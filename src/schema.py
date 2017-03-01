@@ -29,7 +29,7 @@ def error(code, description):
 def user_internal(ID, auth_hash, name, quip, bio, admin):
     return {
         "user_id":   ID,
-        "quip":    quip,
+        "quip":      quip,
         "name":      name,
         "bio":       bio,
         "admin":     admin,
@@ -40,7 +40,7 @@ def user_internal(ID, auth_hash, name, quip, bio, admin):
 def user_external(ID, name, quip, bio, admin):
     return {
         "user_id":   ID,
-        "quip":    quip,
+        "quip":      quip,
         "name":      name,
         "bio":       bio,
         "admin":     admin
