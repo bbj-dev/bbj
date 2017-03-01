@@ -1,3 +1,23 @@
+Data Standards
+--------------
+
+
+  * UTF-8 in, UTF-8 out. No exceptions.
+
+  * SHA256 for auth_hash. Server will do a basic check to make sure of this.
+
+  * Security is not a #1 concern. Basic authorization will be implemented
+    to **help prevent** users from impersonating each other, but this isn't
+    intended to be bulletproof and you shouldn't trust the system with a
+    password you use elsewhere. All clients should inform the user of this.
+
+  * Command-line, on-tilde comes first. Local clients should be possible using
+    SSH port binding, however features like inline images, graphical elements
+    and the like will never be implemented as part of the protocol. Local clients
+    can definitely do things like URL image previews though. Hyperlinks with a
+    different text then the link itself will never be implemented.
+
+
 Text Entities
 -------------
 
