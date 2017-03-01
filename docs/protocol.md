@@ -43,7 +43,7 @@ Some objects will provide further arguments beyond those 3. They will
 always be at the end of the array.
 
 | Name        | Description                                              |
-|-------------+----------------------------------------------------------|
+|-------------|----------------------------------------------------------|
 | `quote`     | This is a string that refers to a previous post number.  |
 |             | These are formatted like >>5, which means it is a        |
 |             | reference to `post_id` 5. These are not processed in     |
@@ -51,20 +51,20 @@ always be at the end of the array.
 |             | addition to the indices at i[1] and i[2], a fourth value |
 |             | is provided, which is an integer of the `post_id` being  |
 |             | quoted. Note that the string indices include the >>'s.   |
-|-------------+----------------------------------------------------------|
+|-------------|----------------------------------------------------------|
 | `linequote` | This is a line of text, denoted by a newline during      |
 |             | composure, representing text that is assumed to be       |
 |             | a quote of someone else. The indices span from the >     |
 |             | until (not including) the newline.                       |
-|-------------+----------------------------------------------------------|
-| `color`     | This is a block of text, denoted by [[color: body]]          |
+|-------------|----------------------------------------------------------|
+| `color`     | This is a block of text, denoted by [[color: body]]      |
 |             | during composure. The body may span across newlines.     |
 |             | A fourth item is provided in the array: it is one of the |
 |             | following strings representing the color.                |
 |             | `red`, `green`, `yellow`, `blue`, `magenta`, or `cyan`.  |
-|-------------+----------------------------------------------------------|
+|-------------|----------------------------------------------------------|
 | `bold`      | Like color, except that no additional attribute is       |
-| `italic`    | provided. it is denoted as [[directive: body]] during        |
+| `italic`    | provided. it is denoted as [[directive: body]] during    |
 | `underline` | composure.                                               |
 
 
@@ -103,7 +103,7 @@ available on the parent object:
 | `lastmod`     | Unix timestamp of when the thread was last           |
 |               | posted in, or a message was edited.                  |
 |---------------|------------------------------------------------------|
-| `edited`      | Boolean of whether the post has been edited.     |
+| `edited`      | Boolean of whether the post has been edited.         |
 |---------------|------------------------------------------------------|
 | `created`     | Unix timestamp of when the post was originally made. |
 
