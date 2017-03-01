@@ -26,10 +26,10 @@ def error(code, description):
     return result
 
 
-def user_internal(ID, auth_hash, name, avatar, bio, admin):
+def user_internal(ID, auth_hash, name, quip, bio, admin):
     return {
         "user_id":   ID,
-        "avatar":    avatar,
+        "quip":    quip,
         "name":      name,
         "bio":       bio,
         "admin":     admin,
@@ -37,10 +37,10 @@ def user_internal(ID, auth_hash, name, avatar, bio, admin):
     }
 
 
-def user_external(ID, name, avatar, bio, admin):
+def user_external(ID, name, quip, bio, admin):
     return {
         "user_id":   ID,
-        "avatar":    avatar,
+        "quip":    quip,
         "name":      name,
         "bio":       bio,
         "admin":     admin

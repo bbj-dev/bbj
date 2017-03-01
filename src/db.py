@@ -86,12 +86,12 @@ def user_resolve(name_or_id):
         return False
 
 
-def user_register(auth_hash, name, avatar, bio):
+def user_register(auth_hash, name, quip, bio):
     if USERDB["mapname"].get(name):
         return schema.error(4, "Username taken.")
 
     ID = uuid1().hex
-    scheme = schema.user_internal(ID, auth_hash, name, avatar, bio, False)
+    scheme = schema.user_internal(ID, auth_hash, name, quip, bio, False)
     USERDB.update({ID: scheme})
     USERDB["mapname"].update({name: ID})
     user_dbdump(USERDB)
@@ -101,7 +101,7 @@ def user_register(auth_hash, name, avatar, bio):
 def user_get(ID):
     user = USERDB[ID]
     return schema.user_external(
-        ID, user["name"], user["avatar"],
+        ID, user["name"], user["quip"],
         user["bio"], user["admin"])
 
 

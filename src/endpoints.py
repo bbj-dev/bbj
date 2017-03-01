@@ -9,7 +9,7 @@ endpoints = {
     "thread_index": [],
     "thread_create": ["title", "body", "tags"],
     "thread_reply": ["thread_id", "body"],
-    "user_register": ["user", "auth_hash", "avatar", "bio"],
+    "user_register": ["user", "auth_hash", "quip", "bio"],
     "user_get": ["target_user"],
 }
 
@@ -43,7 +43,7 @@ def user_register(json):
         db.user_register(
             json["auth_hash"],
             json["user"],
-            json["avatar"],
+            json["quip"],
             json["bio"]))
 
 
