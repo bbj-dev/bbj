@@ -30,7 +30,7 @@ def thread_index(key="lastmod"):
         thread = thread_load(ID)
         thread.pop("replies")
         result.append(thread)
-    return sorted(result, key=lambda i: i[key])
+    return sorted(result, key=lambda i: i[key], reverse=True)
 
 
 def thread_create(author, body, title, tags):

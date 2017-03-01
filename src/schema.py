@@ -1,3 +1,4 @@
+from src import formatting
 from time import time
 
 def base():
@@ -48,12 +49,13 @@ def user_external(ID, name, quip, bio, admin):
 
 
 def thread(ID, author, body, title, tags):
+    text, entities = formatting.parse(body, doquotes=False)
     now = time()
     return {
         "thread_id":   ID,
         "author":      author,
-        "body":        body,
-        "entities":    list(),
+        "body":        text,
+        "entities":    entities, # of type list()
         "title":       title,
         "tags":        tags,
         "replies":     list(),
@@ -65,12 +67,13 @@ def thread(ID, author, body, title, tags):
 
 
 def reply(ID, author, body):
+    text, entities = formatting.parse(body)
     now = time()
     return {
         "post_id":  ID,
         "author":   author,
-        "body":     body,
-        "entities": list(),
+        "body":     text,
+        "entities": entities, # of type list()
         "lastmod":  now,
         "edited":   False,
         "created":  now

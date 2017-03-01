@@ -31,11 +31,11 @@ def create_usermap(thread, index=False):
 
 
 def is_registered(json):
-    return dumps(bool(db.USERDB["mapname"].get(json["target_user"])))
+    return bool(db.USERDB["mapname"].get(json["target_user"]))
 
 
 def check_auth(json):
-    return dumps(bool(db.user_auth(json["user"], json["auth_hash"])))
+    return bool(db.user_auth(json["user"], json["auth_hash"]))
 
 
 def user_register(json):

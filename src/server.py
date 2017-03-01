@@ -8,7 +8,7 @@ import json
 class RequestHandler(StreamRequestHandler):
     """
     Receieves and processes json input; dispatches input to the
-    approproate endpoint, or responds with error objects.
+    requested endpoint, or responds with error objects.
     """
 
 
@@ -22,51 +22,36 @@ class RequestHandler(StreamRequestHandler):
             endpoint = request.get("method")
 
             if endpoint not in endpoints.endpoints:
-                raise IndexError("Invalid endpoint")
+                return self.reply(schema.error(2, "Invalid endpoint"))
 
             # check to make sure all the arguments for endpoint are provided
             elif any([key not in request for key in endpoints.endpoints[endpoint]]):
-                raise ValueError("{} requires: {}".format(
-                    endpoint, ", ".join(endpoints.endpoints[endpoint])))
+                return self.reply(schema.error(3, "{} requires: {}".format(
+                    endpoint, ", ".join(endpoints.endpoints[endpoint]))))
 
             elif endpoint not in endpoints.authless:
                 if not request.get("user"):
-                    raise ConnectionError("No username provided.")
+                    return self.reply(schema.error(4, "No username provided."))
 
                 user = db.user_resolve(request["user"])
                 request["user"] = user
 
                 if not user:
-                    raise ConnectionAbortedError("User not registered")
+                    return self.reply(schema.error(5, "User not registered"))
 
-                elif endpoint != "check_auth" and not db.user_auth(user, request.get("auth_hash")):
-                    raise ConnectionRefusedError("Authorization failed.")
+                elif endpoint != "check_auth" and not \
+                     db.user_auth(user, request.get("auth_hash")):
+                     return self.reply(schema.error(6, "Authorization failed."))
+
+            # exception handling is now passed to the endpoints;
+            # anything unhandled beyond here is a code 1
+            self.reply(eval("endpoints." + endpoint)(request))
 
         except json.decoder.JSONDecodeError as E:
             return self.reply(schema.error(0, str(E)))
 
-        except IndexError as E:
-            return self.reply(schema.error(2, str(E)))
-
-        except ValueError as E:
-            return self.reply(schema.error(3, str(E)))
-
-        except ConnectionError as E:
-            return self.reply(schema.error(4, str(E)))
-
-        except ConnectionAbortedError as E:
-            return self.reply(schema.error(5, str(E)))
-
-        except ConnectionRefusedError as E:
-            return self.reply(schema.error(6, str(E)))
-
         except Exception as E:
             return self.reply(schema.error(1, str(E)))
-
-        try:
-            self.reply(eval("endpoints." + endpoint)(request))
-        except Exception as E:
-            self.reply(schema.error(1, str(E)))
 
 
 def run(host, port):
