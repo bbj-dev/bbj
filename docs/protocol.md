@@ -42,9 +42,8 @@ varies a lot between programming languages.
 Some objects will provide further arguments beyond those 3. They will
 always be at the end of the array.
 
-|-------------|----------------------------------------------------------|
 | Name        | Description                                              |
-|-------------|----------------------------------------------------------|
+|-------------+----------------------------------------------------------|
 | `quote`     | This is a string that refers to a previous post number.  |
 |             | These are formatted like >>5, which means it is a        |
 |             | reference to `post_id` 5. These are not processed in     |
@@ -52,22 +51,21 @@ always be at the end of the array.
 |             | addition to the indices at i[1] and i[2], a fourth value |
 |             | is provided, which is an integer of the `post_id` being  |
 |             | quoted. Note that the string indices include the >>'s.   |
-|-------------|----------------------------------------------------------|
+|-------------+----------------------------------------------------------|
 | `linequote` | This is a line of text, denoted by a newline during      |
 |             | composure, representing text that is assumed to be       |
 |             | a quote of someone else. The indices span from the >     |
 |             | until (not including) the newline.                       |
-|-------------|----------------------------------------------------------|
-| `color`     | This is a block of text, denoted by [[color: body]]      |
+|-------------+----------------------------------------------------------|
+| `color`     | This is a block of text, denoted by [[color: body]]          |
 |             | during composure. The body may span across newlines.     |
 |             | A fourth item is provided in the array: it is one of the |
 |             | following strings representing the color.                |
 |             | `red`, `green`, `yellow`, `blue`, `magenta`, or `cyan`.  |
-|-------------|----------------------------------------------------------|
+|-------------+----------------------------------------------------------|
 | `bold`      | Like color, except that no additional attribute is       |
-| `italic`    | provided. it is denoted as [[directive: body]] during    |
+| `italic`    | provided. it is denoted as [[directive: body]] during        |
 | `underline` | composure.                                               |
-|-------------|----------------------------------------------------------|
 
 
 Threads & Replies
@@ -78,7 +76,6 @@ Threads are represented the same when using `thread_index` and
 present with `thread_load`. The following attributes are
 available on the parent object:
 
-|---------------|------------------------------------------------------|
 | Name          | Description                                          |
 |---------------|------------------------------------------------------|
 | `author`      | The ID string of the author.                         |
@@ -109,12 +106,10 @@ available on the parent object:
 | `edited`      | Boolean of whether the post has been edited.     |
 |---------------|------------------------------------------------------|
 | `created`     | Unix timestamp of when the post was originally made. |
-|---------------|------------------------------------------------------|
 
 The following attributes are available on each reply object in `replies`:
 
 
-|------------|---------------------------------------------------------|
 | Name       | Description                                             |
 |------------|---------------------------------------------------------|
 | `post_id`  | An integer of the posts ID; unlike thread and user ids, |
@@ -135,7 +130,6 @@ The following attributes are available on each reply object in `replies`:
 | `edited`   | A boolean of whether the post was edited.               |
 |------------|---------------------------------------------------------|
 | `created`  | Unix timestamp of when the reply was originally posted. |
-|------------|---------------------------------------------------------|
 
 
 Errors
@@ -149,7 +143,6 @@ the problem. `description` is intended for human consumption; in your client
 code, use the error codes to handle conditions. The `presentable` column
 indicates whether the `description` should be shown to users verbatim.
 
-|------|--------------|---------------------------------------------------|
 | Code | Presentable  | Documentation                                     |
 |------|--------------|---------------------------------------------------|
 |    0 | Never, fix   | Malformed json input. `description` is the error  |
@@ -188,4 +181,3 @@ indicates whether the `description` should be shown to users verbatim.
 |   10 | Always       | User action requires `admin` privilege.           |
 |------|--------------|---------------------------------------------------|
 |   11 | Always       | Invalid formatting directives in text submission. |
-|------|--------------|---------------------------------------------------|
