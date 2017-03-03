@@ -32,7 +32,7 @@ def create_usermap(thread, index=False):
 
 
 def is_registered(json):
-    return bool(db.USERDB["mapname"].get(json["target_user"]))
+    return bool(db.USERDB["namemap"].get(json["target_user"]))
 
 
 def check_auth(json):

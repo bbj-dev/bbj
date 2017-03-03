@@ -18,7 +18,7 @@ try:
         USERDB = json.loads(f.read())
 
 except FileNotFoundError:
-    USERDB = dict(mapname=dict())
+    USERDB = dict(namemap=dict())
     with open(path.join(PATH, "userdb"), "w") as f:
         f.write(json.dumps(USERDB))
     path.os.chmod(path.join(PATH, "userdb"), 0o600)
@@ -95,19 +95,19 @@ def user_resolve(name_or_id):
         if check:
             return name_or_id
         else:
-            return USERDB["mapname"][name_or_id]
+            return USERDB["namemap"][name_or_id]
     except KeyError:
         return False
 
 
 def user_register(auth_hash, name, quip, bio):
-    if USERDB["mapname"].get(name):
+    if USERDB["namemap"].get(name):
         return schema.error(4, "Username taken.")
 
     ID = uuid1().hex
     scheme = schema.user_internal(ID, auth_hash, name, quip, bio, False)
     USERDB.update({ID: scheme})
-    USERDB["mapname"].update({name: ID})
+    USERDB["namemap"].update({name: ID})
     user_dbdump(USERDB)
     return scheme
 
