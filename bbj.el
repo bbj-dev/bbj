@@ -31,6 +31,16 @@
   (local-set-key (kbd "p")       'bbj-prev-post)
   (local-set-key (kbd "<up>")    'bbj-prev-post)
 
+  (local-set-key (kbd "J")       'scroll-up-line)
+  (local-set-key (kbd "N")       'scroll-up-line)
+  (local-set-key (kbd "S-SPC")   'scroll-up-line)
+  (local-set-key (kbd "<S-down>")'scroll-up-line)
+
+  (local-set-key (kbd "K")       'scroll-down-line)
+  (local-set-key (kbd "P")       'scroll-down-line)
+  (local-set-key (kbd "<S-up>")  'scroll-down-line)
+  (local-set-key (kbd "<S-backspace>") 'scroll-down-line)
+
   (local-set-key (kbd "RET")     'bbj-enter)
   (local-set-key (kbd "l")       'bbj-enter)
   (local-set-key (kbd "o")       'bbj-enter)
@@ -38,6 +48,7 @@
 
   (local-set-key (kbd "q")       'quit-window)
   (local-set-key (kbd "<left>")  'quit-window)
+  (local-set-key (kbd "<escape>")'quit-window)
 
   (local-set-key (kbd "+")       'bbj-compose)
   (local-set-key (kbd "c")       'bbj-compose)
