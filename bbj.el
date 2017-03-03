@@ -1,12 +1,12 @@
 (require 'json)
 (require 'cl)
 
-;; stuff you can touch
 (defvar bbj:host "localhost")
 (defvar bbj:port "7066")
 (defvar bbj:width 80)
 
-;; stuff you shouldnt touch
+;; blah blah user servicable parts blah blaheiu hre  ;;;;;;;;;;r;r;r;r;;;q;q;;;
+(defvar bbj:old-p (eq emacs-major-version 24))
 (defvar bbj:logged-in nil)
 (defvar bbj:user nil)
 (defvar bbj:hash nil)
@@ -364,7 +364,7 @@ and renders the content in the current buffer."
 
 (defun bbj:timestring (epoch)
   "Make a cute timestring out of the epoch (for post heads)"
-  (format-time-string "%H:%M %a %m/%d/%y" epoch))
+  (format-time-string "%H:%M %a %m/%d/%y" (seconds-to-time epoch)))
 
 
 (defun bbj:render-post (object)
@@ -394,9 +394,11 @@ or any of its children."
 
 
 (defun bbj:render-tag-span (dom)
-  "A slightly modified version of `shr-tag-span' which handles quotes and stuff.."
-  (let ((class (dom-attr dom 'class)))
-    (dolist (sub (dom-children dom))
+  "A slightly modified version of `shr-tag-span' which handles quotes and stuff."
+  (let ((class (if bbj:old-p
+                   (assq :class (cdr dom))
+                   (dom-attr dom 'class))))
+    (dolist (sub (if (consp (car dom)) (cddr (car dom)) (cddr dom)))
       (if (stringp sub)
           (cond
            ((equal class "quote")
