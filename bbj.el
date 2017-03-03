@@ -107,7 +107,10 @@ for all JSON tourists."
       (setq message (bbj-descend json 'error 'description))
       (case (bbj-descend json 'error 'code)
         ;; haha epic handling
-        ((4 5 6 7) (error message))
+        (4 (user-error
+            (if bbj-logged-in message
+              "Not logged in. Call M-x bbj-login")))
+        ((5 6 7) (user-error message))
         (otherwise json)))))
 
 
