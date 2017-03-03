@@ -13,6 +13,7 @@ endpoints = {
     "thread_create":   ["title", "body", "tags"],
     "thread_reply":    ["thread_id", "body"],
     "edit_post":       ["thread_id", "post_id", "body"],
+    "edit_query":      ["thread_id", "post_id"],
     "can_edit":        ["thread_id", "post_id"],
     "user_register":   ["user", "auth_hash", "quip", "bio"],
     "user_get":        ["target_user"],
@@ -100,13 +101,17 @@ def user_register(json):
 
     return schema.response(
         db.user_register(
-            json["user"],
             json["auth_hash"],
+            json["user"],
             json["quip"],
             json["bio"]))
 
 
 def user_get(json):
+    """
+    On success, returns an external user object for target_user (ID or name).
+    If the user isn't in the system, returns false.
+    """
     user = db.user_resolve(json["target_user"])
     if not user:
         return False
@@ -146,6 +151,10 @@ def thread_reply(json):
     return schema.response(reply)
 
 
+def edit_query(json):
+    return db.edit_handler(json)[1]
+
+
 def can_edit(json):
     return db.edit_handler(json)[0]
 
@@ -154,9 +163,9 @@ def edit_post(json):
     thread = db.thread_load(json["thread_id"])
     admin = db.user_is_admin(json["user"])
     target_id = json["post_id"]
-    query, obj = db.edit_handler(json, thread)
+    ok, obj = db.edit_handler(json, thread)
 
-    if query:
+    if ok:
         obj["body"] = json["body"]
         obj["lastmod"] = time()
         obj["edited"] = True

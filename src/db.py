@@ -190,7 +190,12 @@ def user_namecheck(name):
         return False, schema.error(4,
             "Username cannot contain whitespace chars besides spaces.")
 
-    elif len(username) > 24:
+    elif not name.strip():
+        return False, schema.error(4,
+            "Username must contain at least one non-space character")
+
+
+    elif len(name) > 24:
         return False, schema.error(4,
             "Username is too long (max 24 chars)")
 
@@ -199,7 +204,7 @@ def user_namecheck(name):
 
 def user_authcheck(auth_hash):
     if not auth_hash:
-        return schema.error(3,
+        return False, schema.error(3,
             "auth_hash may not be empty")
 
     elif len(auth_hash) != 64:
@@ -211,7 +216,7 @@ def user_authcheck(auth_hash):
 
 def user_quipcheck(quip):
     if not quip:
-        return ""
+        return True, True
 
     elif contains_nonspaces(quip):
         return False, schema.error(4,
@@ -226,7 +231,7 @@ def user_quipcheck(quip):
 
 def user_biocheck(bio):
     if not bio:
-        return ""
+        return True, True
 
     elif len(bio) > 4096:
         return False, schema.error(4,

@@ -467,19 +467,31 @@ it worked on emacs 24."
 
 (defun bbj-edit-post ()
   (interactive)
-  (let ((adminp (bbj-request "is_admin" 'target_user bbj-username))
-        (callback `(lambda ()
-            (let* ((message (bbj-consume-window (current-buffer)))
-                   (request (bbj-request "edit_post"
-                             'post_id ,(alist-get 'post_id (bbj-post-prop 'data))
-                             'body message 'thread_id ,thread-id)))
-              (if (numberp (bbj-descend request 'error 'code))
-                  (message bbj-descend request 'error 'description)
-                (message "post edited")
-                (bbj-enter-thread ,thread-id))))))
+  (when (eq bbj-buffer-type 'index)
+    (let ((buffer (current-buffer)))
+      (bbj-enter)
+      (unless (eql buffer (current-buffer))
+        (bbj-edit-post))))
+  (let* ((post (alist-get 'post_id (bbj-post-prop 'data)))
+         (adminp (bbj-request "is_admin" 'target_user bbj-username))
+         (message (alist-get 'body (bbj-post-prop 'data)))
+         (query (bbj-request "edit_query" 'post_id post 'thread_id thread-id))
+         (callback `(lambda ()
+             (let* ((message (bbj-consume-window (current-buffer)))
+                    (request (bbj-request "edit_post"
+                              'post_id ,post
+                              'body message 'thread_id ,thread-id)))
+               (if (numberp (bbj-descend request 'error 'code))
+                   (message bbj-descend request 'error 'description)
+                 (message "post edited")
+                 (bbj-enter-thread ,thread-id))))))
     (cond
-     ((and (not (eq ))))
-     )))
+     ((numberp (bbj-descend query 'error 'code))
+      (message (bbj-descend query 'error 'description)))
+     (t
+      (bbj-compose-in-window "Editing post (including html) (C-c C-c to send)" callback)
+      (insert message)
+      (goto-char (point-min))))))
 
 
 (defun bbj-browse-index ()
