@@ -8,7 +8,8 @@
 ;; blah blah user servicable parts blah blaheiu hre  ;;;;;;;;;;r;r;r;r;;;q;q;;;
 (defvar bbj-old-p (eq emacs-major-version 24))
 (defvar bbj-logged-in nil)
-(defvar bbj-user nil)
+(defvar bbj-username nil)
+(defvar bbj-userid nil)
 (defvar bbj-hash nil)
 (make-variable-buffer-local
  (defvar bbj-*usermap* nil))
@@ -53,6 +54,7 @@
   (local-set-key (kbd "+")       'bbj-compose)
   (local-set-key (kbd "c")       'bbj-compose)
 
+  (local-set-key (kbd "e")       'bbj-edit-post)
   (local-set-key (kbd "C-c C-c") 'bbj-aux)
   (local-set-key (kbd "r")       'bbj-quote-current-post))
 
@@ -99,7 +101,7 @@ for all JSON tourists."
   ;; json-false/json-nil are bound as nil here to stop them from being silly keywords
   (let (json message json-false json-null
         (data (list
-          (cons 'user bbj-user)
+          (cons 'user bbj-username)
           (cons 'auth_hash bbj-hash)
           (cons 'method method))))
     ;; populate a query with our hash and username, then the func arguments
@@ -112,9 +114,12 @@ for all JSON tourists."
        (point-min) (point-max)
        shell-file-name t t nil ;; meow meow
        "-c" (format "nc %s %s" bbj-host bbj-port))
+      (when (eq (point-min) (point-max))
+        (user-error "Server is down"))
       (setq json (progn (goto-char (point-min)) (json-read))))
 
-    (if (eq json t) t ;; a few enpoints just return true/false
+    ;; if the response is an atom, just return it. otherwise check for errors
+    (if (not (and (listp json) (eq json nil))) json
       (setq message (bbj-descend json 'error 'description))
       (case (bbj-descend json 'error 'code)
         ;; haha epic handling
@@ -128,7 +133,6 @@ for all JSON tourists."
 (defun bbj-sethash (&optional password)
   "Either prompt for or take the arg `PASSWORD', and then sha256-hash it.
 Sets it globally and also returns it."
-  (interactive)
   (unless password (setq password
     (read-from-minibuffer "(Password)> ")))
   (setq bbj-hash (secure-hash 'sha256 password)))
@@ -139,18 +143,20 @@ Sets it globally and also returns it."
 care of that. Jumps to the index afterward. This function only needs to be used
 once per emacs session."
   (interactive)
-  (setq bbj-user (read-from-minibuffer "(BBJ Username)> "))
+  (setq bbj-username (read-from-minibuffer "(BBJ Username)> "))
   (cond
-   ((bbj-request "is_registered" 'target_user bbj-user)
+   ((bbj-request "is_registered" 'target_user bbj-username)
     (bbj-sethash)
     (if (bbj-request "check_auth")
         (progn
-          (setq bbj-logged-in t)
+          (setq bbj-logged-in t
+                bbj-userid (bbj-request "user_name_to_id"
+                             'target_user bbj-username))
           (bbj-browse-index)
-          (message "Logged in as %s!" bbj-user))
+          (message "Logged in as %s!" bbj-username))
       (message "(Invalid Password!)")
       (run-at-time 1 nil #'bbj-login)))
-   ((y-or-n-p (format "Register for BBJ as %s? " bbj-user))
+   ((y-or-n-p (format "Register for BBJ as %s? " bbj-username))
     (bbj-sethash)
     (let ((response
            (bbj-request "user_register"
@@ -160,7 +166,7 @@ once per emacs session."
           (message "%s" (alist-get 'error response))
         (setq bbj-logged-in t)
         (bbj-browse-index)
-        (message "Logged in as %s!" bbj-user))))))
+        (message "Logged in as %s!" bbj-username))))))
 
 
 ;;;; user navigation shit. a LOT of user navigation shit. ;;;;
@@ -339,7 +345,6 @@ assign CALLBACK to C-c C-c."
 (defun bbj-consume-window (buffer)
   "Consume all text in the current buffer, delete the window if
 it is one, and kill the buffer. Returns property-free string."
-  (interactive)
   (with-current-buffer buffer
     (let ((content (buffer-substring-no-properties
                     (point-min) (point-max))))
@@ -458,6 +463,23 @@ it worked on emacs 24."
       (if drop-newline (subseq sep 1) sep)
       'face 'font-lock-comment-face
       'type 'end))))
+
+
+(defun bbj-edit-post ()
+  (interactive)
+  (let ((adminp (bbj-request "is_admin" 'target_user bbj-username))
+        (callback `(lambda ()
+            (let* ((message (bbj-consume-window (current-buffer)))
+                   (request (bbj-request "edit_post"
+                             'post_id ,(alist-get 'post_id (bbj-post-prop 'data))
+                             'body message 'thread_id ,thread-id)))
+              (if (numberp (bbj-descend request 'error 'code))
+                  (message bbj-descend request 'error 'description)
+                (message "post edited")
+                (bbj-enter-thread ,thread-id))))))
+    (cond
+     ((and (not (eq ))))
+     )))
 
 
 (defun bbj-browse-index ()

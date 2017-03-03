@@ -1,17 +1,22 @@
 from src import formatting
 from src import schema
+from time import time
 from src import db
-from json import dumps
+
 
 endpoints = {
-    "check_auth": ["user", "auth_hash"],
-    "is_registered": ["target_user"],
-    "thread_load": ["thread_id"],
-    "thread_index": [],
-    "thread_create": ["title", "body", "tags"],
-    "thread_reply": ["thread_id", "body"],
-    "user_register": ["user", "auth_hash", "quip", "bio"],
-    "user_get": ["target_user"],
+    "check_auth":      ["user", "auth_hash"],
+    "is_registered":   ["target_user"],
+    "is_admin":        ["target_user"],
+    "thread_index":    [],
+    "thread_load":     ["thread_id"],
+    "thread_create":   ["title", "body", "tags"],
+    "thread_reply":    ["thread_id", "body"],
+    "edit_post":       ["thread_id", "post_id", "body"],
+    "can_edit":        ["thread_id", "post_id"],
+    "user_register":   ["user", "auth_hash", "quip", "bio"],
+    "user_get":        ["target_user"],
+    "user_name_to_id": ["target_user"]
 }
 
 
@@ -21,6 +26,8 @@ authless = [
 ]
 
 
+# this is not actually an endpoint, but produces a required
+# element of thread responses.
 def create_usermap(thread, index=False):
     if index:
         return {user: db.user_get(user) for user in
@@ -31,21 +38,79 @@ def create_usermap(thread, index=False):
     return {x: db.user_get(x) for x in result}
 
 
+def user_name_to_id(json):
+    """
+    Returns a string of the target_user's ID when it is
+    part of the database: a non-existent user will return
+    a boolean false.
+    """
+    return db.user_resolve(json["target_user"])
+
+
 def is_registered(json):
+    """
+    Returns true or false whether target_user is registered
+    in the system. This function only takes usernames: not
+    user IDs.
+    """
     return bool(db.USERDB["namemap"].get(json["target_user"]))
 
 
 def check_auth(json):
+    "Returns true or false whether auth_hashes matches user."
     return bool(db.user_auth(json["user"], json["auth_hash"]))
 
 
+def is_admin(json):
+    """
+    Returns true or false whether target_user is a system
+    administrator. Takes a username or user ID. Nonexistent
+    users return false.
+    """
+    user = db.user_resolve(json["target_user"])
+    if user:
+        return db.user_is_admin(user)
+    return False
+
+
 def user_register(json):
+    """
+    Registers a new user into the system. Returns the new internal user
+    object on success, or an error response.
+
+    auth_hash should be a hexadecimal SHA-256 string, produced from a
+      UTF-8 password string.
+
+    user should be a string containing no newlines and
+      under 24 characters in length.
+
+    quip is a string, up to 120 characters, provided by the user
+      the acts as small bio, suitable for display next to posts
+      if the client wants to. Whitespace characters besides space
+      are not allowed. The string may be empty.
+
+    bio is a string, up to 4096 chars, provided by the user that
+      can be shown on profiles. There are no character type limits
+      for this entry. The string may be empty.
+
+    All errors for this endpoint with code 4 should show the
+    description direcrtly to the user.
+
+    """
+
     return schema.response(
         db.user_register(
-            json["auth_hash"],
             json["user"],
+            json["auth_hash"],
             json["quip"],
             json["bio"]))
+
+
+def user_get(json):
+    user = db.user_resolve(json["target_user"])
+    if not user:
+        return False
+    return db.user_get(user)
 
 
 def thread_index(json):
@@ -79,3 +144,21 @@ def thread_reply(json):
     if json.get("nomarkup"):
         reply["body"] = formatting.cleanse(reply["body"])
     return schema.response(reply)
+
+
+def can_edit(json):
+    return db.edit_handler(json)[0]
+
+
+def edit_post(json):
+    thread = db.thread_load(json["thread_id"])
+    admin = db.user_is_admin(json["user"])
+    target_id = json["post_id"]
+    query, obj = db.edit_handler(json, thread)
+
+    if query:
+        obj["body"] = json["body"]
+        obj["lastmod"] = time()
+        obj["edited"] = True
+        db.thread_dump(json["thread_id"], thread)
+    return obj

@@ -143,41 +143,47 @@ the problem. `description` is intended for human consumption; in your client
 code, use the error codes to handle conditions. The `presentable` column
 indicates whether the `description` should be shown to users verbatim.
 
-| Code | Presentable  | Documentation                                     |
-|------|--------------|---------------------------------------------------|
-|    0 | Never, fix   | Malformed json input. `description` is the error  |
-|      | your client  | string thrown by the server-side json decoder.    |
-|------|--------------|---------------------------------------------------|
-|    1 | Not a good   | Internal server error. Unaltered exception text   |
-|      | idea, the    | is returned as `description`. This shouldn't      |
-|      | exceptions   | happen, and if it does, make a bug report.        |
-|      | are not      | clients should not attempt to intelligently       |
-|      | helpful      | recover from any errors of this class.            |
-|------|--------------|---------------------------------------------------|
-|    2 | Nadda.       | Unknown `method` was requested.                   |
-|------|--------------|---------------------------------------------------|
-|    3 | Fix. Your.   | Missing or malformed parameter values for the     |
-|      | Client.      | requested `method`.                               |
-|------|--------------|---------------------------------------------------|
-|    4 | Only during  | Invalid or unprovided `user`.                     |
-|      | registration |                                                   |
-|      |              | During registration, this code is returned with a |
-|      |              | `description` that should be shown to the user.   |
-|      |              | It could indicate an invalid name input, an       |
-|      |              | occupied username, invalid/missing `auth_hash`,   |
-|      |              | etc.                                              |
-|------|--------------|---------------------------------------------------|
-|    5 | Always       | `user` is not registered.                         |
-|------|--------------|---------------------------------------------------|
-|    6 | Always       | User `auth_hash` failed or was not provided.      |
-|------|--------------|---------------------------------------------------|
-|    7 | Always       | Requested thread does not exist.                  |
-|------|--------------|---------------------------------------------------|
-|    8 | Always       | Requested thread does not allow posts.            |
-|------|--------------|---------------------------------------------------|
-|    9 | Always       | Message edit failed; there is a 24hr limit for    |
-|      |              | editing posts.                                    |
-|------|--------------|---------------------------------------------------|
-|   10 | Always       | User action requires `admin` privilege.           |
-|------|--------------|---------------------------------------------------|
-|   11 | Always       | Invalid formatting directives in text submission. |
+| Code | Presentable  | Documentation                                      |
+|------+--------------+----------------------------------------------------|
+|    0 | Never, fix   | Malformed json input. `description` is the error   |
+|      | your client  | string thrown by the server-side json decoder.     |
+|------+--------------+----------------------------------------------------|
+|    1 | Not a good   | Internal server error. Unaltered exception text    |
+|      | idea, the    | is returned as `description`. This shouldn't       |
+|      | exceptions   | happen, and if it does, make a bug report.         |
+|      | are not      | clients should not attempt to intelligently        |
+|      | helpful      | recover from any errors of this class.             |
+|------+--------------+----------------------------------------------------|
+|    2 | Nadda.       | Unknown `method` was requested.                    |
+|------+--------------+----------------------------------------------------|
+|    3 | Fix. Your.   | Missing, malformed, or otherwise incorrect         |
+|      | Client.      | parameters or values for the requested `method`.   |
+|      |              | This is returned, for example, when a request to   |
+|      |              | `edit_post` tries to edit a post_id that does      |
+|      |              | not exist. Its also used to indicate a lack of     |
+|      |              | required arguments for a method. This is a generic |
+|      |              | error class that can cover programming errors      |
+|      |              | but never user errors.                             |
+|------+--------------+----------------------------------------------------|
+|    4 | Only during  | Invalid or unprovided `user`.                      |
+|      | registration |                                                    |
+|      |              | During registration, this code is returned with a  |
+|      |              | `description` that should be shown to the user.    |
+|      |              | It could indicate an invalid name input, an        |
+|      |              | occupied username, invalid/missing `auth_hash`,    |
+|      |              | etc.                                               |
+|------+--------------+----------------------------------------------------|
+|    5 | Always       | `user` is not registered.                          |
+|------+--------------+----------------------------------------------------|
+|    6 | Always       | User `auth_hash` failed or was not provided.       |
+|------+--------------+----------------------------------------------------|
+|    7 | Always       | Requested thread does not exist.                   |
+|------+--------------+----------------------------------------------------|
+|    8 | Always       | Requested thread does not allow posts.             |
+|------+--------------+----------------------------------------------------|
+|    9 | Always       | Message edit failed; there is a 24hr limit for     |
+|      |              | editing posts.                                     |
+|------+--------------+----------------------------------------------------|
+|   10 | Always       | User action requires `admin` privilege.            |
+|------+--------------+----------------------------------------------------|
+|   11 | Always       | Invalid formatting directives in text submission.  |

@@ -43,6 +43,13 @@ class RequestHandler(StreamRequestHandler):
                      db.user_auth(user, request.get("auth_hash")):
                      return self.reply(schema.error(6, "Authorization failed."))
 
+            # post_ids are always returned as integers, but for callers who
+            # provide them as something else, try to convert them.
+            if isinstance(request.get("post_id"), (float, str)):
+                try: request["post_id"] = int(request["post_id"])
+                except Exception:
+                    return schema.error(3, "Non-numeric post_id")
+
             # exception handling is now passed to the endpoints;
             # anything unhandled beyond here is a code 1
             self.reply(eval("endpoints." + endpoint)(request))
