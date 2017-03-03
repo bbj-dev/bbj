@@ -48,6 +48,31 @@
 (ignore-errors
   (evil-set-initial-state 'bbj-mode 'emacs))
 
+;;;; shit to put up with outdated emacs on the tilde ;;;;
+
+(when (eq emacs-major-version 24)
+
+  (defun alist-get (key alist &optional default remove)
+    (ignore remove) ;;Silence byte-compiler.
+    (let ((x (assq key alist)))
+      (if x (cdr x) default)))
+
+  (defsubst string-trim-left (string)
+    "Remove leading whitespace from STRING."
+    (if (string-match "\\`[ \t\n\r]+" string)
+        (replace-match "" t t string)
+      string))
+
+  (defsubst string-trim-right (string)
+    "Remove trailing whitespace from STRING."
+    (if (string-match "[ \t\n\r]+\\'" string)
+        (replace-match "" t t string)
+      string))
+
+  (defsubst string-trim (string)
+    "Remove leading and trailing whitespace from STRING."
+    (string-trim-left (string-trim-right string))))
+
 ;;;; network shit ;;;;
 
 (defun bbj:descend (alist &rest keys)
