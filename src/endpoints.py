@@ -1,3 +1,4 @@
+from src import formatting
 from src import schema
 from src import db
 from json import dumps
@@ -48,13 +49,12 @@ def user_register(json):
 
 
 def thread_index(json):
-    index = db.thread_index()
-    return schema.response(
-        {"threads": index}, create_usermap(index, True))
+    index = db.thread_index(markup=not json.get("nomarkup"))
+    return schema.response({"threads": index}, create_usermap(index, True))
 
 
 def thread_load(json):
-    thread = db.thread_load(json["thread_id"])
+    thread = db.thread_load(json["thread_id"], not json.get("nomarkup"))
     if not thread:
         return schema.error(7, "Requested thread does not exist")
     return schema.response(thread, create_usermap(thread))
@@ -66,12 +66,16 @@ def thread_create(json):
         json["body"],
         json["title"],
         json["tags"])
-    return schema.response(thread, create_usermap(thread))
+    if json.get("nomarkup"):
+        thread["body"] = formatting.cleanse(thread["body"])
+    return schema.response(thread)
 
 
 def thread_reply(json):
-    thread = db.thread_reply(
+    reply = db.thread_reply(
         json["thread_id"],
         json["user"],
         json["body"])
-    return schema.response(thread)
+    if json.get("nomarkup"):
+        reply["body"] = formatting.cleanse(reply["body"])
+    return schema.response(reply)

@@ -1,3 +1,4 @@
+from src import formatting
 from uuid import uuid1
 from src import schema
 from time import time
@@ -24,10 +25,10 @@ except FileNotFoundError:
 
 ### THREAD MANAGEMENT ###
 
-def thread_index(key="lastmod"):
+def thread_index(key="lastmod", markup=True):
     result = list()
     for ID in path.os.listdir(path.join(PATH, "threads")):
-        thread = thread_load(ID)
+        thread = thread_load(ID, markup)
         thread.pop("replies")
         result.append(thread)
     return sorted(result, key=lambda i: i[key], reverse=True)
@@ -42,10 +43,17 @@ def thread_create(author, body, title, tags):
     return scheme
 
 
-def thread_load(ID):
+def thread_load(ID, markup=True):
     try:
         with open(path.join(PATH, "threads", ID), "r") as f:
-            return json.loads(f.read())
+            thread = json.loads(f.read())
+            if not markup:
+                thread["body"] = formatting.cleanse(thread["body"])
+                for x in range(len(thread["replies"])):
+                    thread["replies"][x]["body"] = formatting.cleanse(
+                        thread["replies"][x]["body"])
+            return thread
+
     except FileNotFoundError:
         return False
 
@@ -62,7 +70,13 @@ def thread_reply(ID, author, body):
 
     thread["reply_count"] += 1
     thread["lastmod"] = time()
-    reply = schema.reply(thread["reply_count"], author, body)
+
+    if thread["replies"]:
+        lastpost = thread["replies"][-1]["post_id"]
+    else:
+        lastpost = 1
+
+    reply = schema.reply(lastpost + 1, author, body)
     thread["replies"].append(reply)
     thread_dump(ID, thread)
     return reply

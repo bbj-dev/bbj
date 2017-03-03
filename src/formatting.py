@@ -1,35 +1,28 @@
+from markdown import markdown
+from html import escape
 import re
 
+# these parameters are utter nonsense...
 COLORS = ["red", "green", "yellow", "blue", "magenta", "cyan"]
-KEYWORDS = COLORS + [
-    "bold", "italic", "underline"
-]
+MARKUP = ["bold", "italic", "underline", "strike"]
+TOKENS = re.compile(r"\[({}): (.+?)]".format("|".join(COLORS + MARKUP)), flags=re.DOTALL)
+QUOTES = re.compile("&gt;&gt;([0-9]+)")
+LINEQUOTES = re.compile("^(&gt;.+)$", flags=re.MULTILINE)
 
 
-TOKENS = re.compile(r"\[\[({}): (.+?)]]".format("|".join(KEYWORDS)), flags=re.DOTALL)
-QUOTES = re.compile(">>([0-9]+)")
-LINEQUOTES = re.compile("^>(.+)$", flags=re.MULTILINE)
+def map_html(match):
+    directive, body = match.group(1).lower(), match.group(2)
+    if directive in COLORS:
+        return '<span color="{0}" style="color: {0};">{1}</span>'.format(directive, body)
+    elif directive in MARKUP:
+        return '<{0}>{1}</{0}>'.format(directive[0], body)
+    return body
 
 
 def parse(text, doquotes=True):
-    output = TOKENS.sub("\\2", text)
-    objects = list()
-    offset = 0
-    for token in TOKENS.finditer(text):
-        directive = token.group(1).lower()
-        start = token.start() - offset
-        end = start + len(token.group(2))
-        offset += len(directive) + 6
-        if directive in COLORS:
-            objects.append(["color", start, end, directive])
-        else:
-            objects.append([directive, start, end])
-
-    objects += [["linequote", m.start(), m.end()]
-                  for m in LINEQUOTES.finditer(output)]
-
+    text = TOKENS.sub(map_html, escape(text))
     if doquotes:
-        objects += [["quote", m.start(), m.end(), int(m.group(1))]
-                      for m in QUOTES.finditer(output)]
-
-    return output, objects
+        text = QUOTES.sub(r'<span post="\1" class="quote">\g<0></span>', text)
+    return markdown(
+        LINEQUOTES.sub(r'<span class="linequote">\1</span>', text)
+    )
