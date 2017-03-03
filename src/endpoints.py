@@ -166,8 +166,13 @@ def edit_post(json):
     ok, obj = db.edit_handler(json, thread)
 
     if ok:
+
+        if json.get("reformat"):
+            json["body"] = formatting.parse(json["body"])
+
         obj["body"] = json["body"]
         obj["lastmod"] = time()
         obj["edited"] = True
         db.thread_dump(json["thread_id"], thread)
+
     return obj

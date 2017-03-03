@@ -472,6 +472,7 @@ it worked on emacs 24."
       (bbj-enter)
       (unless (eql buffer (current-buffer))
         (bbj-edit-post))))
+
   (let* ((post (alist-get 'post_id (bbj-post-prop 'data)))
          (adminp (bbj-request "is_admin" 'target_user bbj-username))
          (message (alist-get 'body (bbj-post-prop 'data)))
@@ -485,6 +486,7 @@ it worked on emacs 24."
                    (message bbj-descend request 'error 'description)
                  (message "post edited")
                  (bbj-enter-thread ,thread-id))))))
+
     (cond
      ((numberp (bbj-descend query 'error 'code))
       (message (bbj-descend query 'error 'description)))
