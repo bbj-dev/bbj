@@ -314,7 +314,7 @@ is sent using C-c C-c."
 (defun bbj-compose-in-window (title callback &rest cbargs)
   "Create a new buffer, pop it, set TITLE as the header line, and
 assign CALLBACK to C-c C-c."
-  (let ((buffer (get-buffer-create "*BBJ: Compose*")))
+  (let ((buffer (get-buffer-create "BBJ: Compose")))
     (pop-to-buffer buffer)
     (with-current-buffer buffer
       (erase-buffer)
@@ -452,7 +452,7 @@ it worked on emacs 24."
 (defun bbj-browse-index ()
   (interactive)
   (let* ((inhibit-read-only t)
-         (buffer (get-buffer-create "*BBJ Index*"))
+         (buffer (get-buffer-create "BBJ Index"))
          (response (bbj-request "thread_index"))
          (bbj-*usermap* (alist-get 'usermap response)))
     (with-current-buffer buffer
