@@ -12,8 +12,8 @@ class RequestHandler(StreamRequestHandler):
     """
 
 
-    def reply(self, dictionary):
-        self.wfile.write(bytes(json.dumps(dictionary), "utf8"))
+    def reply(self, obj):
+        self.wfile.write(bytes(json.dumps(obj), "utf8"))
 
 
     def handle(self):
