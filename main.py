@@ -1,4 +1,5 @@
 from src import schema
 from src import server
 
-server.run("localhost", 7066)
+if __name__ == '__main__':
+    server.run("localhost", 7066)
