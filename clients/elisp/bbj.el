@@ -12,6 +12,9 @@
 (defvar bbj-username nil)
 (defvar bbj-userid nil)
 (defvar bbj-hash nil)
+
+(make-variable-buffer-local
+ (defvar bbj-refresh-timer nil))
 (make-variable-buffer-local
  (defvar bbj-*usermap* nil))
 (make-variable-buffer-local
@@ -67,7 +70,7 @@
 
 ;;;; shit to put up with outdated emacs on the tilde ;;;;
 
-(when (eq emacs-major-version 24)
+(when bbj-old-p
 
   (defun alist-get (key alist &optional default remove)
     (ignore remove) ;;Silence byte-compiler.
@@ -265,6 +268,18 @@ just hunts for a specific text property."
   (goto-char (+ 1 bbj-width (point-min))))
 
 
+(defun bbj-seek-post (id)
+  "Locate a post number and jump to it."
+  (when (eq bbj-buffer-type 'thread)
+    (if (member id '("0" 0))
+        (bbj-first-post)
+      (let ((pos (bbj-next-pos (format ">>%s" id) nil 'head)))
+        (if (not pos)
+            (message "post %s not found" id)
+          (goto-char pos)
+          (recenter t))))))
+
+
 (defun bbj-aux ()
   "just some random lazy callback shitty thing for C-c C-c"
   (interactive)
@@ -454,8 +469,15 @@ maimed until it worked on emacs 24."
   "i need to add post seeker to make this less jarring..."
   (interactive)
   (case bbj-buffer-type
-    (index (bbj-browse-index))
-    (thread (bbj-enter-thread thread-id))))
+    (index
+     (let ((point (point)))
+       (bbj-browse-index)
+       (goto-char point)
+       (recenter t)))
+    (thread
+     (let ((post (alist-get 'post_id (bbj-post-prop 'data))))
+       (bbj-enter-thread thread-id)
+       (bbj-seek-post post)))))
 
 
 (defun bbj-edit-post ()
