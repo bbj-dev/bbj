@@ -1,4 +1,5 @@
 (require 'json)
+(require 'shr)
 (require 'cl)
 
 (defvar bbj-host "localhost")
@@ -412,28 +413,9 @@ or any of its children."
     (bbj-insert-sep)))
 
 
-;; (defun bbj-render-tag-span (dom)
-;;   "A slightly modified version of `shr-tag-span' which handles quotes and stuff."
-;;   (let ((class (if bbj-old-p
-;;                    (assq :class (cdr dom))
-;;                    (dom-attr dom 'class))))
-;;     (dolist (sub (if (consp (car dom)) (cddr (car dom)) (cddr dom)))
-;;       (if (stringp sub)
-;;           (cond
-;;            ((equal class "quote")
-;;             (insert (propertize sub
-;;               'face 'font-lock-constant-face
-;;               'type 'quote)))
-;;            ((equal class "linequote")
-;;             (insert (propertize sub
-;;               'face 'font-lock-string-face
-;;               'type 'linequote)))
-;;            (t (shr-insert sub)))
-;;         (shr-descend sub)))))
-
 (defun bbj-render-tag-span (dom)
-  "A highly bastardized version of `shr-tag-span', beaten and maimed until
-it worked on emacs 24."
+  "A highly bastardized version of e25's `shr-tag-span', beaten and
+maimed until it worked on emacs 24."
   (let ((class (if bbj-old-p
                    (alist-get :class dom)
                  (dom-attr dom 'class)))
@@ -450,7 +432,7 @@ it worked on emacs 24."
       (insert (propertize text
                'face 'font-lock-string-face
                'type 'linequote)))
-     (text (shr-insert text)))))
+     (t (shr-generic dom)))))
 
 
 (defun bbj-mksep ()
