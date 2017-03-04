@@ -24,5 +24,5 @@ def parse(text, doquotes=True):
     if doquotes:
         text = QUOTES.sub(r'<span post="\1" class="quote">\g<0></span>', text)
     return markdown(
-        LINEQUOTES.sub(r'<span class="linequote">\1</span>', text)
+        LINEQUOTES.sub(r'<span class="linequote">\1</span><br>', text)
     )
