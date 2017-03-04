@@ -33,6 +33,9 @@
   (local-set-key (kbd "p")       'bbj-prev-post)
   (local-set-key (kbd "<up>")    'bbj-prev-post)
 
+  (local-set-key (kbd "g")       'bbj-refresh)
+  (local-set-key (kbd "<f5>")    'bbj-refresh)
+
   (local-set-key (kbd "J")       'scroll-up-line)
   (local-set-key (kbd "N")       'scroll-up-line)
   (local-set-key (kbd "S-SPC")   'scroll-up-line)
@@ -445,6 +448,14 @@ maimed until it worked on emacs 24."
       (if drop-newline (subseq sep 1) sep)
       'face 'font-lock-comment-face
       'type 'end))))
+
+
+(defun bbj-refresh ()
+  "i need to add post seeker to make this less jarring..."
+  (interactive)
+  (case bbj-buffer-type
+    (index (bbj-browse-index))
+    (thread (bbj-enter-thread thread-id))))
 
 
 (defun bbj-edit-post ()
