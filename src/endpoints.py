@@ -136,8 +136,6 @@ def thread_create(json):
         json["body"],
         json["title"],
         json["tags"])
-    if json.get("nomarkup"):
-        thread["body"] = formatting.cleanse(thread["body"])
     return schema.response(thread)
 
 
@@ -146,8 +144,6 @@ def thread_reply(json):
         json["thread_id"],
         json["user"],
         json["body"])
-    if json.get("nomarkup"):
-        reply["body"] = formatting.cleanse(reply["body"])
     return schema.response(reply)
 
 

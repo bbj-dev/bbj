@@ -2,7 +2,7 @@ from markdown import markdown
 from html import escape
 import re
 
-# these parameters are utter nonsense...
+
 COLORS = ["red", "green", "yellow", "blue", "magenta", "cyan"]
 MARKUP = ["bold", "italic", "underline", "strike"]
 TOKENS = re.compile(r"\[({}): (.+?)]".format("|".join(COLORS + MARKUP)), flags=re.DOTALL)
