@@ -472,7 +472,7 @@ maimed until it worked on emacs 24."
   "Displays the help text."
   (interactive)
   ;; yes lets embed this shit in the source code haha epic
-  (let ((help "hi this help pleased to meet ye 8)
+  (let ((help "hi this is help pleased to meet ye 8)
 
 Please note the keys described below apply to thread and index buffers,
 not this help page.
@@ -607,7 +607,7 @@ Thats about it for now.
             (incf count))
       (bbj-postprocess)
       (setq header-line-format (format
-            "%d posts. Press Control+h then spacebar for help."
+            "%d posts. g to refresh. Control+h then spacebar for help."
             count)))
     (switch-to-buffer buffer)
     (setq buffer-read-only t)))
