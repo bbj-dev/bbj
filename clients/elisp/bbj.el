@@ -61,6 +61,7 @@
   (local-set-key (kbd "+")       'bbj-compose)
   (local-set-key (kbd "c")       'bbj-compose)
 
+  (local-set-key (kbd "C-h SPC") 'bbj-pop-help)
   (local-set-key (kbd "e")       'bbj-edit-post)
   (local-set-key (kbd "C-c C-c") 'bbj-aux)
   (local-set-key (kbd "r")       'bbj-quote-current-post))
@@ -371,6 +372,8 @@ it is one, and kill the buffer. Returns property-free string."
       content)))
 
 
+;; rendering shit
+
 (defun bbj-postprocess ()
   "Makes all the whitespace in and between posts consistent."
   (bbj-first-post)
@@ -465,8 +468,83 @@ maimed until it worked on emacs 24."
       'type 'end))))
 
 
+(defun bbj-pop-help ()
+  "Displays the help text."
+  (interactive)
+  ;; yes lets embed this shit in the source code haha epic
+  (let ((help "hi this help pleased to meet ye 8)
+
+Please note the keys described below apply to thread and index buffers,
+not this help page.
+
+n, j, down arrow, and spacebar all move down by a whole post.
+p, k, up arrow, and backspace go up, again by a whole post.
+
+for n/p/j/k, hold shift (or use caps lock if you're into that) to scroll up or
+down by one exactly one line. You can also use shift with the arrow keys, and
+space/backspace, but if you are using terminal emacs, your terminal emulator may
+not work properly with these combos.
+
+The normal emacs paging and cursor movement keys (besides arrows) are not
+affected, if you are already familiar with them. C-n goes down a line, C-p goes
+up, C-v pages down, M-v pages up. (reminder: M means alt here in Emacs lala
+land) The keyboard's dedicated paging keys will work too.
+
+Open a thread with enter, or the o key.
+
+The make-a-post keys are c and + (the plus key). If you are in the index, it
+will make a new thread and prompt you at the minibuffer for a title and some
+tags. If you dont want tags, just press enter again. If you're in a thread, this
+will begin composing a new reply.
+
+In the composure window, press control-c twice to fire it off to the server. If
+you would like to discard the post, you can kill or hide this buffer using the
+standard emacs keys. C-x 4 0 will kill the buffer and the window. C-x 0 will
+just hide the window. C-x k RET will kill the buffer but not the window.
+
+In addition to the composure keys, r is bound to insert a quote element for the
+post at point after popping a reply window. Post quotes look like >>32, that is,
+they are two angle brackets pointing at a number. They currently dont do
+anything special. Later versions of the client will support navigation features
+using them. r is not required to use these: you can also type them in yourself.
+
+Pressing e on a post will pop a new window to edit it, given that the post is
+yours and is not older than 24 hours. Currently this returns the html-rendered
+output of the markdown parser, which is quite clunky and i will fix that. But
+pressing C-c C-c will update it for everyone with the new data.
+
+g or f5 will reload whatever buffer you are in, thread or index. If you are in a
+thread, it will save whatever post your cursor is positioned at. Use this to
+check for new messages.
+
+q will get out of a thread and back to the index. If you're on the index, it
+will kill that too. If you've killed the index, you can get back using the
+command alt+x bbj-browse-index (tab completion is available)
+
+The command names to log in, and browse to the index are bbj-login and
+bbj-browse-index respectively.
+
+Thats about it for now.
+"))
+    (let ((buffer (get-buffer-create "BBJ: Help"))
+          (inhibit-read-only t))
+      (with-current-buffer buffer
+          (erase-buffer)
+        (insert help)
+        (goto-char (point-min))
+        (text-mode)
+        (use-local-map (copy-keymap text-mode-map))
+        (local-set-key (kbd "q") 'kill-buffer-and-window)
+        (setq header-line-format
+              "Press q or C-x 4 0 to get out. Arrows can scroll."
+              buffer-read-only t))
+      (pop-to-buffer buffer)
+      (ignore-errors
+        (evil-emacs-state)))))
+
+
 (defun bbj-refresh ()
-  "i need to add post seeker to make this less jarring..."
+  "Reload current buffer. Tries to keep point position in threads."
   (interactive)
   (case bbj-buffer-type
     (index
@@ -516,7 +594,8 @@ maimed until it worked on emacs 24."
   (let* ((inhibit-read-only t)
          (buffer (get-buffer-create "BBJ Index"))
          (response (bbj-request "thread_index"))
-         (bbj-*usermap* (alist-get 'usermap response)))
+         (bbj-*usermap* (alist-get 'usermap response))
+         (count 0))
     (with-current-buffer buffer
       (erase-buffer)
       (bbj-mode)
@@ -524,10 +603,17 @@ maimed until it worked on emacs 24."
             bbj-*usermap* (alist-get 'usermap response))
       (bbj-insert-sep t)
       (loop for thread across (alist-get 'threads response) do
-            (bbj-render-post thread))
-      (bbj-postprocess))
+            (bbj-render-post thread)
+            (incf count))
+      (bbj-postprocess)
+      (setq header-line-format (format
+            "%d posts. Press Control+h then spacebar for help."
+            count)))
     (switch-to-buffer buffer)
     (setq buffer-read-only t)))
+
+
+(defalias 'bbj-index #'bbj-browse-index)
 
 
 (defun bbj-enter-thread (id)
