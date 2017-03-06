@@ -32,7 +32,7 @@ def user_internal(ID, auth_hash, name, quip, bio, admin):
         quip = ""
 
     if not bio:
-        bio =   ""
+        bio = ""
 
     return {
         "user_id":   ID,       # string
@@ -49,7 +49,7 @@ def user_external(ID, name, quip, bio, admin):
         quip = ""
 
     if not bio:
-        bio =   ""
+        bio = ""
 
     return {
         "user_id":   ID,   # string
