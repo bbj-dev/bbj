@@ -2,7 +2,7 @@
 set -e
 
 if [[ $1 == --init ]]; then
-	sqlite3 bbj.db < schema.sql
+	sqlite3 data.sqlite < schema.sql
 	echo cleared
 	exit
 fi

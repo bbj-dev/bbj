@@ -5,66 +5,70 @@ import cherrypy
 import sqlite3
 import json
 
-dbname = "data.sqlite"
 
+dbname = "data.sqlite"
 with sqlite3.connect(dbname) as _c:
-    if not db.user_resolve(_c, "anonymous"):
-        db.user_register(_c, *db.anonymous)
+    db.anon_object = db.user_resolve(_c, "anonymous")
+    if not db.anon_object:
+        db.anon_object = db.user_register(_c, *db.anon_credentials)
 
 
 # creates a database connection for each thread
-def connect(_):
+def db_connect(_):
     cherrypy.thread_data.db = sqlite3.connect(dbname)
-cherrypy.engine.subscribe('start_thread', connect)
+cherrypy.engine.subscribe('start_thread', db_connect)
 
 
-def bbjapi(function):
+def api_method(function):
     """
     A wrapper that handles encoding of objects and errors to a
     standard format for the API, resolves and authorizes users
-    from header data, and prepares thread data to handle the
-    request.
+    from header data, and prepares cherrypy.thread_data so other
+    funtions can handle the request.
 
-    In addition, all BBJException's will return their attached
-    schema, and unhandled exceptions return a code 1 error schema.
+    In the body of each api method and all the functions
+    they utilize, BBJExceptions are caught and their attached
+    schema is dispatched to the client. All other unhandled
+    exceptions will throw a code 1 back at the client and log
+    it for inspection.
     """
     @wraps(function)
     def wrapper(*args, **kwargs):
-        headers = cherrypy.request.headers
-        username = headers.get("User")
-        auth = headers.get("Auth")
-        anon = False
-
-        if not username and not auth:
-            user = db.user_resolve(cherrypy.thread_data.db, "anonymous")
-            anon = True
-        elif not username or not auth:
-            return json.dumps(schema.error(5,
-                "User or Auth was given without the other."))
-
-        if not anon:
-            user = db.user_resolve(cherrypy.thread_data.db, username)
-            if not user:
-                return json.dumps(schema.error(4,
-                    "Username is not registered."))
-
-            elif auth != user["auth_hash"]:
-                return json.dumps(schema.error(5,
-                    "Invalid authorization key for user."))
-
-        cherrypy.thread_data.user = user
-        cherrypy.thread_data.anon = anon
-
+        response = None
         try:
-            value = function(*args, **kwargs)
+            username = cherrypy.request.headers.get("User")
+            auth = cherrypy.request.headers.get("Auth")
+            anon = False
+
+            if not username and not auth:
+                user = db.anon_object
+                anon = True
+            elif not username or not auth:
+                return json.dumps(schema.error(5,
+                    "User or Auth was given without the other."))
+
+            if not anon:
+                user = db.user_resolve(cherrypy.thread_data.db, username)
+                if auth != user["auth_hash"]:
+                    return json.dumps(schema.error(5,
+                        "Invalid authorization key for user."))
+
+            cherrypy.thread_data.user = user
+            cherrypy.thread_data.anon = anon
+            response = function(*args, **kwargs)
 
         except BBJException as e:
-            value = e.schema
+            response = e.schema
 
         except Exception as e:
-            value = schema.error(1, str(e))
+            response = schema.error(1, repr(e))
+            # TODO: use a logging file or module or something
+            # repr() in this case is more verbose than just passing it in
+            print(repr(e))
 
-        return json.dumps(value)
+        finally:
+            return json.dumps(response)
+
     return wrapper
 
 
@@ -76,8 +80,8 @@ def create_usermap(connection, obj):
     """
 
     if isinstance(obj, dict):
-        # this is a message object for a thread, unravel it
-        obj = [value for key, value in obj.items()]
+        # this is a message object for a thread, ditch the keys
+        obj = obj.values()
 
     return {
         user_id: db.user_resolve(
@@ -114,18 +118,40 @@ APICONFIG = {
 }
 
 class API(object):
-    @bbjapi
+    @api_method
+    @cherrypy.expose
+    def get_me(self):
+        """
+        Requires no arguments. Returns your internal user object,
+        including your authorization hash.
+        """
+        return schema.response(cherrypy.thread_data.user)
+
+    @api_method
+    @cherrypy.expose
+    def user_get(self):
+        """
+        Retreive an external user object for the given `user`.
+        Can be a user_id or user_name.
+        """
+        args = cherrypy.request.json
+        validate(["user"])
+        return schema.response(db.user_resolve(
+            cherrypy.thread_data.db,
+            args["user"],
+            return_false=False,
+            externalize=True))
+
+
+    @api_method
     @cherrypy.expose
     def thread_index(self):
         threads = db.thread_index(cherrypy.thread_data.db)
         usermap = create_usermap(cherrypy.thread_data.db, threads)
-        return schema.response({
-            "data": threads,
-            "usermap": usermap
-        })
+        return schema.response(threads, usermap)
 
 
-    @bbjapi
+    @api_method
     @cherrypy.expose
     @cherrypy.tools.json_in()
     def thread_create(self):
@@ -142,27 +168,22 @@ class API(object):
               cherrypy.thread_data.user
         }
 
-        return schema.response({
-            "data": thread,
-            "usermap": usermap
-        })
+        return schema.response(thread, usermap)
 
 
-    @bbjapi
+    @api_method
     @cherrypy.expose
     @cherrypy.tools.json_in()
     def thread_reply(self):
         args = cherrypy.request.json
         validate(args, ["thread_id", "body"])
-        return schema.response({
-            "data": db.thread_reply(
-                cherrypy.thread_data.db,
-                cherrypy.thread_data.user["user_id"],
-                args["thread_id"], args["body"])
-        })
+        return schema.response(db.thread_reply(
+            cherrypy.thread_data.db,
+            cherrypy.thread_data.user["user_id"],
+            args["thread_id"], args["body"]))
 
 
-    @bbjapi
+    @api_method
     @cherrypy.expose
     @cherrypy.tools.json_in()
     def thread_load(self):
@@ -177,38 +198,32 @@ class API(object):
             cherrypy.thread_data.db,
             thread["messages"])
 
-        return schema.response({
-            "data": thread,
-            "usermap": usermap
-        })
+        return schema.response(thread, usermap)
 
 
-    @bbjapi
+    @api_method
     @cherrypy.expose
     @cherrypy.tools.json_in()
     def user_register(self):
         args = cherrypy.request.json
         validate(args, ["user_name", "auth_hash"])
-        return schema.response({
-            "data": db.user_register(
-                cherrypy.thread_data.db,
-                args["user_name"], args["auth_hash"])
-        })
+        return schema.response(db.user_register(
+            cherrypy.thread_data.db,
+            args["user_name"],
+            args["auth_hash"]))
 
 
-    @bbjapi
+    @api_method
     @cherrypy.expose
     @cherrypy.tools.json_in()
     def edit_query(self):
         args = cherrypy.request.json
         validate(args, ["thread_id", "post_id"])
-        return schema.response({
-            "data": message_edit_query(
-                cherrypy.thread_data.db,
-                cherrypy.thread_data.user["user_id"],
-                args["thread_id"],
-                args["post_id"])
-        })
+        return schema.response(message_edit_query(
+            cherrypy.thread_data.db,
+            cherrypy.thread_data.user["user_id"],
+            args["thread_id"],
+            args["post_id"]))
 
 
 

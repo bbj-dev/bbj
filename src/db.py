@@ -25,7 +25,8 @@ import pickle
 import json
 import os
 
-anonymous = \
+anon_object = None
+anon_credentials = \
     ("anonymous",
      "5430eeed859cad61d925097ec4f53246"
      "1ccf1ab6b9802b09a313be1478a4d614")
@@ -228,7 +229,7 @@ def user_resolve(connection, name_or_id, externalize=False, return_false=True):
         return False
     raise BBJParameterError(
         "Requested user element ({})"
-        " does not exist".format(name_or_id))
+        " is not registered".format(name_or_id))
 
 
 def user_update(connection, user_object, parameters):

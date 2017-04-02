@@ -1,12 +1,15 @@
 def base():
     return {
-        "error": False
+        "error": False,
+        "data": None,
+        "usermap": dict()
     }
 
 
-def response(dictionary):
+def response(data, usermap={}):
     result = base()
-    result.update(dictionary)
+    result["data"] = data
+    result["usermap"].update(usermap)
     return result
 
 
