@@ -1,0 +1,40 @@
+* running info
+** port 7066
+** http via flask
+** endpoint specified by http point instead of a method param
+* required endpoints
+** old scheme
+{
+    "check_auth":      ["user", "auth_hash"],
+    "is_registered":   ["target_user"],
+    "is_admin":        ["target_user"],
+    "thread_index":    [],
+    "thread_load":     ["thread_id"],
+    "thread_create":   ["title", "body"],
+    "thread_reply":    ["thread_id", "body"],
+    "edit_post":       ["thread_id", "post_id", "body"],
+    "edit_query":      ["thread_id", "post_id"],
+    "can_edit":        ["thread_id", "post_id"],
+    "user_register":   ["user", "auth_hash", "quip", "bio"],
+    "user_get":        ["target_user"],
+    "user_name_to_id": ["target_user"]
+}
+** checking auth for user/hash pair (bool)
+** checking if a user is registered (bool)
+** checking is a user is an admin (bool)
+** index of all threads sans replies
+** load a thread by id
+** create a thread
+** reply to a thread
+** edit a post within 24hrs (unless admin)
+** query a postid with the current auth info to see if elegible (bool)
+** register a new user into the system
+** retrieve a full user object by name or ID
+** retrieve a username for ID and vice versa
+* authorization
+** SHA256 passhash and username in headers
+* what to do differently
+** concurrency, sql oriented from the beginning
+** dont tell anyone about it until its done
+** http instead of socket ports
+** start with formatting in mind, store it in plain and render accordingly on the fly

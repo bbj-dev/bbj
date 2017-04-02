@@ -62,6 +62,7 @@
   (local-set-key (kbd "c")       'bbj-compose)
 
   (local-set-key (kbd "C-h SPC") 'bbj-pop-help)
+  (local-set-key (kbd "?")       'bbj-pop-help)
   (local-set-key (kbd "e")       'bbj-edit-post)
   (local-set-key (kbd "C-c C-c") 'bbj-aux)
   (local-set-key (kbd "r")       'bbj-quote-current-post))
