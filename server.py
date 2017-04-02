@@ -7,12 +7,17 @@ import cherrypy
 import sqlite3
 import json
 
-
 dbname = "data.sqlite"
+
+# user anonymity is achieved in the laziest possible way: a literal user
+# named anonymous. may god have mercy on my soul.
 with sqlite3.connect(dbname) as _c:
-    db.anon_object = db.user_resolve(_c, "anonymous")
-    if not db.anon_object:
-        db.anon_object = db.user_register(_c, *db.anon_credentials)
+    db.anon = db.user_resolve(_c, "anonymous")
+    if not db.anon:
+        db.anon = db.user_register(
+            _c, "anonymous", # this is the hash for "anon"
+            "5430eeed859cad61d925097ec4f53246"
+            "1ccf1ab6b9802b09a313be1478a4d614")
 
 
 # creates a database connection for each thread
@@ -41,32 +46,27 @@ def api_method(function):
         try:
             # read in the body from the request to a string...
             body = str(cherrypy.request.body.read(), "utf8")
-            # is it empty? not all methods require an input
+            # is it just empty bytes? not all methods require an input
             if body:
-                # if this fucks up, we throw code 0 instead of code 1
                 body = json.loads(body)
                 if isinstance(body, dict):
                     # lowercase all of its keys
                     body = {str(key).lower(): value for key, value
                               in body.items()}
-                cherrypy.request.json = body
-
-            else:
-                cherrypy.request.json = None
+            else: # would rather a NoneType than b""
+                body = None
 
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
-            anon = False
 
-            if not username and not auth:
-                user = db.anon_object
-                anon = True
-
-            elif not username or not auth:
+            if (username and not auth) or (auth and not username):
                 return json.dumps(schema.error(5,
                     "User or Auth was given without the other."))
 
-            if not anon:
+            elif not username and not auth:
+                user = db.anon
+
+            else:
                 user = db.user_resolve(cherrypy.thread_data.db, username)
                 if not user:
                     raise BBJUserError("User %s is not registered" % username)
@@ -75,24 +75,28 @@ def api_method(function):
                     return json.dumps(schema.error(5,
                         "Invalid authorization key for user."))
 
-            cherrypy.thread_data.user = user
-            cherrypy.thread_data.anon = anon
-            response = function(*args, **kwargs)
-
-        except json.JSONDecodeError as e:
-            response = schema.error(0, str(e))
+            # api_methods may choose to bind a usermap into the thread_data
+            # which will send it off with the response
+            cherrypy.thread_data.usermap = {}
+            # TODO: Why in kek's name is self needing to be supplied a value positionally?
+            value = function(None, body, cherrypy.thread_data.db, user)
+            response = schema.response(value, cherrypy.thread_data.usermap)
 
         except BBJException as e:
             response = e.schema
 
+        except json.JSONDecodeError as e:
+            response = schema.error(0, str(e))
+
         except Exception as e:
             error_id = uuid1().hex
             response = schema.error(1,
-                "Internal server error: code {}. Tell ~desvox (the code too)"
-                .format(error_id))
+                "Internal server error: code {}. {}"
+                    .format(error_id, repr(e)))
             with open("logs/exceptions/" + error_id, "a") as log:
                 traceback.print_tb(e.__traceback__, file=log)
                 log.write(repr(e))
+            print("logged code 1 exception " + error_id)
 
         finally:
             return json.dumps(response)
@@ -117,9 +121,7 @@ def create_usermap(connection, obj):
             user_id,
             externalize=True,
             return_false=False)
-        for user_id in {
-                item["author"] for item in obj
-        }
+        for user_id in {item["author"] for item in obj}
     }
 
 
@@ -154,111 +156,148 @@ APICONFIG = {
 class API(object):
     @api_method
     @cherrypy.expose
-    def get_me(self, *args, **kwargs):
+    def user_register(self, args, database, user, **kwargs):
+        """
+        Register a new user into the system and return the new object.
+        Requires the string arguments `user_name` and `auth_hash`
+        """
+        validate(args, ["user_name", "auth_hash"])
+        return db.user_register(
+            database, args["user_name"], args["auth_hash"])
+
+
+    @api_method
+    @cherrypy.expose
+    def user_update(self, args, database, user, **kwargs):
+        """
+        Receives new parameters and assigns them to the user_object
+        in the database. The following new parameters can be supplied:
+        `user_name`, `auth_hash`, `quip`, `bio`, and `color`. Any number
+        of them may be supplied.
+
+        The newly updated user object is returned on success.
+        """
+        validate(args, []) # just make sure its not empty
+        return db.user_update(database, user, args)
+
+
+    @api_method
+    @cherrypy.expose
+    def get_me(self, args, database, user, **kwargs):
         """
         Requires no arguments. Returns your internal user object,
         including your authorization hash.
         """
-        return schema.response(cherrypy.thread_data.user)
+        return user
+
 
     @api_method
     @cherrypy.expose
-    def user_get(self, *args, **kwargs):
+    def user_get(self, args, database, user, **kwargs):
         """
         Retreive an external user object for the given `user`.
         Can be a user_id or user_name.
         """
-        args = cherrypy.request.json
         validate(args, ["user"])
-        return schema.response(db.user_resolve(
-            cherrypy.thread_data.db,
-            args["user"],
-            return_false=False,
-            externalize=True))
+        return db.user_resolve(
+            database, args["user"], return_false=False, externalize=True)
 
 
     @api_method
     @cherrypy.expose
-    def thread_index(self, *args, **kwargs):
-        threads = db.thread_index(cherrypy.thread_data.db)
-        usermap = create_usermap(cherrypy.thread_data.db, threads)
-        return schema.response(threads, usermap)
+    def thread_index(self, args, database, user, **kwargs):
+        """
+        Return an array with all the threads, ordered by most recent activity.
+        Requires no arguments.
+        """
+        threads = db.thread_index(database)
+        cherrypy.thread_data.usermap = create_usermap(database, threads)
+        return threads
 
 
     @api_method
     @cherrypy.expose
-    def thread_create(self, *args, **kwargs):
-        args = cherrypy.request.json
+    def thread_create(self, args, database, user, **kwargs):
+        """
+        Creates a new thread and returns it. Requires the non-empty
+        string arguments `body` and `title`
+        """
         validate(args, ["body", "title"])
-
         thread = db.thread_create(
-            cherrypy.thread_data.db,
-            cherrypy.thread_data.user["user_id"],
-            args["body"], args["title"])
-
-        usermap = {
-            cherrypy.thread_data.user["user_id"]:
-              cherrypy.thread_data.user
-        }
-
-        return schema.response(thread, usermap)
+            database, user["user_id"], args["body"], args["title"])
+        cherrypy.thread_data.usermap = {user["user_id"]: user}
+        return thread
 
 
     @api_method
     @cherrypy.expose
-    def thread_reply(self, *args, **kwargs):
-        args = cherrypy.request.json
+    def thread_reply(self, args, database, user, **kwargs):
+        """
+        Creates a new reply for the given thread and returns it.
+        Requires the string arguments `thread_id` and `body`
+        """
         validate(args, ["thread_id", "body"])
-        return schema.response(db.thread_reply(
-            cherrypy.thread_data.db,
-            cherrypy.thread_data.user["user_id"],
-            args["thread_id"], args["body"]))
+        return db.thread_reply(
+            database, user["user_id"], args["thread_id"], args["body"])
 
 
     @api_method
     @cherrypy.expose
-    def thread_load(self, *args, **kwargs):
-        args = cherrypy.request.json
+    def thread_load(self, args, database, user, **kwargs):
+        """
+        Returns the thread object with all of its messages loaded.
+        Requires the argument `thread_id`
+        """
         validate(args, ["thread_id"])
-
-        thread = db.thread_get(
-            cherrypy.thread_data.db,
-            args["thread_id"])
-
-        usermap = create_usermap(
-            cherrypy.thread_data.db,
-            thread["messages"])
-
-        return schema.response(thread, usermap)
+        thread = db.thread_get(database, args["thread_id"])
+        cherrypy.thread_data.usermap = \
+            create_usermap(database, thread["messages"])
+        return thread
 
 
     @api_method
     @cherrypy.expose
-    def user_register(self, *args, **kwargs):
-        args = cherrypy.request.json
-        validate(args, ["user_name", "auth_hash"])
-        return schema.response(db.user_register(
-            cherrypy.thread_data.db,
-            args["user_name"],
-            args["auth_hash"]))
+    def edit_post(self, args, database, user, **kwargs):
+        """
+        Replace a post with a new body. Requires the arguments
+        `thread_id`, `post_id`, and `body`. This method verifies
+        that the user can edit a post before commiting the change,
+        otherwise an error object is returned whose description
+        should be shown to the user.
+
+        To perform sanity checks without actually attempting to
+        edit a post, use `edit_query`
+
+        Returns the new message object.
+        """
+        if user == db.anon:
+            raise BBJUserError("Anons cannot edit messages.")
+        validate(args, ["body", "thread_id", "post_id"])
+        return message_edit_commit(
+            database, user["user_id"], args["thread_id"], args["post_id"], args["body"])
 
 
     @api_method
     @cherrypy.expose
-    def edit_query(self, *args, **kwargs):
-        args = cherrypy.request.json
+    def edit_query(self, args, database, user, **kwargs):
+        """
+        Queries the database to ensure the user can edit a given
+        message. Requires the arguments `thread_id` and `post_id`
+        (does not require a new body)
+
+        Returns either boolean true or the current message object
+        """
+        if user == db.anon:
+            raise BBJUserError("Anons cannot edit messages.")
         validate(args, ["thread_id", "post_id"])
-        return schema.response(message_edit_query(
-            cherrypy.thread_data.db,
-            cherrypy.thread_data.user["user_id"],
-            args["thread_id"],
-            args["post_id"]))
+        return message_edit_query(
+            database, user["user_id"], args["thread_id"], args["post_id"])
 
 
     @cherrypy.expose
-    def test(self, *args, **kwargs):
+    def test(self, **kwargs):
         print(cherrypy.request.body.read())
-        return "{\"wow\": \"good job!\"}"
+        return "{\"wow\": \"jolly good show!\"}"
 
 
 
@@ -267,4 +306,4 @@ def run():
 
 
 if __name__ == "__main__":
-    print("wew")
+    print("yo lets do that -i shit mang")

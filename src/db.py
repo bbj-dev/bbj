@@ -25,16 +25,7 @@ import pickle
 import json
 import os
 
-anon_object = None
-anon_credentials = \
-    ("anonymous",
-     "5430eeed859cad61d925097ec4f53246"
-     "1ccf1ab6b9802b09a313be1478a4d614")
-     # this is the hash for "anon"
-
-# if os.path.exists("cache"):
-#     os.rmdir("cache")
-# os.mkdir("cache")
+anon = None
 
 ### THREADS ###
 
@@ -267,11 +258,6 @@ def user_externalize(user_object):
     return user_object
 
 
-def user_auth(auth_hash, user_object):
-    # nominating this for most useless function in the program
-    return auth_hash == user_object["auth_hash"]
-
-
 ### SANITY CHECKS ###
 
 def contains_nonspaces(string):
@@ -358,145 +344,3 @@ def validate(keys_and_values):
                 "Color specification out of range (int 0-8)")
 
     return True
-
-
-### OLD SHIT ###
-
-# def thread_index(key="lastmod", markup=True):
-#     result = list()
-#     for ID in path.os.listdir(path.join(PATH, "threads")):
-#         thread = thread_load(ID, markup)
-#         thread.pop("replies")
-#         result.append(thread)
-#     return sorted(result, key=lambda i: i[key], reverse=True)
-#
-#
-#
-#
-# def thread_load(ID, markup=True):
-#     try:
-#         with open(path.join(PATH, "threads", ID), "r") as f:
-#             return json.loads(f.read())
-#     except FileNotFoundError:
-#         return False
-#
-#
-# def thread_dump(ID, obj):
-#     with open(path.join(PATH, "threads", ID), "w") as f:
-#         f.write(json.dumps(obj))
-#
-#
-# def thread_reply(ID, author, body):
-#     thread = thread_load(ID)
-#     if not thread:
-#         return schema.error(7, "Requested thread does not exist.")
-#
-#     thread["reply_count"] += 1
-#     thread["lastmod"] = time()
-#
-#     if thread["replies"]:
-#         lastpost = thread["replies"][-1]["post_id"]
-#     else:
-#         lastpost = 1
-#
-#     reply = schema.reply(lastpost + 1, author, body)
-#     thread["replies"].append(reply)
-#     thread_dump(ID, thread)
-#     return reply
-#
-#
-# def index_reply(reply_list, post_id):
-#     for index, reply in enumerate(reply_list):
-#         if reply["post_id"] == post_id:
-#             return index
-#     else:
-#         raise IndexError
-#
-#
-# def edit_handler(json, thread=None):
-#     try:
-#         target_id = json["post_id"]
-#         if not thread:
-#             thread = thread_load(json["thread_id"])
-#             if not thread:
-#                 return False, schema.error(7, "Requested thread does not exist.")
-#
-#
-#         if target_id == 1:
-#             target = thread
-#         else:
-#             target = thread["replies"][
-#                 index_reply(thread["replies"], target_id)]
-#
-#         if not user_is_admin(json["user"]):
-#             if json["user"] != target["author"]:
-#                 return False, schema.error(10,
-#                     "non-admin attempt to edit another user's message")
-#
-#             elif (time() - target["created"]) > 86400:
-#                 return False, schema.error(9,
-#                     "message is too old to edit (24hr limit)")
-#
-#         return True, target
-#
-#     except IndexError:
-#         return False, schema.error(3, "post_id out of bounds for requested thread")
-#
-#
-# ### USER MANAGEMENT ###
-#
-# def user_dbdump(dictionary):
-#     with open(path.join(PATH, "userdb"), "w") as f:
-#         f.write(json.dumps(dictionary))
-#
-#
-# def user_resolve(name_or_id):
-#     check = USERDB.get(name_or_id)
-#     try:
-#         if check:
-#             return name_or_id
-#         else:
-#             return USERDB["namemap"][name_or_id]
-#     except KeyError:
-#         return False
-#
-#
-# def user_register(auth_hash, name, quip, bio):
-#     if USERDB["namemap"].get(name):
-#         return schema.error(4, "Username taken.")
-#
-#     for ok, error in [
-#         user_namecheck(name),
-#         user_authcheck(auth_hash),
-#         user_quipcheck(quip),
-#         user_biocheck(bio)]:
-#
-#         if not ok:
-#             return error
-#
-#     ID = uuid1().hex
-#     scheme = schema.user_internal(ID, auth_hash, name, quip, bio, False)
-#     USERDB.update({ID: scheme})
-#     USERDB["namemap"].update({name: ID})
-#     user_dbdump(USERDB)
-#     return scheme
-#
-#
-# def user_get(ID):
-#     user = USERDB[ID]
-#     return schema.user_external(
-#         ID, user["name"], user["quip"],
-#         user["bio"], user["admin"])
-#
-#
-# def user_auth(ID, auth_hash):
-#     return auth_hash == USERDB[ID]["auth_hash"]
-#
-#
-#
-#
-# def user_update(ID, **params):
-#     USERDB[ID].update(params)
-#     return USERDB[ID]
-#
-#
