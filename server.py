@@ -1,6 +1,8 @@
-from src.exceptions import BBJException, BBJParameterError
-from src import db, schema, endpoints
+from src.exceptions import BBJException, BBJParameterError, BBJUserError
+from src import db, schema
 from functools import wraps
+from uuid import uuid1
+import traceback
 import cherrypy
 import sqlite3
 import json
@@ -30,12 +32,28 @@ def api_method(function):
     they utilize, BBJExceptions are caught and their attached
     schema is dispatched to the client. All other unhandled
     exceptions will throw a code 1 back at the client and log
-    it for inspection.
+    it for inspection. Errors related to JSON decoding are
+    caught as well and returned to the client as code 0.
     """
     @wraps(function)
     def wrapper(*args, **kwargs):
         response = None
         try:
+            # read in the body from the request to a string...
+            body = str(cherrypy.request.body.read(), "utf8")
+            # is it empty? not all methods require an input
+            if body:
+                # if this fucks up, we throw code 0 instead of code 1
+                body = json.loads(body)
+                if isinstance(body, dict):
+                    # lowercase all of its keys
+                    body = {str(key).lower(): value for key, value
+                              in body.items()}
+                cherrypy.request.json = body
+
+            else:
+                cherrypy.request.json = None
+
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
             anon = False
@@ -43,12 +61,16 @@ def api_method(function):
             if not username and not auth:
                 user = db.anon_object
                 anon = True
+
             elif not username or not auth:
                 return json.dumps(schema.error(5,
                     "User or Auth was given without the other."))
 
             if not anon:
                 user = db.user_resolve(cherrypy.thread_data.db, username)
+                if not user:
+                    raise BBJUserError("User %s is not registered" % username)
+
                 if auth != user["auth_hash"]:
                     return json.dumps(schema.error(5,
                         "Invalid authorization key for user."))
@@ -57,14 +79,20 @@ def api_method(function):
             cherrypy.thread_data.anon = anon
             response = function(*args, **kwargs)
 
+        except json.JSONDecodeError as e:
+            response = schema.error(0, str(e))
+
         except BBJException as e:
             response = e.schema
 
         except Exception as e:
-            response = schema.error(1, repr(e))
-            # TODO: use a logging file or module or something
-            # repr() in this case is more verbose than just passing it in
-            print(repr(e))
+            error_id = uuid1().hex
+            response = schema.error(1,
+                "Internal server error: code {}. Tell ~desvox (the code too)"
+                .format(error_id))
+            with open("logs/exceptions/" + error_id, "a") as log:
+                traceback.print_tb(e.__traceback__, file=log)
+                log.write(repr(e))
 
         finally:
             return json.dumps(response)
@@ -99,13 +127,19 @@ def create_usermap(connection, obj):
 def validate(json, args):
     """
     Ensure the json object contains all the keys needed to satisfy
-    its endpoint.
+    its endpoint (and isnt empty)
     """
+    if not json:
+        raise BBJParameterError(
+            "JSON input is empty. This method requires the following "
+            "arguments: {}".format(", ".join(args)))
+
     for arg in args:
         if arg not in json.keys():
             raise BBJParameterError(
-                "Required parameter %s is "
-                "absent from the request." % arg)
+                "Required parameter {} is absent from the request. "
+                "This method requires the following arguments: {}"
+                .format(arg, ", ".join(args)))
 
 
 APICONFIG = {
@@ -120,7 +154,7 @@ APICONFIG = {
 class API(object):
     @api_method
     @cherrypy.expose
-    def get_me(self):
+    def get_me(self, *args, **kwargs):
         """
         Requires no arguments. Returns your internal user object,
         including your authorization hash.
@@ -129,13 +163,13 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    def user_get(self):
+    def user_get(self, *args, **kwargs):
         """
         Retreive an external user object for the given `user`.
         Can be a user_id or user_name.
         """
         args = cherrypy.request.json
-        validate(["user"])
+        validate(args, ["user"])
         return schema.response(db.user_resolve(
             cherrypy.thread_data.db,
             args["user"],
@@ -145,7 +179,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    def thread_index(self):
+    def thread_index(self, *args, **kwargs):
         threads = db.thread_index(cherrypy.thread_data.db)
         usermap = create_usermap(cherrypy.thread_data.db, threads)
         return schema.response(threads, usermap)
@@ -153,8 +187,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def thread_create(self):
+    def thread_create(self, *args, **kwargs):
         args = cherrypy.request.json
         validate(args, ["body", "title"])
 
@@ -173,8 +206,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def thread_reply(self):
+    def thread_reply(self, *args, **kwargs):
         args = cherrypy.request.json
         validate(args, ["thread_id", "body"])
         return schema.response(db.thread_reply(
@@ -185,8 +217,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def thread_load(self):
+    def thread_load(self, *args, **kwargs):
         args = cherrypy.request.json
         validate(args, ["thread_id"])
 
@@ -203,8 +234,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def user_register(self):
+    def user_register(self, *args, **kwargs):
         args = cherrypy.request.json
         validate(args, ["user_name", "auth_hash"])
         return schema.response(db.user_register(
@@ -215,8 +245,7 @@ class API(object):
 
     @api_method
     @cherrypy.expose
-    @cherrypy.tools.json_in()
-    def edit_query(self):
+    def edit_query(self, *args, **kwargs):
         args = cherrypy.request.json
         validate(args, ["thread_id", "post_id"])
         return schema.response(message_edit_query(
@@ -224,6 +253,12 @@ class API(object):
             cherrypy.thread_data.user["user_id"],
             args["thread_id"],
             args["post_id"]))
+
+
+    @cherrypy.expose
+    def test(self, *args, **kwargs):
+        print(cherrypy.request.body.read())
+        return "{\"wow\": \"good job!\"}"
 
 
 
