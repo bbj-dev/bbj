@@ -667,7 +667,7 @@ Thats about it for now.
       (bbj-mode)
       (setq bbj-buffer-type 'index
             bbj-*usermap* (alist-get 'usermap response)
-            mode-line-process 'bbj-user)
+            mode-line-process '(":~%e" bbj-user))
       (bbj-insert-sep t)
       (loop for thread across (alist-get 'data response) do
             (bbj-render-post thread)
@@ -694,7 +694,7 @@ Thats about it for now.
       (setq wow response)
       (setq bbj-buffer-type 'thread
             bbj-*usermap* (alist-get 'usermap response)
-            mode-line-process 'bbj-user
+            mode-line-process '(":~%e" bbj-user)
             header-line-format
             (format "~%s: %s"
              (alist-get 'user_name (alist-get (car (read-from-string
