@@ -19,7 +19,7 @@ If "error" is true, it looks like this:
   "error": {
       "code": an integer from 0 to 5,
       "description": a string describing the error in detail.
-}
+  }
   "data": null   // ALWAYS null if error is not false
   "usermap": {}  // ALWAYS empty if error is not false
 }

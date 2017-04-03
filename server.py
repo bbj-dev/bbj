@@ -35,7 +35,7 @@ def api_method(function):
                 body = json.loads(body)
                 if isinstance(body, dict):
                     # lowercase all of its top-level keys
-                    body = {str(key).lower(): value for key, value in body.items()}
+                    body = {key.lower(): value for key, value in body.items()}
 
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
