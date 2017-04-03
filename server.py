@@ -29,8 +29,11 @@ def api_method(function):
         try:
             connection = sqlite3.connect(dbname)
             # read in the body from the request to a string...
-            body = str(cherrypy.request.body.read(), "utf8")
-            # is it just empty bytes? not all methods require an input
+            if cherrypy.request.method == "POST":
+                body = str(cherrypy.request.body.read(), "utf8")
+            else:
+                body = ""
+            # the body may be empty, not all methods require input
             if body:
                 body = json.loads(body)
                 if isinstance(body, dict):
@@ -177,6 +180,27 @@ class API(object):
 
 
     @api_method
+    def user_is_registered(self, args, database, user, **kwargs):
+        """
+        Takes the argument `target_user` and returns true or false
+        whether they are in the system or not.
+        """
+        validate(args, ["target_user"])
+        return bool(db.user_resolve(database, args["target_user"]))
+
+
+    @api_method
+    def check_auth(self, args, database, user, **kwargs):
+        """
+        Takes the arguments `target_user` and `target_hash`, and
+        returns boolean true or false whether the hash is valid.
+        """
+        validate(args, ["target_user", "target_hash"])
+        user = db.user_resolve(database, args["target_user"], return_false=False)
+        return args["target_hash"] == user["auth_hash"]
+
+
+    @api_method
     def thread_index(self, args, database, user, **kwargs):
         """
         Return an array with all the threads, ordered by most recent activity.
@@ -248,6 +272,17 @@ class API(object):
 
 
     @api_method
+    def is_admin(self, args, database, user, **kwargs):
+        """
+        Requires the argument `target_user`. Returns a boolean
+        of whether that user is an admin.
+        """
+        validate(args, ["target_user"])
+        user = db.user_resolve(database, args["target_user"], return_false=False)
+        return user["is_admin"]
+
+
+    @api_method
     def edit_query(self, args, database, user, **kwargs):
         """
         Queries the database to ensure the user can edit a given
@@ -262,6 +297,43 @@ class API(object):
         validate(args, ["thread_id", "post_id"])
         return db.message_edit_query(
             database, user["user_id"], args["thread_id"], args["post_id"])
+
+
+    @api_method
+    def db_sanity_check(self, args, database, user, **kwargs):
+        """
+        Requires the arguments `key` and `value`. Returns an object
+        with information about the database sanity criteria for
+        key. This can be used to validate user input in the client
+        before trying to send it to the server.
+
+        If the argument `error` is supplied with a non-nil value,
+        the server will return a standard error object on failure
+        instead of the special object described below.
+
+        The returned object has two keys:
+
+        {
+          "bool": true/false,
+          "description": null/"why this value is bad"
+        }
+
+        If bool == false, description is a string describing the
+        problem. If bool == true, description is null and the
+        provided value is safe to use.
+        """
+        validate(args, ["key", "value"])
+        response = dict()
+        try:
+            db.validate([(args["key"], args["value"])])
+            response["bool"] = True
+            response["description"] = None
+        except BBJException as e:
+            if args.get("error"):
+                raise
+            response["bool"] = False
+            response["description"] = e.description
+        return response
 
 
     def test(self, **kwargs):

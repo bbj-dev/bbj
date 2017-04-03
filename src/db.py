@@ -350,6 +350,10 @@ def validate(keys_and_values):
                 raise BBJUserError(
                     "Titles cannot contain whitespace chars besides spaces.")
 
+            elif not value.strip():
+                raise BBJUserError(
+                    "Title must contain at least one non-space character")
+
             elif len(value) > 120:
                 raise BBJUserError(
                     "Title is too long (max 120 chars)")
