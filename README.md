@@ -1,4 +1,4 @@
-# AAAAAAAAAAAAAAAAAAAAA
+# Bulletin Board & Jelly
 
 Hi. This will be BBJs final form. The prototype and its elisp client
 are available in the *prototype* folder.
