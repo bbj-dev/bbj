@@ -1,3 +1,8 @@
+"""
+This module is not complete and none of its functions are currently
+used elsewhere. Subject to major refactoring.
+"""
+
 from markdown import markdown
 from html import escape
 import re

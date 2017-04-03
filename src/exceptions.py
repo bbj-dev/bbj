@@ -1,3 +1,14 @@
+"""
+These exceptions create schema objects to send back to the client.
+The new error codes have not been fully documented since ditching
+the prototype but there are less of them and the handling is much
+more robust and less verbose in the source code.
+
+At any point of the API's codepath, these may be raised and will be
+captured by the request handler. Their schema is then sent back to
+the client.
+"""
+
 from src.schema import error
 
 

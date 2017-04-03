@@ -1,3 +1,40 @@
+"""
+This module provides functions that return API objects in
+a clearly defined, consistent manner. Schmea representing
+data types mirror the column order used by the sqlite
+database. An sql object can be unpacked by using star
+expansion as an argument, such as thread(*sql_thread_obj)
+
+Each response has a base layout as follows:
+
+{
+  "error":   false, // boolean false or error object
+  "data":    null,  // null or the requested data from endpoint.
+  "usermap": {}     // a potentially empty object mapping user_ids to their objects
+}
+
+If "error" is true, it looks like this:
+
+{
+  "error": {
+      "code": an integer from 0 to 5,
+      "description": a string describing the error in detail.
+}
+  "data": null   // ALWAYS null if error is not false
+  "usermap": {}  // ALWAYS empty if error is not false
+}
+
+"data" can be anything. It could be a boolean, it could be a string,
+object, anything. The return value for an endpoint is described clearly
+in its documentation. However, no endpoint will EVER return null. If
+"data" is null, then "error" is filled.
+
+"usermap" is filled with objects whenever users are present in
+"data". its keys are all the user_ids that occur in the "data"
+object. Use this to get information about users, as follows:
+usermap[id]["user_name"]
+"""
+
 def base():
     return {
         "error": False,
