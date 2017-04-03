@@ -11,19 +11,17 @@ dbname = "data.sqlite"
 
 # user anonymity is achieved in the laziest possible way: a literal user
 # named anonymous. may god have mercy on my soul.
-with sqlite3.connect(dbname) as _c:
+_c = sqlite3.connect(dbname)
+try:
     db.anon = db.user_resolve(_c, "anonymous")
     if not db.anon:
         db.anon = db.user_register(
             _c, "anonymous", # this is the hash for "anon"
             "5430eeed859cad61d925097ec4f53246"
             "1ccf1ab6b9802b09a313be1478a4d614")
-
-
-# creates a database connection for each thread
-def db_connect(_):
-    cherrypy.thread_data.db = sqlite3.connect(dbname)
-cherrypy.engine.subscribe('start_thread', db_connect)
+finally:
+    _c.close()
+    del _c
 
 
 def api_method(function):
@@ -44,6 +42,7 @@ def api_method(function):
     def wrapper(self, *args, **kwargs):
         response = None
         try:
+            connection = sqlite3.connect(dbname)
             # read in the body from the request to a string...
             body = str(cherrypy.request.body.read(), "utf8")
             # is it just empty bytes? not all methods require an input
@@ -64,7 +63,7 @@ def api_method(function):
                 user = db.anon
 
             else:
-                user = db.user_resolve(cherrypy.thread_data.db, username)
+                user = db.user_resolve(connection, username)
                 if not user:
                     raise BBJUserError("User %s is not registered" % username)
 
@@ -75,7 +74,7 @@ def api_method(function):
             # api_methods may choose to bind a usermap into the thread_data
             # which will send it off with the response
             cherrypy.thread_data.usermap = {}
-            value = function(self, body, cherrypy.thread_data.db, user)
+            value = function(self, body, connection, user)
             response = schema.response(value, cherrypy.thread_data.usermap)
 
         except BBJException as e:
@@ -95,6 +94,7 @@ def api_method(function):
             print("logged code 1 exception " + error_id)
 
         finally:
+            connection.close()
             return json.dumps(response)
 
     return wrapper
@@ -165,6 +165,8 @@ class API(object):
 
         The newly updated user object is returned on success.
         """
+        if user == db.anon:
+            raise BBJParameterError("Anons cannot modify their account.")
         validate(args, []) # just make sure its not empty
         return db.user_update(database, user, args)
 
@@ -209,7 +211,8 @@ class API(object):
         validate(args, ["body", "title"])
         thread = db.thread_create(
             database, user["user_id"], args["body"], args["title"])
-        cherrypy.thread_data.usermap = thread
+        cherrypy.thread_data.usermap = \
+            create_usermap(database, thread["messages"])
         return thread
 
 
@@ -255,7 +258,7 @@ class API(object):
         if user == db.anon:
             raise BBJUserError("Anons cannot edit messages.")
         validate(args, ["body", "thread_id", "post_id"])
-        return message_edit_commit(
+        return db.message_edit_commit(
             database, user["user_id"], args["thread_id"], args["post_id"], args["body"])
 
 
@@ -272,7 +275,7 @@ class API(object):
         if user == db.anon:
             raise BBJUserError("Anons cannot edit messages.")
         validate(args, ["thread_id", "post_id"])
-        return message_edit_query(
+        return db.message_edit_query(
             database, user["user_id"], args["thread_id"], args["post_id"])
 
 

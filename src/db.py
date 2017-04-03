@@ -41,16 +41,18 @@ def thread_get(connection, thread_id, messages=True):
     and only get its metadata, such as title, author, etc.
     """
     c = connection.cursor()
-    c.execute("SELECT * FROM threads WHERE thread_id = ?", (thread_id,))
-    thread = c.fetchone()
+    thread = c.execute(
+        "SELECT * FROM threads WHERE thread_id = ?",
+        (thread_id,)).fetchone()
 
     if not thread:
         raise BBJParameterError("Thread does not exist.")
     thread = schema.thread(*thread)
 
     if messages:
-        c.execute("""SELECT * FROM messages WHERE thread_id = ?
-                     ORDER BY post_id""", (thread_id,))
+        c.execute("""
+        SELECT * FROM messages WHERE thread_id = ?
+          ORDER BY post_id""", (thread_id,))
         # create a list where each post_id matches its list[index]
         thread["messages"] = [schema.message(*values) for values in c.fetchall()]
 
@@ -65,10 +67,10 @@ def thread_index(connection):
 
     Please note that thred["messages"] is omitted.
     """
-    c = connection.cursor()
-    c.execute("""
-    SELECT thread_id FROM threads
-    ORDER BY last_mod DESC""")
+    c = connection.execute("""
+        SELECT thread_id FROM threads
+          ORDER BY last_mod DESC""")
+
     threads = [
         thread_get(connection, obj[0], messages=False)
             for obj in c.fetchall()
@@ -91,29 +93,23 @@ def thread_create(connection, author_id, body, title):
         thread_id, author_id, title,
         now, now, -1) # see below for why i set -1 instead of 0
 
-    connection.cursor().execute("""
+    connection.execute("""
         INSERT INTO threads
         VALUES (?,?,?,?,?,?)
     """, schema_values("thread", scheme))
     connection.commit()
-
-    scheme["messages"] = [
-        thread_reply(connection, author_id, thread_id, body, time_override=now)
-    ]
-    scheme["reply_count"] = 0
-    # note that thread_reply returns a schema object
-    # after committing the new message to the database.
-    # here i mimic a real thread_get by including a mock
-    # message array, and then setting the reply_count
-    # to reflect its new database value, so the response
-    # can be loaded as a normal thread object
-    # this hackery needs a bit more testing
-    return scheme
+    thread_reply(connection, author_id, thread_id, body, time_override=now)
+    # fetch the new thread out of the database instead of reusing the returned
+    # objects, just to be 100% sure what is returned is what was committed
+    return thread_get(connection, thread_id)
 
 
 def thread_reply(connection, author_id, thread_id, body, time_override=None):
     """
     Submit a new reply for thread_id. Return the new reply object.
+
+    time_overide can be time() value to set as the new message time.
+    This is to keep post_id 0 in exact parity with its parent thread.
     """
     validate([("body", body)])
 
@@ -124,14 +120,12 @@ def thread_reply(connection, author_id, thread_id, body, time_override=None):
         thread_id, count, author_id,
         now, False, body)
 
-    c = connection.cursor()
-
-    c.execute("""
+    connection.execute("""
         INSERT INTO messages
         VALUES (?,?,?,?,?,?)
     """, schema_values("message", scheme))
 
-    c.execute("""
+    connection.execute("""
         UPDATE threads SET
         reply_count = ?,
         last_mod = ?
@@ -154,7 +148,7 @@ def message_edit_query(connection, author, thread_id, post_id):
     except IndexError:
         raise BBJParameterError("post_id out of bounds for requested thread")
 
-    if not user["admin"]:
+    if not user["is_admin"]:
         if not user["user_id"] == message["author"]:
             raise BBJUserError(
                 "non-admin attempt to edit another user's message")
@@ -172,15 +166,16 @@ def message_edit_commit(connection, author_id, thread_id, post_id, new_body):
     message_edit_query first. Returns the newly updated message object.
     """
     validate([("body", new_body)])
-    message = message_edit_query(author_id, thread_id, post_id)
+    message = message_edit_query(connection, author_id, thread_id, post_id)
     message["body"] = new_body
     message["edited"] = True
 
-    connection.cursor().excute("""
+    connection.execute("""
         UPDATE messages SET
-        body = ? edited = ?
-        WHERE
-          thread_id = ? AND post_id = ?
+        body = ?,
+        edited = ?
+        WHERE thread_id = ?
+          AND post_id = ?
     """, (new_body, True, thread_id, post_id))
 
     connection.commit()
@@ -208,7 +203,7 @@ def user_register(connection, user_name, auth_hash):
         uuid1().hex, user_name, auth_hash,
         "", "", 0, False, time())
 
-    connection.cursor().execute("""
+    connection.execute("""
          INSERT INTO users
          VALUES (?,?,?,?,?,?,?,?)
     """, schema_values("user", scheme))
@@ -226,14 +221,12 @@ def user_resolve(connection, name_or_id, externalize=False, return_false=True):
     RETURN_FALSE determines whether to raise an exception or just
     return bool False if the user doesn't exist
     """
-    c = connection.cursor()
-    c.execute("""
+    user = connection.execute("""
          SELECT * FROM users
          WHERE user_name = ?
-            OR user_id = ?
-    """, (name_or_id, name_or_id))
+            OR user_id = ? """,
+        (name_or_id, name_or_id)).fetchone()
 
-    user = c.fetchone()
     if user:
         user = schema.user_internal(*user)
         if externalize:
@@ -265,7 +258,7 @@ def user_update(connection, user_object, parameters):
         "user_name", "quip", "auth_hash",
         "bio", "color", "user_id")
 
-    connection.cursor().execute("""
+    connection.execute("""
         UPDATE users SET
         user_name = ?, quip = ?,
         auth_hash = ?, bio = ?,
