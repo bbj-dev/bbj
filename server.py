@@ -9,21 +9,6 @@ import json
 
 dbname = "data.sqlite"
 
-# user anonymity is achieved in the laziest possible way: a literal user
-# named anonymous. may god have mercy on my soul.
-_c = sqlite3.connect(dbname)
-try:
-    db.anon = db.user_resolve(_c, "anonymous")
-    if not db.anon:
-        db.anon = db.user_register(
-            _c, "anonymous", # this is the hash for "anon"
-            "5430eeed859cad61d925097ec4f53246"
-            "1ccf1ab6b9802b09a313be1478a4d614")
-finally:
-    _c.close()
-    del _c
-
-
 def api_method(function):
     """
     A wrapper that handles encoding of objects and errors to a
@@ -284,6 +269,20 @@ class API(object):
         return "{\"wow\": \"jolly good show!\"}"
     test.exposed = True
 
+
+# user anonymity is achieved in the laziest possible way: a literal user
+# named anonymous. may god have mercy on my soul.
+_c = sqlite3.connect(dbname)
+try:
+    db.anon = db.user_resolve(_c, "anonymous")
+    if not db.anon:
+        db.anon = db.user_register(
+            _c, "anonymous", # this is the hash for "anon"
+            "5430eeed859cad61d925097ec4f53246"
+            "1ccf1ab6b9802b09a313be1478a4d614")
+finally:
+    _c.close()
+    del _c
 
 
 def run():
