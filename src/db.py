@@ -36,13 +36,6 @@ def thread_get(connection, thread_id, messages=True):
 
     MESSAGES, if False, will omit the inclusion of a thread's messages
     and only get its metadata, such as title, author, etc.
-
-    FORMATTER should be a callable object who takes a body string
-    as it's only argument and returns an object to be sent in the
-    response. It isn't strictly necessary that it returns a string,
-    for example the entity parser will return an array with the
-    body string and another array with indices and types of objects
-    contained in it.
     """
     c = connection.cursor()
     c.execute("SELECT * FROM threads WHERE thread_id = ?", (thread_id,))
@@ -53,12 +46,11 @@ def thread_get(connection, thread_id, messages=True):
     thread = schema.thread(*thread)
 
     if messages:
-        c.execute("SELECT * FROM messages WHERE thread_id = ?", (thread_id,))
+        c.execute("""SELECT * FROM messages WHERE thread_id = ?
+                     ORDER BY post_id""", (thread_id,))
         # create a dictionary where each message is accessible by its
         # integer post_id as a key
-        thread["messages"] = \
-            {message["post_id"]: message for message in
-              [schema.message(*values) for values in c.fetchall()]}
+        thread["messages"] = [schema.message(*values) for values in c.fetchall()]
 
     return thread
 

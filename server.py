@@ -30,8 +30,7 @@ def api_method(function):
     """
     A wrapper that handles encoding of objects and errors to a
     standard format for the API, resolves and authorizes users
-    from header data, and prepares cherrypy.thread_data so other
-    funtions can handle the request.
+    from header data, and prepares the arguments for each method.
 
     In the body of each api method and all the functions
     they utilize, BBJExceptions are caught and their attached
@@ -40,8 +39,9 @@ def api_method(function):
     it for inspection. Errors related to JSON decoding are
     caught as well and returned to the client as code 0.
     """
+    function.exposed = True
     @wraps(function)
-    def wrapper(*args, **kwargs):
+    def wrapper(self, *args, **kwargs):
         response = None
         try:
             # read in the body from the request to a string...
@@ -50,11 +50,8 @@ def api_method(function):
             if body:
                 body = json.loads(body)
                 if isinstance(body, dict):
-                    # lowercase all of its keys
-                    body = {str(key).lower(): value for key, value
-                              in body.items()}
-            else: # would rather a NoneType than b""
-                body = None
+                    # lowercase all of its top-level keys
+                    body = {str(key).lower(): value for key, value in body.items()}
 
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
@@ -78,8 +75,7 @@ def api_method(function):
             # api_methods may choose to bind a usermap into the thread_data
             # which will send it off with the response
             cherrypy.thread_data.usermap = {}
-            # TODO: Why in kek's name is self needing to be supplied a value positionally?
-            value = function(None, body, cherrypy.thread_data.db, user)
+            value = function(self, body, cherrypy.thread_data.db, user)
             response = schema.response(value, cherrypy.thread_data.usermap)
 
         except BBJException as e:
@@ -91,7 +87,7 @@ def api_method(function):
         except Exception as e:
             error_id = uuid1().hex
             response = schema.error(1,
-                "Internal server error: code {}. {}"
+                "Internal server error: code {} {}"
                     .format(error_id, repr(e)))
             with open("logs/exceptions/" + error_id, "a") as log:
                 traceback.print_tb(e.__traceback__, file=log)
@@ -110,10 +106,6 @@ def create_usermap(connection, obj):
     their full user objects (names, profile info, etc). Can
     be a thread_index or a messages object from one.
     """
-
-    if isinstance(obj, dict):
-        # this is a message object for a thread, ditch the keys
-        obj = obj.values()
 
     return {
         user_id: db.user_resolve(
@@ -144,22 +136,19 @@ def validate(json, args):
                 .format(arg, ", ".join(args)))
 
 
-APICONFIG = {
-    "/": {
-        "tools.response_headers.on": True,
-        "tools.response_headers.headers": [
-            ("Content-Type", "application/json")
-        ],
-    }
-}
-
 class API(object):
+    """
+    This object contains all the API endpoints for bbj.
+    The html serving part of the server is not written
+    yet, so this is currently the only module being
+    served.
+    """
     @api_method
-    @cherrypy.expose
     def user_register(self, args, database, user, **kwargs):
         """
         Register a new user into the system and return the new object.
-        Requires the string arguments `user_name` and `auth_hash`
+        Requires the string arguments `user_name` and `auth_hash`.
+        Do not send User/Auth headers with this method.
         """
         validate(args, ["user_name", "auth_hash"])
         return db.user_register(
@@ -167,7 +156,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def user_update(self, args, database, user, **kwargs):
         """
         Receives new parameters and assigns them to the user_object
@@ -182,7 +170,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def get_me(self, args, database, user, **kwargs):
         """
         Requires no arguments. Returns your internal user object,
@@ -192,7 +179,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def user_get(self, args, database, user, **kwargs):
         """
         Retreive an external user object for the given `user`.
@@ -204,7 +190,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def thread_index(self, args, database, user, **kwargs):
         """
         Return an array with all the threads, ordered by most recent activity.
@@ -216,7 +201,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def thread_create(self, args, database, user, **kwargs):
         """
         Creates a new thread and returns it. Requires the non-empty
@@ -225,12 +209,11 @@ class API(object):
         validate(args, ["body", "title"])
         thread = db.thread_create(
             database, user["user_id"], args["body"], args["title"])
-        cherrypy.thread_data.usermap = {user["user_id"]: user}
+        cherrypy.thread_data.usermap = thread
         return thread
 
 
     @api_method
-    @cherrypy.expose
     def thread_reply(self, args, database, user, **kwargs):
         """
         Creates a new reply for the given thread and returns it.
@@ -242,7 +225,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def thread_load(self, args, database, user, **kwargs):
         """
         Returns the thread object with all of its messages loaded.
@@ -256,7 +238,6 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def edit_post(self, args, database, user, **kwargs):
         """
         Replace a post with a new body. Requires the arguments
@@ -265,8 +246,9 @@ class API(object):
         otherwise an error object is returned whose description
         should be shown to the user.
 
-        To perform sanity checks without actually attempting to
-        edit a post, use `edit_query`
+        To perform sanity checks and retrieve the unformatted body
+        of a post without actually attempting to replace it, use
+        `edit_query` first.
 
         Returns the new message object.
         """
@@ -278,14 +260,14 @@ class API(object):
 
 
     @api_method
-    @cherrypy.expose
     def edit_query(self, args, database, user, **kwargs):
         """
         Queries the database to ensure the user can edit a given
         message. Requires the arguments `thread_id` and `post_id`
         (does not require a new body)
 
-        Returns either boolean true or the current message object
+        Returns the original message object without any formatting
+        on success.
         """
         if user == db.anon:
             raise BBJUserError("Anons cannot edit messages.")
@@ -294,10 +276,10 @@ class API(object):
             database, user["user_id"], args["thread_id"], args["post_id"])
 
 
-    @cherrypy.expose
     def test(self, **kwargs):
         print(cherrypy.request.body.read())
         return "{\"wow\": \"jolly good show!\"}"
+    test.exposed = True
 
 
 
