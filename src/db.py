@@ -2,7 +2,10 @@
 This module contains all of the interaction with the SQLite database. It
 doesnt hold a connection itself, rather, a connection is passed in as
 an argument to all the functions and is maintained by CherryPy's threading
-system. This is clunky but fuck it, it works.
+system. This is clunky but fuck it, it works (for now at least).
+
+(foreword: formatting is not currently implemented but its an important
+  feature needed in the final version)
 
 All post and thread data are stored in the database without formatting.
 This is questionable, as it causes formatting to be reapplied with each
@@ -31,8 +34,8 @@ anon = None
 
 def thread_get(connection, thread_id, messages=True):
     """
-    Fetch the thread_id from the database, and assign and format
-    all of its messages as requested.
+    Fetch the thread_id from the database. Formatting is be handled
+    elsewhere.
 
     MESSAGES, if False, will omit the inclusion of a thread's messages
     and only get its metadata, such as title, author, etc.
@@ -48,14 +51,20 @@ def thread_get(connection, thread_id, messages=True):
     if messages:
         c.execute("""SELECT * FROM messages WHERE thread_id = ?
                      ORDER BY post_id""", (thread_id,))
-        # create a dictionary where each message is accessible by its
-        # integer post_id as a key
+        # create a list where each post_id matches its list[index]
         thread["messages"] = [schema.message(*values) for values in c.fetchall()]
 
     return thread
 
 
 def thread_index(connection):
+    """
+    Return a list with each thread, ordered by the date they
+    were last modifed (which could be when it was submitted
+    or its last reply)
+
+    Please note that thred["messages"] is omitted.
+    """
     c = connection.cursor()
     c.execute("""
     SELECT thread_id FROM threads
@@ -68,6 +77,9 @@ def thread_index(connection):
 
 
 def thread_create(connection, author_id, body, title):
+    """
+    Create a new thread and return it.
+    """
     validate([
         ("body",  body),
         ("title", title)
@@ -85,20 +97,24 @@ def thread_create(connection, author_id, body, title):
     """, schema_values("thread", scheme))
     connection.commit()
 
-    scheme["messages"] = {
-        0: thread_reply(connection, author_id, thread_id, body, time_override=now)
-    }
+    scheme["messages"] = [
+        thread_reply(connection, author_id, thread_id, body, time_override=now)
+    ]
     scheme["reply_count"] = 0
     # note that thread_reply returns a schema object
     # after committing the new message to the database.
     # here i mimic a real thread_get by including a mock
-    # message dictionary, and then setting the reply_count
+    # message array, and then setting the reply_count
     # to reflect its new database value, so the response
     # can be loaded as a normal thread object
+    # this hackery needs a bit more testing
     return scheme
 
 
 def thread_reply(connection, author_id, thread_id, body, time_override=None):
+    """
+    Submit a new reply for thread_id. Return the new reply object.
+    """
     validate([("body", body)])
 
     now = time_override or time()
@@ -127,11 +143,15 @@ def thread_reply(connection, author_id, thread_id, body, time_override=None):
 
 
 def message_edit_query(connection, author, thread_id, post_id):
+    """
+    Perform all the neccesary sanity checks required to edit a post
+    and then return the requested message object without any changes.
+    """
     user = user_resolve(connection, author)
     thread = thread_get(connection, thread_id)
 
     try: message = thread["messages"][post_id]
-    except KeyError:
+    except IndexError:
         raise BBJParameterError("post_id out of bounds for requested thread")
 
     if not user["admin"]:
@@ -147,6 +167,10 @@ def message_edit_query(connection, author, thread_id, post_id):
 
 
 def message_edit_commit(connection, author_id, thread_id, post_id, new_body):
+    """
+    Attempt to commit new_body to the existing message. Touches base with
+    message_edit_query first. Returns the newly updated message object.
+    """
     validate([("body", new_body)])
     message = message_edit_query(author_id, thread_id, post_id)
     message["body"] = new_body
@@ -194,6 +218,14 @@ def user_register(connection, user_name, auth_hash):
 
 
 def user_resolve(connection, name_or_id, externalize=False, return_false=True):
+    """
+    Accepts a name or id and returns the full user object for it.
+
+    EXTERNALIZE determines whether to strip the object of private data.
+
+    RETURN_FALSE determines whether to raise an exception or just
+    return bool False if the user doesn't exist
+    """
     c = connection.cursor()
     c.execute("""
          SELECT * FROM users
@@ -216,6 +248,12 @@ def user_resolve(connection, name_or_id, externalize=False, return_false=True):
 
 
 def user_update(connection, user_object, parameters):
+    """
+    Accepts new parameters for a user object and then
+    commits the changes to the database. Parameters
+    that are not suitable for editing (like user_id
+    and anything undefined) are ignored completely.
+    """
     user_id = user_object["user_id"]
     for key in ("user_name", "auth_hash", "quip", "bio", "color"):
         value = parameters.get(key)
