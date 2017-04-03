@@ -687,7 +687,7 @@ Thats about it for now.
   (interactive)
   (let* ((inhibit-read-only t)
          (response (bbj-request 'thread_load 'thread_id id))
-         (buffer (get-buffer-create (format "BBJ: %s" (alist-get 'title response)))))
+         (buffer (get-buffer-create (format "BBJ: %s" (bbj-descend response 'data 'title)))))
     (with-current-buffer buffer
       (erase-buffer)
       (bbj-mode)
