@@ -44,8 +44,7 @@ def api_method(function):
             auth = cherrypy.request.headers.get("Auth")
 
             if (username and not auth) or (auth and not username):
-                return json.dumps(schema.error(5,
-                    "User or Auth was given without the other."))
+                raise BBJParameterError("User or Auth was given without the other.")
 
             elif not username and not auth:
                 user = db.anon
@@ -55,9 +54,8 @@ def api_method(function):
                 if not user:
                     raise BBJUserError("User %s is not registered" % username)
 
-                if auth != user["auth_hash"]:
-                    return json.dumps(schema.error(5,
-                        "Invalid authorization key for user."))
+                elif auth != user["auth_hash"]:
+                    raise BBJException(5, "Invalid authorization key for user.")
 
             # api_methods may choose to bind a usermap into the thread_data
             # which will send it off with the response
@@ -342,23 +340,33 @@ class API(object):
     test.exposed = True
 
 
-# user anonymity is achieved in the laziest possible way: a literal user
-# named anonymous. may god have mercy on my soul.
-_c = sqlite3.connect(dbname)
-try:
-    db.anon = db.user_resolve(_c, "anonymous")
-    if not db.anon:
-        db.anon = db.user_register(
-            _c, "anonymous", # this is the hash for "anon"
-            "5430eeed859cad61d925097ec4f53246"
-            "1ccf1ab6b9802b09a313be1478a4d614")
-finally:
-    _c.close()
-    del _c
+def api_http_error(status, message, traceback, version):
+    return json.dumps(schema.error(2, "HTTP error {}: {}".format(status, message)))
+
+
+CONFIG = {
+    "/": {
+        "error_page.default": api_http_error
+    }
+}
 
 
 def run():
-    cherrypy.quickstart(API(), "/api")
+    # user anonymity is achieved in the laziest possible way: a literal user
+    # named anonymous. may god have mercy on my soul.
+    _c = sqlite3.connect(dbname)
+    try:
+        db.anon = db.user_resolve(_c, "anonymous")
+        if not db.anon:
+            db.anon = db.user_register(
+                _c, "anonymous", # this is the hash for "anon"
+                "5430eeed859cad61d925097ec4f53246"
+                "1ccf1ab6b9802b09a313be1478a4d614")
+    finally:
+        _c.close()
+        del _c
+
+    cherrypy.quickstart(API(), "/api", CONFIG)
 
 
 if __name__ == "__main__":

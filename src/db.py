@@ -365,9 +365,9 @@ def validate(keys_and_values):
 
 
         elif key == "color":
-            if color in range(0, 9):
+            if value in range(0, 6):
                 continue
             raise BBJParameterError(
-                "Color specification out of range (int 0-8)")
+                "Color specification out of range (int 0-6)")
 
     return True

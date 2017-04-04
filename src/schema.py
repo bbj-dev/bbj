@@ -67,7 +67,7 @@ def user_internal(
         auth_hash, # string (sha256 hash)
         quip,      # string (possibly empty)
         bio,       # string (possibly empty)
-        color,     # int from 0 to 8
+        color,     # int from 0 to 6
         is_admin,  # bool (supply as either False/True or 0/1)
         created):  # floating point unix timestamp (when user registered)
 
@@ -97,7 +97,7 @@ def user_external(
         user_name, # string
         quip,      # string (possibly empty)
         bio,       # string (possibly empty)
-        color,     # int from 0 to 8
+        color,     # int from 0 to 6
         admin,     # bool (can be supplied as False/True or 0/1)
         created):  # floating point unix timestamp (when user registered)
 

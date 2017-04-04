@@ -9,7 +9,7 @@ create table users (
   auth_hash text,   -- string (sha256 hash)
   quip text,        -- string (possibly empty)
   bio text,         -- string (possibly empty)
-  color int,        -- int (from 0 to 8)
+  color int,        -- int (from 0 to 6)
   is_admin int,     -- bool
   created real      -- floating point unix timestamp (when this user registered)
 );
