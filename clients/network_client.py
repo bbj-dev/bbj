@@ -190,6 +190,14 @@ class BBJ:
         return response["data"]
 
 
+    def user_is_registered(self, target_user):
+        """
+        Returns a boolean true or false whether target_user
+        is a registered BBJ user.
+        """
+        return self("user_is_registered", target_user=target_user)["data"]
+
+
     def user_register(self, user_name, user_auth, hash_auth=True, set_as_user=True):
         """
         Register user_name into the system with user_auth. Unless hash_auth

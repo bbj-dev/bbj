@@ -7,8 +7,9 @@ from markdown import markdown
 from html import escape
 import re
 
+#0,   1        2        3        4       5        6
 colors = [
-    "red", "green", "yellow", "blue", "magenta", "cyan"
+    "red", "yellow", "green", "blue", "cyan", "magenta"
 ]
 
 markup = [

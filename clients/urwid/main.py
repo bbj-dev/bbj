@@ -1,7 +1,7 @@
-from time import sleep, localtime
+from time import time, sleep, localtime
+from random import choice, randrange
 from string import punctuation
 from subprocess import run
-from random import choice
 from network import BBJ
 import urwid
 
@@ -36,20 +36,35 @@ colors = [
 
 class App:
     def __init__(self):
+        self.mode = None
         colors = [
-            ("bar", "light magenta", "default", "underline"),
-            ("button", "light red", "default")
+            ("bar", "light magenta", "default"),
+            ("button", "light red", "default"),
+            ("dim", "dark gray", "default"),
+
+            # map the bbj api color values for display
+            ("0", "default", "default"),
+            ("1", "light red", "default"),
+            ("2", "yellow", "default"),
+            ("3", "light green", "default"),
+            ("4", "light blue", "default"),
+            ("5", "light cyan", "default"),
+            ("6", "light magenta", "default")
         ]
         self.loop = urwid.MainLoop(urwid.Frame(
-            urwid.LineBox(ActionBox(urwid.SimpleFocusListWalker([]))),
-        ), colors)
+            urwid.LineBox(ActionBox(urwid.SimpleFocusListWalker([])),
+                          title="> > T I L D E T O W N < <",
+                          tlcorner="@", tline="=", lline="|", rline="|",
+                          bline="_", trcorner="@", brcorner="@", blcorner="@"
+
+            )), colors)
         self.date_format = "{1}/{2}/{0}"
         self.index()
 
 
     def set_header(self, text, *format_specs):
         self.loop.widget.header = urwid.AttrMap(urwid.Text(
-            ("%s@bbj | " % network.user_name)
+            ("%s@bbj | " % (network.user_name or "anonymous"))
             + text.format(*format_specs)
         ), "bar")
 
@@ -61,30 +76,30 @@ class App:
         self.loop.widget.footer = urwid.AttrMap(urwid.Text(text), "bar")
 
 
-    def readable_delta(self, created, modified):
-        delta = modified - created
-        minutes = delta // 60
-        if not minutes:
-            return "less than a minute ago"
-        elif minutes < 60:
-            return "%d minutes ago" % minutes
-        hours = delta // 60
-        if hours == 1:
-            return "about an hour ago"
-        elif hours < 48:
+    def readable_delta(self, modified):
+        delta = time() - modified
+        hours, remainder = divmod(delta, 3600)
+        if hours > 48:
+            return self.date_format.format(*localtime(modified))
+        elif hours > 1:
             return "%d hours ago" % hours
-        return self.date_format.format(*localtime(modified))
+        elif hours == 1:
+            return "about an hour ago"
+        minutes, remainder = divmod(remainder, 60)
+        if minutes > 1:
+            return "%d minutes ago"
+        return "less than a minute ago"
 
 
     def index(self):
+        self.mode = "index"
         threads, usermap = network.thread_index()
         self.set_header("{} threads", len(threads))
-        self.set_footer("Compose")
+        self.set_footer("Refresh", "Compose", "/Search", "?Help")
         walker = self.loop.widget.body.base_widget.body
+        walker.clear()
         for thread in threads:
-            button = urwid.Button("", self.thread_load, thread["thread_id"])
-            super(urwid.Button, button).__init__(
-                urwid.SelectableIcon(">>"))
+            button = cute_button(">>", self.thread_load, thread["thread_id"])
             title = urwid.Text(thread["title"])
 
             last_mod = thread["last_mod"]
@@ -92,31 +107,81 @@ class App:
             infoline = "by ~{} @ {} | last active {}".format(
                 usermap[thread["author"]]["user_name"],
                 self.date_format.format(*localtime(created)),
-                self.readable_delta(created, last_mod)
+                self.readable_delta(last_mod)
             )
 
-            walker.append(urwid.Columns([(3, urwid.AttrMap(button, "button")), title]))
-            walker.append(urwid.Text(infoline))
-            walker.append(urwid.Divider("-"))
+            [walker.append(element)
+                for element in [
+                        urwid.Columns([(3, urwid.AttrMap(button, "button")), title]),
+                        urwid.AttrMap(urwid.Text(infoline), "dim"),
+                        urwid.AttrMap(urwid.Divider("-"), "dim")
+                ]]
 
 
     def thread_load(self, button, thread_id):
+        self.mode = "thread"
         thread, usermap = network.thread_load(thread_id)
         walker = self.loop.widget.body.base_widget.body
         walker.clear()
         self.set_header("~{}: {}",
             usermap[thread["author"]]["user_name"], thread["title"])
         for message in thread["messages"]:
-            pass
+            name = urwid.Text("~{}".format(usermap[message["author"]]["user_name"]))
+            info = "@ " + self.date_format.format(*localtime(message["created"]))
+            if message["edited"]:
+                info += " [edited]"
+            head = urwid.Columns([
+                (3, urwid.AttrMap(cute_button(">>"), "button")),
+                (len(name._text) + 1, urwid.AttrMap(name, str(usermap[message["author"]]["color"]))),
+                urwid.AttrMap(urwid.Text(info), "dim")
+            ])
+
+            [walker.append(element)
+                for element in [
+                        head, urwid.Divider(), urwid.Text(message["body"]),
+                        urwid.Divider(), urwid.AttrMap(urwid.Divider("-"), "dim")
+            ]]
+
+
 
 
 class ActionBox(urwid.ListBox):
-    pass
+    def keypress(self, size, key):
+        super(ActionBox, self).keypress(size, key)
+        if key.lower() in ["j", "n"]:
+            self._keypress_down(size)
+        elif key.lower() in ["k", "p"]:
+            self._keypress_up(size)
+        elif key.lower() == "q":
+            if app.mode == "index":
+                app.loop.stop()
+                # run("clear", shell=True)
+                width, height = urwid.raw_display.Screen().get_cols_rows()
+                for x in range(height - 1):
+                    line = str()
+                    for x in range(width):
+                        line += choice([" ", choice(punctuation)])
+                    motherfucking_rainbows(line)
+                    sleep(0.008)
+                exit()
+            else: app.index()
+
+
+
+def cute_button(label, callback=None, data=None):
+    """
+    Urwid's default buttons are shit, and they have ugly borders.
+    This function returns buttons that are a bit easier to love.
+    """
+    button = urwid.Button("", callback, data)
+    super(urwid.Button, button).__init__(
+        urwid.SelectableIcon(label))
+    return button
 
 
 def motherfucking_rainbows(string, inputmode=False, end="\n"):
     """
-    I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee!!
+    I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee
     """
     for character in string:
         print(choice(colors) + character, end="")
@@ -195,7 +260,7 @@ def log_in():
         try:
             network.set_credentials(name, "")
             # make it easy for people who use an empty password =)
-            motherfucking_rainbows("~~logged in as {}~~".format(network.user_name))
+            motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
 
         except ConnectionRefusedError:
             def login_loop(prompt, positive):
@@ -206,7 +271,7 @@ def log_in():
                     login_loop("// R E J E C T E D //.", False)
 
             login_loop("Enter your password", True)
-            motherfucking_rainbows("~~logged in as {}~~".format(network.user_name))
+            motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
 
         except ValueError:
             motherfucking_rainbows("Nice to meet'cha, %s!" % name)
@@ -216,7 +281,12 @@ def log_in():
             )
 
             if response == "c":
-                name = sane_value("user_name", "Pick a new name")
+                def nameloop(prompt, positive):
+                    name = sane_value("user_name", prompt, positive)
+                    if network.user_is_registered(name):
+                        return nameloop("%s is already registered" % name, False)
+                    return name
+                name = nameloop("Pick a new name", True)
 
             def password_loop(prompt, positive=True):
                 response1 = paren_prompt(prompt, positive)
@@ -239,7 +309,7 @@ def main():
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
     log_in()
-    # sleep(1) # let that confirmation message shine
+    sleep(0.6) # let that confirmation message shine
 
 if __name__ == "__main__":
     global app
