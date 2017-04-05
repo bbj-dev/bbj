@@ -42,8 +42,7 @@ class BBJ:
     """
     def __init__(self, host="127.0.0.1", port=8080):
         self.base = "http://{}:{}/api/%s".format(host, port)
-        self.user_name = None
-        self.user_auth = None
+        self.user_name = self.user_auth = None
         self.send_auth = True
 
 
@@ -101,7 +100,8 @@ class BBJ:
         Uses the server's db_sanity_check method to verify the validty
         of value by key. If it is invalid, kwarg exception (default
         AssertionError) is raised with the exception containing the
-        attribute .description as the server's reason.
+        attribute .description as the server's reason. Exception can
+        be a False value to just rturn boolean False.
         """
         response = self(
             "db_sanity_check",
@@ -111,6 +111,8 @@ class BBJ:
         )
 
         if not response["data"]["bool"]:
+            if not exception:
+                return False
             description = response["data"]["description"]
             error = exception(description)
             error.description = description
@@ -148,8 +150,7 @@ class BBJ:
             user_auth = sha256(bytes(user_auth, "utf8")).hexdigest()
 
         if check_validity and not self.validate_credentials(user_name, user_auth):
-            self.user_auth = None
-            self.user_name = None
+            self.user_auth = self.user_name = None
             raise ConnectionRefusedError("Auth and User do not match")
 
         self.user_auth = user_auth
@@ -180,22 +181,44 @@ class BBJ:
         Returns True or False whether user_name is registered
         into the system.
         """
-        return self(
+        response = self(
             "user_is_registered",
             no_auth=True,
             target_user=user_name
-        )["data"]
+        )
+
+        return response["data"]
 
 
-    def user_register(self, user_name, user_auth, hash_auth=True):
+    def user_register(self, user_name, user_auth, hash_auth=True, set_as_user=True):
         """
         Register user_name into the system with user_auth. Unless hash_auth
         is set to false, user_auth should be a password string.
-        """
-        pass
-        # return self(
 
-        # )
+        When set_as_user is True, the newly registered user is internalizedn
+        and subsequent uses of the object will be authorized for them.
+        """
+        if hash_auth:
+            user_auth = sha256(bytes(user_auth, "utf8")).hexdigest()
+
+        response = self(
+            "user_register",
+            no_auth=True,
+            user_name=user_name,
+            auth_hash=user_auth
+        )["data"]
+
+        assert all([
+            user_auth == response["auth_hash"],
+            user_name == response["user_name"]
+        ])
+
+        if set_as_user:
+            self.user_name = user_name
+            self.user_auth = user_auth
+
+        return response
+
 
     def thread_index(self):
         """
@@ -203,4 +226,12 @@ class BBJ:
         most recently interacted, and [1] is a usermap object.
         """
         response = self("thread_index")
+        return response["data"], response["usermap"]
+
+
+    def thread_load(self, thread_id):
+        """
+        Returns a tuple where [0] is a thread object and [1] is a usermap object.
+        """
+        response = self("thread_load", thread_id=thread_id)
         return response["data"], response["usermap"]
