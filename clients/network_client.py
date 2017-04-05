@@ -15,8 +15,8 @@ class BBJ:
     You can call them like `threads, usermap = bbj.thread_index()`
 
     __init__ can take a host string and a port value (which can be
-    either int or str). It defaults to "127.0.0.1" and 8080, expanding
-    out to http://127.0.0.1:8080/.
+    either int or str). It defaults to "127.0.0.1" and 7099, expanding
+    out to http://127.0.0.1:7099/.
 
     Standard library exceptions are used, but several new attributes are
     attached to them before raising: .code, .description, and .body.
@@ -40,7 +40,7 @@ class BBJ:
 
     See the offical API error documentation for more details.
     """
-    def __init__(self, host="127.0.0.1", port=8080):
+    def __init__(self, host="127.0.0.1", port=7099):
         self.base = "http://{}:{}/api/%s".format(host, port)
         self.user_name = self.user_auth = None
         self.send_auth = True

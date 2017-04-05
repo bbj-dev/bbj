@@ -343,6 +343,7 @@ class API(object):
 def api_http_error(status, message, traceback, version):
     return json.dumps(schema.error(2, "HTTP error {}: {}".format(status, message)))
 
+cherrypy.config.update({'server.socket_port': 7099})
 
 CONFIG = {
     "/": {

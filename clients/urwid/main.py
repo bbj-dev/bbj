@@ -5,7 +5,7 @@ from random import choice
 from network import BBJ
 import urwid
 
-network = BBJ(host="127.0.0.1", port=8080)
+network = BBJ(host="127.0.0.1", port=7099)
 
 obnoxious_logo = """
        OwO    8 888888888o    8 888888888o               8 8888         1337

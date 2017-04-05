@@ -4,7 +4,7 @@
 (require 'cl)
 
 (defvar bbj-host "127.0.0.1")
-(defvar bbj-port 8080)
+(defvar bbj-port 7099)
 (defvar bbj-width 80)
 
 (defvar bbj-user "anonymous"
