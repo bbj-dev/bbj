@@ -1,7 +1,7 @@
 from time import time, sleep, localtime
-from random import choice, randrange
 from string import punctuation
 from subprocess import run
+from random import choice
 from network import BBJ
 import urwid
 
@@ -37,6 +37,8 @@ colors = [
 class App:
     def __init__(self):
         self.mode = None
+        self.thread = None
+        self.usermap = {}
         colors = [
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
@@ -93,9 +95,11 @@ class App:
 
     def index(self):
         self.mode = "index"
+        self.thread = None
         threads, usermap = network.thread_index()
+        self.usermap.update(usermap)
         self.set_header("{} threads", len(threads))
-        self.set_footer("Refresh", "Compose", "/Search", "?Help")
+        self.set_footer("Refresh", "Compose", "Quit", "/Search", "?Help")
         walker = self.loop.widget.body.base_widget.body
         walker.clear()
         for thread in threads:
@@ -121,10 +125,13 @@ class App:
     def thread_load(self, button, thread_id):
         self.mode = "thread"
         thread, usermap = network.thread_load(thread_id)
+        self.usermap.update(usermap)
+        self.thread = thread
         walker = self.loop.widget.body.base_widget.body
         walker.clear()
         self.set_header("~{}: {}",
             usermap[thread["author"]]["user_name"], thread["title"])
+        self.set_footer("Compose", "Refresh", "\"Quote", "/Search", "<Top", ">End", "QBack")
         for message in thread["messages"]:
             name = urwid.Text("~{}".format(usermap[message["author"]]["user_name"]))
             info = "@ " + self.date_format.format(*localtime(message["created"]))
@@ -143,6 +150,13 @@ class App:
             ]]
 
 
+    # def compose(self):
+    #     if self.mode == "index":
+    #         feedback = "Starting a new thread..."
+    #     elif self.mode == "thread":
+    #         feedback = "Replying in "
+
+
 
 
 class ActionBox(urwid.ListBox):
@@ -156,13 +170,13 @@ class ActionBox(urwid.ListBox):
             if app.mode == "index":
                 app.loop.stop()
                 # run("clear", shell=True)
-                width, height = urwid.raw_display.Screen().get_cols_rows()
+                width, height = app.loop.screen_size
                 for x in range(height - 1):
-                    line = str()
-                    for x in range(width):
-                        line += choice([" ", choice(punctuation)])
-                    motherfucking_rainbows(line)
-                    sleep(0.008)
+                    motherfucking_rainbows(
+                        "".join([choice([" ", choice(punctuation)]) for x in range(width)])
+                    )
+                out = "  ~~CoMeE BaCkK SooOn~~  0000000"
+                motherfucking_rainbows(out.zfill(width))
                 exit()
             else: app.index()
 
