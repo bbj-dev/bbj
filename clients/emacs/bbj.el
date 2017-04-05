@@ -158,11 +158,9 @@ is the only thing returned (not the usermap or error field)"
 passed to the server to check it for validity before the
 user is allowed to continue. Will recurse until the input
 is valid, then it is returned."
-  (let (response value)
-    (setq value (read-from-minibuffer prompt)
-          response (bbj-request! 'db_sanity_check
-                     'value value
-                     'key key))
+  (let* ((value (read-from-minibuffer prompt))
+         (response (bbj-request! 'db_sanity_check
+                     'value value 'key key)))
     (if (alist-get 'bool response)
         value
       (message (alist-get 'description response))
