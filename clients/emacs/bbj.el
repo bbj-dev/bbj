@@ -134,7 +134,7 @@ or can be ommitted to send no data."
       (re-search-forward "^$" nil t)
       (condition-case nil
           (setq json (json-read))
-        (json-readtable-error
+        (error
          (user-error "BBJ response error"))))
 
     (case (setq error (alist-get 'error json)
@@ -156,16 +156,18 @@ is the only thing returned (not the usermap or error field)"
 (defun bbj-sane-value (prompt key)
   "Opens an input loop with the user, where the response is
 passed to the server to check it for validity before the
-user is allowed to continue."
-  (let (response value done)
-    (while (not done)
-      (setq value (read-from-minibuffer prompt)
-            response (bbj-data (bbj-request 'db_sanity_check
-                'key key 'value value)))
-      (unless (setq done (alist-get 'bool response))
-        (message (alist-get 'description response))
-        (sit-for 2)))
-    value))
+user is allowed to continue. Will recurse until the input
+is valid, then it is returned."
+  (let (response value)
+    (setq value (read-from-minibuffer prompt)
+          response (bbj-request! 'db_sanity_check
+                     'value value
+                     'key key))
+    (if (alist-get 'bool response)
+        value
+      (message (alist-get 'description response))
+      (sit-for 2)
+      (bbj-sane-value prompt key))))
 
 
 (defun bbj-descend (alist &rest keys)
@@ -195,11 +197,10 @@ You can restore anon status on demand by using `bbj-logout'"
            "user_name"))
     (cond
      ((bbj-request! 'user_is_registered 'target_user bbj-user)
-      (setq check
-            (bbj-request! 'check_auth
-              'target_user bbj-user
-              'target_hash (bbj-sethash)))
-      (if check (message "Logged in as %s!" bbj-user)
+      (if (bbj-request! 'check_auth
+            'target_user bbj-user
+            'target_hash (bbj-sethash))
+          (message "Logged in as %s!" bbj-user)
         (setq bbj-hash nil)
         (if (y-or-n-p (format "Invalid credentials for %s. Try again? " bbj-user))
             (bbj-login)

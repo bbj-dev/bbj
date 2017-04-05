@@ -308,7 +308,7 @@ def validate(keys_and_values):
 
             elif contains_nonspaces(value):
                 raise BBJUserError(
-                    "Username cannot contain whitespace chars besides spaces.")
+                    "Username cannot contain whitespace characters besides spaces.")
 
             elif not value.strip():
                 raise BBJUserError(
@@ -330,7 +330,7 @@ def validate(keys_and_values):
         elif key == "quip":
             if contains_nonspaces(value):
                 raise BBJUserError(
-                    "Quip cannot contain whitespace chars besides spaces.")
+                    "Quip cannot contain whitespace characters besides spaces.")
 
             elif len(value) > 120:
                 raise BBJUserError(
@@ -348,7 +348,7 @@ def validate(keys_and_values):
 
             elif contains_nonspaces(value):
                 raise BBJUserError(
-                    "Titles cannot contain whitespace chars besides spaces.")
+                    "Titles cannot contain whitespace characters besides spaces.")
 
             elif not value.strip():
                 raise BBJUserError(
