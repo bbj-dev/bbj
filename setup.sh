@@ -20,7 +20,7 @@ EOF
     --dbset )
         sqlite3 data.sqlite < schema.sql
 	      echo cleared
-        chmod 400 data.sqlite
+        chmod 600 data.sqlite
 	      exit;;
 esac
 
@@ -31,4 +31,4 @@ echo Using $PYTHON...
 $PYTHON -m pip install ${DEPS[*]}
 echo "Enter [i] to initialize a new database"
 read CLEAR
-[[ $CLEAR == "i" ]] && sqlite3 bbj.db < schema.sql; chmod 400 data.sqlite
+[[ $CLEAR == "i" ]] && sqlite3 data.sqlite < schema.sql; chmod 600 data.sqlite
