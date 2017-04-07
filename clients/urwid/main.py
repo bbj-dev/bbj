@@ -111,6 +111,25 @@ class App(object):
         self.loop.widget.footer = urwid.AttrMap(urwid.Text(text), "bar")
 
 
+    def close_editor(self):
+        if self.window_split:
+            self.window_split = False
+            self.loop.widget.focus_position = "body"
+            self.set_footer("lmao")
+        else:
+            self.loop.widget = self.loop.widget[0]
+
+
+    def switch_editor(self):
+        if not self.window_split:
+            return
+        elif self.loop.widget.focus_position == "body":
+            self.loop.widget.focus_position = "footer"
+        else:
+            self.loop.widget.focus_position = "body"
+
+
+
     def readable_delta(self, modified):
         """
         Return a human-readable string representing the difference
@@ -241,6 +260,7 @@ class App(object):
 
 
     def compose(self, title=None):
+        editor = ExternalEditor if self.prefs["editor"] else InternalEditor
         if self.mode == "index":
             if not title:
                 return self.footer_prompt("Title", self.compose)
@@ -250,23 +270,31 @@ class App(object):
                 return self.footer_prompt(
                     "Title", self.compose, extra_text=e.description)
 
-            if self.prefs["editor"]:
-                editor = ExternalEditor("thread_create", title=title)
-                footer = "[F1]Abort [Save and quit to submit your thread]"
-            else:
-                editor = urwid.Edit()
-
             self.set_header('Composing "{}"', title)
             self.set_footer(static_string=
                 "[F1]Abort [Save and quit to submit your thread]")
 
             self.loop.widget = urwid.Overlay(
-                urwid.LineBox(editor, title=self.prefs["editor"]),
-                self.loop.widget,
-                align="center",
+                urwid.LineBox(
+                    editor("thread_create", title=title),
+                    title=self.prefs["editor"]),
+                self.loop.widget, align="center", valign="middle",
                 width=self.loop.screen_size[0] - 2,
-                valign="middle",
                 height=(self.loop.screen_size[1] - 4))
+
+        elif self.mode == "thread":
+            self.window_split=True
+            self.set_header('Replying to "{}"', self.thread["title"])
+            self.loop.widget.footer = urwid.BoxAdapter(
+                urwid.Frame(
+                    urwid.LineBox(editor("thread_reply", thread_id=self.thread["thread_id"])),
+                    footer=urwid.AttrMap(urwid.Text("[F1]Abort [F2]Swap [F3]Send"), "bar")
+                )
+                ,
+                20)
+            self.switch_editor()
+
+
 
 
 
@@ -289,6 +317,21 @@ class FootPrompt(urwid.Edit):
         self.callback(self.get_edit_text(), *self.args)
 
 
+class InternalEditor(urwid.Edit):
+    def __init__(self, endpoint, **params):
+        super(InternalEditor, self).__init__()
+        self.endpoint = endpoint
+        self.params = params
+
+    def keypress(self, size, key):
+        if key not in ["f1", "f2"]:
+            return super(InternalEditor, self).keypress(size, key)
+        elif key == "f1":
+            return app.close_editor()
+        elif key == "f2":
+            return app.switch_editor()
+
+
 class ExternalEditor(urwid.Terminal):
     def __init__(self, endpoint, **params):
         self.file_descriptor, self.path = tempfile.mkstemp()
@@ -303,30 +346,20 @@ class ExternalEditor(urwid.Terminal):
 
     def keypress(self, size, key):
         if self.terminated:
-            if app.window_split:
-                app.window_split = False
-                app.loop.widget.focus_position = "body"
-                app.set_footer("this")
-            else:
-                app.loop.widget = app.loop.widget[0]
+            app.close_editor()
             with open(self.file_descriptor) as _:
                 self.params.update({"body": _.read()})
             network.request(self.endpoint, **self.params)
             os.remove(self.path)
             return app.refresh()
 
-        elif key != "f1":
+        elif key not in ["f1", "f2"]:
             return super(ExternalEditor, self).keypress(size, key)
-
-        if app.window_split:
-            app.loop.widget.focus_position = "body"
-            return app.loop.widget.footer.set_title(
-                "press f1 to return to the editor")
-
-        self.terminate()
-        app.loop.widget = app.loop.widget[0]
-        app.refresh()
-
+        elif key == "f1":
+            self.terminate()
+            app.close_editor()
+            app.refresh()
+        app.switch_editor()
 
 
 class ActionBox(urwid.ListBox):
@@ -336,9 +369,8 @@ class ActionBox(urwid.ListBox):
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
 
-        if key == "f1" and app.window_split:
-            app.loop.widget.focus_position = "footer"
-            app.loop.widget.footer.set_title("press F1 to focus the thread")
+        if key == "f2":
+            app.switch_editor()
 
         elif key in ["j", "n", "ctrl n"]:
             self._keypress_down(size)
@@ -374,23 +406,31 @@ class ActionBox(urwid.ListBox):
 
         elif key.lower() == "q":
             if app.mode == "index":
-                app.loop.stop()
-                if app.prefs["dramatic_exit"]:
-                    width, height = app.loop.screen_size
-                    for x in range(height - 1):
-                        motherfucking_rainbows(
-                            "".join([choice([" ", choice(punctuation)])
-                                       for x in range(width)]
-                            ))
-                    out = "  ~~CoMeE BaCkK SooOn~~  0000000"
-                    motherfucking_rainbows(out.zfill(width))
-                else:
-                    run("clear", shell=True)
-                    motherfucking_rainbows("Come back soon! <3")
-                exit()
+                frilly_exit()
             else:
                 app.back()
 
+
+def frilly_exit():
+    """
+    Exit with some flair. Will fill the screen with rainbows
+    and shit, or just say bye, depending on the user's bbjrc
+    setting, `dramatic_exit`
+    """
+    app.loop.stop()
+    if app.prefs["dramatic_exit"]:
+        width, height = app.loop.screen_size
+        for x in range(height - 1):
+            motherfucking_rainbows(
+                "".join([choice([" ", choice(punctuation)])
+                        for x in range(width)]
+                ))
+        out = "  ~~CoMeE BaCkK SooOn~~  0000000"
+        motherfucking_rainbows(out.zfill(width))
+    else:
+        run("clear", shell=True)
+        motherfucking_rainbows("Come back soon! <3")
+    exit()
 
 
 def cute_button(label, callback=None, data=None):
