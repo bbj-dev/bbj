@@ -81,6 +81,7 @@ class App(object):
 
             )), colors)
         self.walker = self.loop.widget.body.base_widget.body
+        self.last_pos = 0
         self.date_format = "{1}/{2}/{0}"
         self.index()
 
@@ -186,13 +187,15 @@ class App(object):
         self.walker.clear()
         for thread in threads:
             self.walker.append(self.make_thread_body(thread))
-
+        self.loop.widget.body.base_widget.set_focus(self.last_pos)
 
 
     def thread_load(self, button, thread_id):
         """
         Open a thread
         """
+        if self.mode == "index":
+            self.last_pos = self.loop.widget.body.base_widget.get_focus()[1]
         self.mode = "thread"
         thread, usermap = network.thread_load(thread_id)
         self.usermap.update(usermap)
@@ -206,11 +209,17 @@ class App(object):
             "Top", "Bottom", "QBack"
         )
         for message in thread["messages"]:
-            app.walker.append(self.make_message_body(message))
+            self.walker.append(self.make_message_body(message))
+
 
 
     def refresh(self):
         if self.mode == "index":
+            self.index()
+
+
+    def back(self):
+        if self.mode == "thread":
             self.index()
 
 
@@ -306,12 +315,17 @@ class ExternalEditor(urwid.Terminal):
             os.remove(self.path)
             return app.refresh()
 
-
         elif key != "f1":
             return super(ExternalEditor, self).keypress(size, key)
 
-        app.loop.widget.focus_position = "body"
-        app.loop.widget.footer.set_title("press f1 to return to the editor")
+        if app.window_split:
+            app.loop.widget.focus_position = "body"
+            return app.loop.widget.footer.set_title(
+                "press f1 to return to the editor")
+
+        self.terminate()
+        app.loop.widget = app.loop.widget[0]
+        app.refresh()
 
 
 
@@ -321,12 +335,12 @@ class ActionBox(urwid.ListBox):
     """
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
-        if key == "h":
-            app.submit_thread()
+
         if key == "f1" and app.window_split:
             app.loop.widget.focus_position = "footer"
             app.loop.widget.footer.set_title("press F1 to focus the thread")
-        if key in ["j", "n", "ctrl n"]:
+
+        elif key in ["j", "n", "ctrl n"]:
             self._keypress_down(size)
 
         elif key in ["k", "p", "ctrl p"]:
@@ -340,6 +354,12 @@ class ActionBox(urwid.ListBox):
             for x in range(5):
                 self._keypress_up(size)
 
+        elif key in ["h", "left"]:
+            app.back()
+
+        elif key in ["l", "right"]:
+            self.keypress(size, "enter")
+
         elif key.lower() == "b":
             self.change_focus(size, len(app.walker) - 1)
 
@@ -352,7 +372,6 @@ class ActionBox(urwid.ListBox):
         elif key == "r":
             app.refresh()
 
-
         elif key.lower() == "q":
             if app.mode == "index":
                 app.loop.stop()
@@ -360,15 +379,17 @@ class ActionBox(urwid.ListBox):
                     width, height = app.loop.screen_size
                     for x in range(height - 1):
                         motherfucking_rainbows(
-                            "".join([choice([" ", choice(punctuation)]) for x in range(width)])
-                        )
+                            "".join([choice([" ", choice(punctuation)])
+                                       for x in range(width)]
+                            ))
                     out = "  ~~CoMeE BaCkK SooOn~~  0000000"
                     motherfucking_rainbows(out.zfill(width))
                 else:
                     run("clear", shell=True)
                     motherfucking_rainbows("Come back soon! <3")
                 exit()
-            else: app.index()
+            else:
+                app.back()
 
 
 
