@@ -47,7 +47,8 @@ colors = [
 editors = ["nano", "emacs", "vim", "micro", "ed", "joe"]
 # defaults to internal editor, integrates the above as well
 default_prefs = {
-    "editor": False,
+    # well, it WILL default to the internal editor when I write it =)
+    "editor": "vim",
     "dramatic_exit": True
 }
 
@@ -125,9 +126,15 @@ class App(object):
             return
         elif self.loop.widget.focus_position == "body":
             self.loop.widget.focus_position = "footer"
+            focus = "[focused on editor]"
         else:
             self.loop.widget.focus_position = "body"
-
+            focus = "[focused on thread]"
+        if self.window_split:
+            control = ("" if self.prefs["editor"] else " [F3]Send")
+            self.loop.widget.footer[0].set_text(
+                "[F1]Abort [F2]Swap%s %s" % (control, focus)
+            )
 
 
     def readable_delta(self, modified):
@@ -285,13 +292,10 @@ class App(object):
         elif self.mode == "thread":
             self.window_split=True
             self.set_header('Replying to "{}"', self.thread["title"])
-            self.loop.widget.footer = urwid.BoxAdapter(
-                urwid.Frame(
-                    urwid.LineBox(editor("thread_reply", thread_id=self.thread["thread_id"])),
-                    footer=urwid.AttrMap(urwid.Text("[F1]Abort [F2]Swap [F3]Send"), "bar")
-                )
-                ,
-                20)
+            self.loop.widget.footer = urwid.Pile([
+                urwid.AttrMap(urwid.Text(""), "bar"),
+                    urwid.BoxAdapter(urwid.LineBox(editor("thread_reply", thread_id=self.thread["thread_id"])), 15),
+                ])
             self.switch_editor()
 
 
@@ -341,7 +345,7 @@ class ExternalEditor(urwid.Terminal):
         env.update({"LANG": "POSIX"})
         command = ["bash", "-c", "{} {}; echo Press any key to kill this window...".format(
             app.prefs["editor"], self.path)]
-        super(ExternalEditor, self).__init__(command, env, app.loop)
+        super(ExternalEditor, self).__init__(command, env, app.loop, "f1")
 
 
     def keypress(self, size, key):
@@ -355,6 +359,7 @@ class ExternalEditor(urwid.Terminal):
 
         elif key not in ["f1", "f2"]:
             return super(ExternalEditor, self).keypress(size, key)
+
         elif key == "f1":
             self.terminate()
             app.close_editor()
