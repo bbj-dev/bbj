@@ -21,7 +21,8 @@ create table threads (
   title text,       -- string
   last_mod real,    -- floating point unix timestamp (of last post or post edit)
   created real,     -- floating point unix timestamp (when thread was made)
-  reply_count int   -- integer (incremental, starting with 0)
+  reply_count int,  -- integer (incremental, starting with 0)
+  pinned int        -- boolean
 );
 
 

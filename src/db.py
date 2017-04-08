@@ -78,6 +78,21 @@ def thread_index(connection):
     return threads
 
 
+def thread_set_pin(connection, thread_id, pin_bool):
+    """
+    Set the pinned status of thread_id to pin_bool.
+    """
+    # can never be too sure :^)
+    pin_bool = bool(pin_bool)
+    connection.execute("""
+        UPDATE threads SET
+        pinned = ?
+        WHERE thread_id = ?
+    """, (pin_bool, thread_id))
+    connection.commit()
+    return pin_bool
+
+
 def thread_create(connection, author_id, body, title):
     """
     Create a new thread and return it.
@@ -91,13 +106,16 @@ def thread_create(connection, author_id, body, title):
     thread_id = uuid1().hex
     scheme = schema.thread(
         thread_id, author_id, title,
-        now, now, -1) # see below for why i set -1 instead of 0
+        now, now, -1, False) # see below for why i set -1 instead of 0
 
     connection.execute("""
         INSERT INTO threads
-        VALUES (?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?)
     """, schema_values("thread", scheme))
     connection.commit()
+    # the thread is initially commited with reply_count -1 so that i can
+    # just pass the message to the reply method, instead of duplicating
+    # its code here. It then increments to 0.
     thread_reply(connection, author_id, thread_id, body, time_override=now)
     # fetch the new thread out of the database instead of reusing the returned
     # objects, just to be 100% sure what is returned is what was committed
