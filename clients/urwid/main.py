@@ -1,6 +1,7 @@
 # -*- fill-column: 72 -*-
 
 from time import time, sleep, localtime
+from datetime import datetime
 from network import BBJ, URLError
 from string import punctuation
 from subprocess import run
@@ -49,17 +50,19 @@ editors = ["nano", "emacs", "vim", "micro", "ed", "joe"]
 default_prefs = {
     # well, it WILL default to the internal editor when I write it =)
     "editor": "vim",
-    "dramatic_exit": True
+    "dramatic_exit": True,
+    "date": "%Y/%m/%d",
+    "time": "%H:%M"
 }
 
 
 class App(object):
     def __init__(self):
-        self.mode = None
-        self.thread = None
-        self.usermap = {}
-        self.prefs = bbjrc("load")
-        self.window_split = False
+        self.bars = {
+            "index": "[C]ompose [R]efresh [/]Search [O]ptions [?]Help/More [Q]uit",
+            "thread": "[C]ompose [Q]Back [R]efresh [E]dit [/]Search [B/T]End [?]Help/More"
+        }
+
         colors = [
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
@@ -74,16 +77,22 @@ class App(object):
             ("5", "light cyan", "default"),
             ("6", "light magenta", "default")
         ]
-        self.loop = urwid.MainLoop(urwid.Frame(
-            urwid.LineBox(ActionBox(urwid.SimpleFocusListWalker([])),
-                          title="> > T I L D E T O W N < <",
-                          tlcorner="@", tline="=", lline="|", rline="|",
-                          bline="=", trcorner="@", brcorner="@", blcorner="@"
 
-            )), colors)
-        self.walker = self.loop.widget.body.base_widget.body
+        self.mode = None
+        self.thread = None
+        self.usermap = {}
+        self.prefs = bbjrc("load")
+        self.window_split = False
         self.last_pos = 0
-        self.date_format = "{1}/{2}/{0}"
+
+        self.walker = urwid.SimpleFocusListWalker([])
+        self.loop = urwid.MainLoop(urwid.Frame(
+            urwid.LineBox(ActionBox(self.walker),
+                title="> > T I L D E T O W N < <",
+                tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
+                tline="=", bline="=", lline="|", rline="|"
+            )), colors)
+
         self.index()
 
 
@@ -99,42 +108,48 @@ class App(object):
         ), "bar")
 
 
-    def set_footer(self, *controls, static_string=""):
+    def set_footer(self, string):
         """
-        Sets the footer, emphasizing the first character of each string
-        argument passed to it. Used to show controls to the user. Applies
-        bar formatting.
+        Sets the footer to display `string`, applying bar formatting.
+        Other than setting the color, `string` is shown verbatim.
         """
-        text = str()
-        for control in controls:
-            text += "[{}]{} ".format(control[0], control[1:])
-        text += static_string
-        self.loop.widget.footer = urwid.AttrMap(urwid.Text(text), "bar")
+        self.loop.widget.footer = \
+            urwid.AttrMap(urwid.Text(string), "bar")
 
 
     def close_editor(self):
+        """
+        Close whatever editing widget is open and restore proper
+        state back the walker.
+        """
         if self.window_split:
             self.window_split = False
             self.loop.widget.focus_position = "body"
-            self.set_footer("lmao")
+            self.set_footer(self.bars["thread"])
+            name = self.usermap[self.thread["author"]]["user_name"]
+            self.set_header("~{}: {}", name, self.thread["title"])
         else:
             self.loop.widget = self.loop.widget[0]
 
 
     def switch_editor(self):
+        """
+        Switch focus between the thread viewer and the open editor
+        """
         if not self.window_split:
             return
+
         elif self.loop.widget.focus_position == "body":
             self.loop.widget.focus_position = "footer"
             focus = "[focused on editor]"
+
         else:
             self.loop.widget.focus_position = "body"
             focus = "[focused on thread]"
-        if self.window_split:
-            control = ("" if self.prefs["editor"] else " [F3]Send")
-            self.loop.widget.footer[0].set_text(
-                "[F1]Abort [F2]Swap%s %s" % (control, focus)
-            )
+
+        control = "[save/quit to send]" if self.prefs["editor"] else "[F3]Send"
+        self.loop.widget.footer[0].set_text(
+            "[F1]Abort [F2]Swap %s %s" % (control, focus))
 
 
     def readable_delta(self, modified):
@@ -145,7 +160,7 @@ class App(object):
         delta = time() - modified
         hours, remainder = divmod(delta, 3600)
         if hours > 48:
-            return self.date_format.format(*localtime(modified))
+            return self.timestring(modified)
         elif hours > 1:
             return "%d hours ago" % hours
         elif hours == 1:
@@ -158,7 +173,7 @@ class App(object):
 
     def make_message_body(self, message):
         name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
-        info = "@ " + self.date_format.format(*localtime(message["created"]))
+        info = "@ " + self.timestring(message["created"])
         if message["edited"]:
             info += " [edited]"
 
@@ -180,17 +195,34 @@ class App(object):
         return pile
 
 
+    def timestring(self, epoch, mode="both"):
+        if mode == "delta":
+            return self.readable_delta(epoch)
+
+        date = datetime.fromtimestamp(epoch)
+        if mode == "time":
+            directive = self.prefs["time"]
+        elif mode == "date":
+            directive = self.prefs["date"]
+        else:
+            directive = "%s %s" % (self.prefs["date"], self.prefs["time"])
+        return date.strftime(directive)
+
+
     def make_thread_body(self, thread):
         button = cute_button(">>", self.thread_load, thread["thread_id"])
         title = urwid.Text(thread["title"])
-        infoline = "by ~{} @ {} | last active {}".format(
+        dateline = "by ~{} @ {}".format(
             self.usermap[thread["author"]]["user_name"],
-            self.date_format.format(*localtime(thread["created"])),
-            self.readable_delta(thread["last_mod"])
+            self.timestring(thread["created"])
         )
+
+        infoline = "%d replies; active %s" % (
+            thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
 
         pile = urwid.Pile([
             urwid.Columns([(3, urwid.AttrMap(button, "button")), title]),
+            urwid.AttrMap(urwid.Text(dateline), "dim"),
             urwid.AttrMap(urwid.Text(infoline), "dim"),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ])
@@ -209,11 +241,13 @@ class App(object):
         threads, usermap = network.thread_index()
         self.usermap.update(usermap)
         self.set_header("{} threads", len(threads))
-        self.set_footer("Refresh", "Compose", "Quit", "/Search", "?Help")
+        self.set_footer(self.bars["index"])
         self.walker.clear()
         for thread in threads:
             self.walker.append(self.make_thread_body(thread))
-        self.loop.widget.body.base_widget.set_focus(self.last_pos)
+        try: self.loop.widget.body.base_widget.set_focus(self.last_pos)
+        except IndexError:
+            pass
 
 
     def thread_load(self, button, thread_id):
@@ -229,11 +263,7 @@ class App(object):
         self.walker.clear()
         self.set_header("~{}: {}",
             usermap[thread["author"]]["user_name"], thread["title"])
-        self.set_footer(
-            "Compose", "Refresh",
-            "\"Quote", "/Search",
-            "Top", "Bottom", "QBack"
-        )
+        self.set_footer(self.bars["thread"])
         for message in thread["messages"]:
             self.walker.append(self.make_message_body(message))
 
@@ -241,7 +271,9 @@ class App(object):
 
     def refresh(self):
         if self.mode == "index":
-            self.index()
+            return self.index()
+        self.thread_load(None, self.thread["thread_id"])
+        self.loop.widget.body.base_widget.set_focus(len(self.walker) - 1)
 
 
     def back(self):
@@ -278,8 +310,7 @@ class App(object):
                     "Title", self.compose, extra_text=e.description)
 
             self.set_header('Composing "{}"', title)
-            self.set_footer(static_string=
-                "[F1]Abort [Save and quit to submit your thread]")
+            self.set_footer("[F1]Abort [Save and quit to submit your thread]")
 
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
@@ -294,11 +325,11 @@ class App(object):
             self.set_header('Replying to "{}"', self.thread["title"])
             self.loop.widget.footer = urwid.Pile([
                 urwid.AttrMap(urwid.Text(""), "bar"),
-                    urwid.BoxAdapter(urwid.LineBox(editor("thread_reply", thread_id=self.thread["thread_id"])), 15),
+                    urwid.BoxAdapter(urwid.LineBox(editor("thread_reply",
+                        thread_id=self.thread["thread_id"])),
+                                     self.loop.screen_size[1] // 2),
                 ])
             self.switch_editor()
-
-
 
 
 
@@ -317,7 +348,7 @@ class FootPrompt(urwid.Edit):
         if key != "enter":
             return super(FootPrompt, self).keypress(size, key)
         app.loop.widget.focus_position = "body"
-        app.set_footer()
+        app.set_footer(app.bars[app.mode])
         self.callback(self.get_edit_text(), *self.args)
 
 
@@ -580,20 +611,24 @@ def bbjrc(mode, **params):
     values depending on `mode`.
     """
     path = os.path.join(os.getenv("HOME"), ".bbjrc")
-
     try:
+        # load it up
         with open(path, "r") as _in:
             values = json.load(_in)
+        # update it with new keys if necessary
+        for key, default_value in default_prefs.items():
+            if key not in values:
+                values[key] = default_value
+    # else make one
     except FileNotFoundError:
         values = default_prefs
-        with open(path, "w") as _out:
-            json.dump(values, _out)
 
-    if mode == "load":
-        return values
-    values.update(params)
+    if mode == "update":
+        values.update(params)
+
     with open(path, "w") as _out:
         json.dump(values, _out)
+
     return values
 
 
@@ -603,7 +638,7 @@ def main():
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
     log_in()
-    sleep(0.6) # let that confirmation message shine
+    sleep(0.8) # let that confirmation message shine
 
 if __name__ == "__main__":
     global app
