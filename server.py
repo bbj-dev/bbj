@@ -298,7 +298,23 @@ class API(object):
 
 
     @api_method
-    def db_sanity_check(self, args, database, user, **kwargs):
+    def set_thread_pin(self, args, database, user, **kwargs):
+        """
+        Requires the arguments `thread_id` and `pinned`. Pinned
+        must be a boolean of what the pinned status should be.
+        This method requires that the caller is logged in and
+        has admin status on their account.
+
+        Returns the same boolean you supply as `pinned`
+        """
+        validate(args, ["thread_id", "pinned"])
+        if not user["is_admin"]:
+            raise BBJUserError("Only admins can set thread pins")
+        return db.set_thread_pin(database, args["thread_id"], args["pinned"])
+
+
+    @api_method
+    def db_validate(self, args, database, user, **kwargs):
         """
         Requires the arguments `key` and `value`. Returns an object
         with information about the database sanity criteria for

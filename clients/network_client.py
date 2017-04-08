@@ -161,7 +161,7 @@ class BBJ(object):
 
     def validate(self, key, value, exception=AssertionError):
         """
-        Uses the server's db_sanity_check method to verify the validty
+        Uses the server's db_validate method to verify the validty
         of `value` by `key`. If it is invalid, kwarg exception (default
         AssertionError) is raised with the exception containing the
         attribute .description as the server's reason. Exception can
@@ -179,7 +179,7 @@ class BBJ(object):
         is_okay = bbj.validate("title", "teacups and roses <3", exception=None)
         """
         response = self(
-            "db_sanity_check",
+            "db_validate",
             no_auth=True,
             key=key,
             value=value

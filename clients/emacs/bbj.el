@@ -159,7 +159,7 @@ passed to the server to check it for validity before the
 user is allowed to continue. Will recurse until the input
 is valid, then it is returned."
   (let* ((value (read-from-minibuffer prompt))
-         (response (bbj-request! 'db_sanity_check
+         (response (bbj-request! 'db_validate
                      'value value 'key key)))
     (if (alist-get 'bool response)
         value

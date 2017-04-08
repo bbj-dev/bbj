@@ -1,10 +1,10 @@
-The server has an endpoint called `db_sanity_check`. What this does is take
+The server has an endpoint called `db_validate`. What this does is take
 a `key` and a `value` and compares `value` to a set of rules specified by
 `key`. This is the same function used internally by the database to scan
 values before committing them to the database. By default it returns a
 descriptive object under `data`, but you can specify the key/value pair
 `"error": True` to get a standard error response back. A standard call
-to `db_sanity_check` will look like this.
+to `db_validate` will look like this.
 
 ```
 {
@@ -85,7 +85,7 @@ passed to the server to check it for validity before the
 user is allowed to continue. Will recurse until the input
 is valid, then it is returned."
   (let* ((value (read-from-minibuffer prompt))
-         (response (bbj-request! 'db_sanity_check
+         (response (bbj-request! 'db_validate
                      'value value 'key key)))
     (if (alist-get 'bool response)
         value
