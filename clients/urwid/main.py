@@ -1,9 +1,9 @@
 # -*- fill-column: 72 -*-
 
-from time import time, sleep, localtime
-from datetime import datetime
 from network import BBJ, URLError
 from string import punctuation
+from datetime import datetime
+from time import time, sleep
 from subprocess import run
 from random import choice
 import tempfile
@@ -15,6 +15,7 @@ import os
 try:
     network = BBJ(host="127.0.0.1", port=7099)
 except URLError as e:
+    # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))
 
 
@@ -52,7 +53,9 @@ default_prefs = {
     "editor": "vim",
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
-    "time": "%H:%M"
+    "time": "%H:%M",
+    "frame_title": "> > T I L D E T O W N < <",
+    "max_text_width": 80
 }
 
 
@@ -88,7 +91,7 @@ class App(object):
         self.walker = urwid.SimpleFocusListWalker([])
         self.loop = urwid.MainLoop(urwid.Frame(
             urwid.LineBox(ActionBox(self.walker),
-                title="> > T I L D E T O W N < <",
+                title=self.prefs["frame_title"],
                 tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
                 tline="=", bline="=", lline="|", rline="|"
             )), colors)
@@ -102,10 +105,13 @@ class App(object):
         then concat text with format_specs applied to it. Applies
         bar formatting to it.
         """
-        self.loop.widget.header = urwid.AttrMap(urwid.Text(
-            ("%s@bbj | " % (network.user_name or "anonymous"))
-            + text.format(*format_specs)
-        ), "bar")
+        self.loop.widget.header = \
+            urwid.AttrMap(
+                urwid.Text(
+                    ("{}@bbj | " + text).format(
+                        (network.user_name or "anonymous"),
+                        *format_specs)),
+                "bar")
 
 
     def set_footer(self, string):
@@ -113,8 +119,7 @@ class App(object):
         Sets the footer to display `string`, applying bar formatting.
         Other than setting the color, `string` is shown verbatim.
         """
-        self.loop.widget.footer = \
-            urwid.AttrMap(urwid.Text(string), "bar")
+        self.loop.widget.footer = urwid.AttrMap(urwid.Text(string), "bar")
 
 
     def close_editor(self):
@@ -142,14 +147,22 @@ class App(object):
         elif self.loop.widget.focus_position == "body":
             self.loop.widget.focus_position = "footer"
             focus = "[focused on editor]"
+            attr = ("bar", "dim")
 
         else:
             self.loop.widget.focus_position = "body"
             focus = "[focused on thread]"
+            attr = ("dim", "bar")
 
         control = "[save/quit to send]" if self.prefs["editor"] else "[F3]Send"
         self.loop.widget.footer[0].set_text(
             "[F1]Abort [F2]Swap %s %s" % (control, focus))
+        # this hideous and awful sinful horrid unspeakable shithack changes
+        # the color of the help line and editor border to reflect which
+        # object is currently in focus
+        self.loop.widget.footer.contents[1][0].original_widget.attr_map = \
+            self.loop.widget.footer.contents[0][0].attr_map = {None: attr[0]}
+        self.loop.widget.header.attr_map = {None: attr[1]}
 
 
     def readable_delta(self, modified):
@@ -172,27 +185,27 @@ class App(object):
 
 
     def make_message_body(self, message):
-        name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
         info = "@ " + self.timestring(message["created"])
         if message["edited"]:
             info += " [edited]"
 
+        name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
         post = str(message["post_id"])
-        pile = urwid.Pile([
-            urwid.Columns([
-                (2 + len(post), urwid.AttrMap(urwid.Text(">" + post), "button")),
+        head = urwid.Columns([
+                (2 + len(post), urwid.AttrMap(cute_button(">" + post), "button")),
                 (len(name._text) + 1,
-                 urwid.AttrMap(name, str(self.usermap[message["author"]]["color"]))),
+                   urwid.AttrMap(name, str(self.usermap[message["author"]]["color"]))),
                 urwid.AttrMap(urwid.Text(info), "dim")
-            ]),
+            ])
+
+        head.message = message
+        return [
+            head,
             urwid.Divider(),
             MessageBody(message["body"]),
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider("-"), "dim")
-        ])
-
-        pile.message = message
-        return pile
+        ]
 
 
     def timestring(self, epoch, mode="both"):
@@ -205,7 +218,7 @@ class App(object):
         elif mode == "date":
             directive = self.prefs["date"]
         else:
-            directive = "%s %s" % (self.prefs["date"], self.prefs["time"])
+            directive = "%s %s" % ( self.prefs["time"], self.prefs["date"])
         return date.strftime(directive)
 
 
@@ -252,7 +265,7 @@ class App(object):
 
     def thread_load(self, button, thread_id):
         """
-        Open a thread
+        Open a thread.
         """
         if self.mode == "index":
             self.last_pos = self.loop.widget.body.base_widget.get_focus()[1]
@@ -261,12 +274,14 @@ class App(object):
         self.usermap.update(usermap)
         self.thread = thread
         self.walker.clear()
-        self.set_header("~{}: {}",
-            usermap[thread["author"]]["user_name"], thread["title"])
         self.set_footer(self.bars["thread"])
-        for message in thread["messages"]:
-            self.walker.append(self.make_message_body(message))
 
+        self.set_header("~{}: {}",
+            usermap[thread["author"]]["user_name"],
+            thread["title"])
+
+        for message in thread["messages"]:
+            self.walker += self.make_message_body(message)
 
 
     def refresh(self):
@@ -325,10 +340,18 @@ class App(object):
             self.set_header('Replying to "{}"', self.thread["title"])
             self.loop.widget.footer = urwid.Pile([
                 urwid.AttrMap(urwid.Text(""), "bar"),
-                    urwid.BoxAdapter(urwid.LineBox(editor("thread_reply",
-                        thread_id=self.thread["thread_id"])),
-                                     self.loop.screen_size[1] // 2),
-                ])
+                urwid.BoxAdapter(
+                    urwid.AttrMap(
+                        urwid.LineBox(
+                            editor(
+                                "thread_reply",
+                                thread_id=self.thread["thread_id"]),
+                            tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
+                            tline="-", bline="-", lline="|", rline="|"
+                        ),
+                        "bar"),
+                    self.loop.screen_size[1] // 2),
+            ])
             self.switch_editor()
 
 
@@ -395,6 +418,7 @@ class ExternalEditor(urwid.Terminal):
             self.terminate()
             app.close_editor()
             app.refresh()
+        # key == "f2"
         app.switch_editor()
 
 
@@ -548,8 +572,8 @@ def sane_value(key, prompt, positive=True, return_empty=False):
 
 def log_in():
     """
-    Handles login or registration using the oldschool input()
-    method. The user is run through this before starting the
+    Handles login or registration using an oldschool input()
+    chain. The user is run through this before starting the
     curses app.
     """
     name = sane_value("user_name", "Username", return_empty=True)
@@ -641,7 +665,7 @@ def main():
     sleep(0.8) # let that confirmation message shine
 
 if __name__ == "__main__":
-    global app
+    # global app
     main()
     app = App()
     app.loop.run()

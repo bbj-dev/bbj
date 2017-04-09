@@ -2,9 +2,9 @@ from src import schema
 
 def ordered_keys(subscriptable_object, *keys):
     """
-    returns a list with the values for KEYS in the order KEYS are provided,
+    returns a tuple with the values for KEYS in the order KEYS are provided,
     from SUBSCRIPTABLE_OBJECT. Useful for working with dictionaries when
-    parameter ordering is important. Used for sql transactions
+    parameter ordering is important. Used for sql transactions.
     """
     return tuple([subscriptable_object[key] for key in keys])
 
@@ -12,7 +12,7 @@ def ordered_keys(subscriptable_object, *keys):
 def schema_values(scheme, obj):
     """
     Returns the values in the database order for a given
-    schema. Used for sql transactions
+    schema. Used for sql transactions.
     """
     if scheme == "user":
         return ordered_keys(obj,
