@@ -51,6 +51,7 @@ editors = ["nano", "emacs", "vim", "micro", "ed", "joe"]
 default_prefs = {
     # well, it WILL default to the internal editor when I write it =)
     "editor": "vim",
+    "integrate_external_editor": True,
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
     "time": "%H:%M",
@@ -157,9 +158,10 @@ class App(object):
         control = "[save/quit to send]" if self.prefs["editor"] else "[F3]Send"
         self.loop.widget.footer[0].set_text(
             "[F1]Abort [F2]Swap %s %s" % (control, focus))
+
         # this hideous and awful sinful horrid unspeakable shithack changes
-        # the color of the help line and editor border to reflect which
-        # object is currently in focus
+        # the color of the help/title lines and editor border to reflect which
+        # object is currently in focus.
         self.loop.widget.footer.contents[1][0].original_widget.attr_map = \
             self.loop.widget.footer.contents[0][0].attr_map = {None: attr[0]}
         self.loop.widget.header.attr_map = {None: attr[1]}
@@ -313,24 +315,65 @@ class App(object):
         app.loop.widget.focus_position = "footer"
 
 
-    def compose(self, title=None):
-        editor = ExternalEditor if self.prefs["editor"] else InternalEditor
-        if self.mode == "index":
-            if not title:
-                return self.footer_prompt("Title", self.compose)
+    def temp_footer_message(self, string, duration=3):
+        self.loop.set_alarm_in(
+            duration, lambda x,y: self.set_footer(self.bars[self.mode]))
+        self.set_footer(string)
 
+
+    def overthrow_ext_edit(self):
+        """
+        Opens the external editor, but instead of integreating it into the app,
+        stops the mainloop and blocks until the editor is killed. Returns the
+        body of text the user composed.
+        """
+        self.loop.stop()
+        descriptor, path = tempfile.mkstemp()
+        run("%s %s" % (self.prefs["editor"], path), shell=True)
+        with open(descriptor) as _:
+            body = _.read()
+        os.remove(path)
+        self.loop.start()
+        return body.strip()
+
+
+    def compose(self, title=None):
+        if self.mode == "index" and not title:
+            return self.footer_prompt("Title", self.compose)
+
+        elif title:
             try: network.validate("title", title)
             except AssertionError as e:
                 return self.footer_prompt(
                     "Title", self.compose, extra_text=e.description)
 
+        if self.prefs["editor"] and not self.prefs["integrate_external_editor"]:
+            body = self.overthrow_ext_edit()
+            if not body:
+                return self.temp_footer_message("EMPTY POST DISCARDED")
+            params = {"body": body}
+
+            thread = False
+            if self.mode == "thread":
+                thread = True
+                params.update({"thread_id": self.thread["thread_id"]})
+            else:
+                params.update({"title": title})
+
+            network.request("thread_" + ("reply" if thread else "create"), **params)
+            return self.refresh()
+
+        editor = ExternalEditor if self.prefs["editor"] else InternalEditor
+        if self.mode == "index":
             self.set_header('Composing "{}"', title)
             self.set_footer("[F1]Abort [Save and quit to submit your thread]")
 
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
                     editor("thread_create", title=title),
-                    title=self.prefs["editor"]),
+                    title=self.prefs["editor"],
+                    tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
+                    tline="-", bline="-", lline="|", rline="|"),
                 self.loop.widget, align="center", valign="middle",
                 width=self.loop.screen_size[0] - 2,
                 height=(self.loop.screen_size[1] - 4))
@@ -348,12 +391,9 @@ class App(object):
                                 thread_id=self.thread["thread_id"]),
                             tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
                             tline="-", bline="-", lline="|", rline="|"
-                        ),
-                        "bar"),
-                    self.loop.screen_size[1] // 2),
-            ])
+                        ), "bar"),
+                    self.loop.screen_size[1] // 2),])
             self.switch_editor()
-
 
 
 class MessageBody(urwid.Text):
@@ -406,10 +446,13 @@ class ExternalEditor(urwid.Terminal):
         if self.terminated:
             app.close_editor()
             with open(self.file_descriptor) as _:
-                self.params.update({"body": _.read()})
-            network.request(self.endpoint, **self.params)
+                self.params.update({"body": _.read().strip()})
             os.remove(self.path)
-            return app.refresh()
+            if self.params["body"]:
+                network.request(self.endpoint, **self.params)
+                return app.refresh()
+            else:
+                return app.temp_footer_message("EMPTY POST DISCARDED")
 
         elif key not in ["f1", "f2"]:
             return super(ExternalEditor, self).keypress(size, key)
@@ -460,6 +503,9 @@ class ActionBox(urwid.ListBox):
 
         elif key == "c":
             app.compose()
+
+        elif key == "6":
+            app.set_footer(app.overthrow_ext_edit())
 
         elif key == "r":
             app.refresh()
