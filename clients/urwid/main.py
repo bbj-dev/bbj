@@ -68,6 +68,7 @@ class App(object):
         }
 
         colors = [
+            ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
             ("dim", "dark gray", "default"),
@@ -91,10 +92,10 @@ class App(object):
 
         self.walker = urwid.SimpleFocusListWalker([])
         self.loop = urwid.MainLoop(urwid.Frame(
-            urwid.LineBox(ActionBox(self.walker),
+            urwid.LineBox(
+                ActionBox(self.walker),
                 title=self.prefs["frame_title"],
-                tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
-                tline="=", bline="=", lline="|", rline="|"
+                **frame_theme()
             )), colors)
 
         self.index()
@@ -286,16 +287,86 @@ class App(object):
             self.walker += self.make_message_body(message)
 
 
-    def refresh(self):
+    def refresh(self, bottom=False):
         if self.mode == "index":
             return self.index()
         self.thread_load(None, self.thread["thread_id"])
-        self.loop.widget.body.base_widget.set_focus(len(self.walker) - 1)
+        if bottom:
+            self.loop.widget.body.base_widget.set_focus(len(self.walker) - 5)
 
 
     def back(self):
-        if self.mode == "thread":
+        if app.mode == "index":
+            frilly_exit()
+        elif app.mode == "thread":
             self.index()
+
+
+    def set_new_editor(self, button, value, key):
+        if value == False:
+            return
+        elif key == "internal":
+            key = None
+        self.prefs.update({"editor": key})
+        bbjrc("update", **self.prefs)
+
+
+    def set_editor_mode(self, button, value):
+        self.prefs["integrate_external_editor"] = value
+        bbjrc("update", **self.prefs)
+
+
+    def options_menu(self):
+        editor_buttons = []
+        edit_mode = []
+
+        urwid.RadioButton(
+            editor_buttons, "Internal",
+            state=not self.prefs["editor"],
+            on_state_change=self.set_new_editor,
+            user_data="internal")
+
+        for editor in editors:
+            urwid.RadioButton(
+                editor_buttons, editor.title(),
+                state=self.prefs["editor"] == editor,
+                on_state_change=self.set_new_editor,
+                user_data=editor)
+
+        urwid.RadioButton(
+            edit_mode, "Integrate",
+            state=self.prefs["integrate_external_editor"],
+            on_state_change=self.set_editor_mode)
+
+        urwid.RadioButton(
+            edit_mode, "Overthrow",
+            state=not self.prefs["integrate_external_editor"])
+
+        widget = OptionsMenu(
+            urwid.Filler(
+                urwid.Pile([
+                    urwid.AttrMap(urwid.Text("Text editor:"), "button"),
+                    urwid.Divider(),
+                    *editor_buttons,
+                    urwid.Divider("-"),
+                    urwid.AttrMap(urwid.Text("External text editor mode:"), "button"),
+                    urwid.Text("If you have problems using an external text editor, "
+                               "set this to Overthrow."),
+                    urwid.Divider(),
+                    *edit_mode,
+                    urwid.Divider("-"),
+                ]), "top"),
+            title="BBJ Options",
+            **frame_theme()
+        )
+
+        self.loop.widget = urwid.Overlay(
+            widget, self.loop.widget,
+            align="center",
+            valign="middle",
+            width=30,
+            height=(self.loop.screen_size[1] - 10)
+        )
 
 
     def footer_prompt(self, text, callback, *callback_args, extra_text=None):
@@ -312,12 +383,20 @@ class App(object):
             ])
 
         self.loop.widget.footer = widget
-        app.loop.widget.focus_position = "footer"
+        self.loop.widget.focus_position = "footer"
+
+
+    def reset_footer(self, *_, **__):
+        try:
+            self.set_footer(self.bars[self.mode])
+            self.loop.widget.focus_position = "body"
+        except:
+            # just keep trying until the widget can handle it
+            self.loop.set_alarm_in(0.5, self.reset_footer)
 
 
     def temp_footer_message(self, string, duration=3):
-        self.loop.set_alarm_in(
-            duration, lambda x,y: self.set_footer(self.bars[self.mode]))
+        self.loop.set_alarm_in(duration, self.reset_footer)
         self.set_footer(string)
 
 
@@ -353,46 +432,52 @@ class App(object):
                 return self.temp_footer_message("EMPTY POST DISCARDED")
             params = {"body": body}
 
-            thread = False
             if self.mode == "thread":
-                thread = True
+                endpoint = "reply"
                 params.update({"thread_id": self.thread["thread_id"]})
             else:
+                endpoint = "create"
                 params.update({"title": title})
 
-            network.request("thread_" + ("reply" if thread else "create"), **params)
-            return self.refresh()
+            network.request("thread_" + endpoint, **params)
+            return self.refresh(True)
 
-        editor = ExternalEditor if self.prefs["editor"] else InternalEditor
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
-            self.set_footer("[F1]Abort [Save and quit to submit your thread]")
+            if self.prefs["editor"]:
+                editor = ExternalEditor("thread_create", title=title)
+                self.set_footer("[F1]Abort [Save and quit to submit your thread]")
+            else:
+                editor = urwid.Filler(
+                    InternalEditor("thread_create", title=title),
+                    valign=urwid.TOP)
+                self.set_footer("[F1]Abort [F3]Send")
 
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
-                    editor("thread_create", title=title),
-                    title=self.prefs["editor"],
-                    tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
-                    tline="-", bline="-", lline="|", rline="|"),
-                self.loop.widget, align="center", valign="middle",
+                    editor,
+                    title=self.prefs["editor"] or "",
+                    **frame_theme()),
+                self.loop.widget,
+                align="center",
+                valign="middle",
                 width=self.loop.screen_size[0] - 2,
                 height=(self.loop.screen_size[1] - 4))
 
         elif self.mode == "thread":
             self.window_split=True
             self.set_header('Replying to "{}"', self.thread["title"])
+            if self.prefs["editor"]:
+                editor = ExternalEditor("thread_reply", thread_id=self.thread["thread_id"])
+            else:
+                editor = urwid.AttrMap(urwid.Filler(
+                    InternalEditor("thread_reply", thread_id=self.thread["thread_id"]),
+                    valign=urwid.TOP), "default")
             self.loop.widget.footer = urwid.Pile([
                 urwid.AttrMap(urwid.Text(""), "bar"),
-                urwid.BoxAdapter(
-                    urwid.AttrMap(
-                        urwid.LineBox(
-                            editor(
-                                "thread_reply",
-                                thread_id=self.thread["thread_id"]),
-                            tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
-                            tline="-", bline="-", lline="|", rline="|"
-                        ), "bar"),
-                    self.loop.screen_size[1] // 2),])
+                urwid.BoxAdapter(urwid.AttrMap(urwid.LineBox(
+                    editor, **frame_theme()
+                ), "bar"), self.loop.screen_size[1] // 2),])
             self.switch_editor()
 
 
@@ -417,17 +502,27 @@ class FootPrompt(urwid.Edit):
 
 class InternalEditor(urwid.Edit):
     def __init__(self, endpoint, **params):
-        super(InternalEditor, self).__init__()
+        super(InternalEditor, self).__init__(multiline=True)
         self.endpoint = endpoint
         self.params = params
 
     def keypress(self, size, key):
-        if key not in ["f1", "f2"]:
+        if key not in ["f1", "f2", "f3"]:
             return super(InternalEditor, self).keypress(size, key)
         elif key == "f1":
-            return app.close_editor()
+            app.close_editor()
+            return app.refresh()
         elif key == "f2":
             return app.switch_editor()
+
+        body = self.get_edit_text().strip()
+        app.close_editor()
+        if body:
+            self.params.update({"body": body})
+            network.request(self.endpoint, **self.params)
+            app.refresh(True)
+        else:
+            app.temp_footer_message("EMPTY POST DISCARDED")
 
 
 class ExternalEditor(urwid.Terminal):
@@ -450,7 +545,7 @@ class ExternalEditor(urwid.Terminal):
             os.remove(self.path)
             if self.params["body"]:
                 network.request(self.endpoint, **self.params)
-                return app.refresh()
+                return app.refresh(True)
             else:
                 return app.temp_footer_message("EMPTY POST DISCARDED")
 
@@ -465,9 +560,21 @@ class ExternalEditor(urwid.Terminal):
         app.switch_editor()
 
 
+class OptionsMenu(urwid.LineBox):
+    def keypress(self, size, key):
+        super(OptionsMenu, self).keypress(size, key)
+        if key.lower() == "q":
+            app.loop.widget = app.loop.widget[0]
+        elif key in ["ctrl n", "j", "n"]:
+            return self.keypress(size, "down")
+        elif key in ["ctrl p", "k", "p"]:
+            return self.keypress(size, "up")
+
+
 class ActionBox(urwid.ListBox):
     """
-    The listwalker used by all the browsing pages. Handles keys.
+    The listwalker used by all the browsing pages. Most of the application
+    takes place in an instance of this box. Handles many keybinds.
     """
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
@@ -495,26 +602,23 @@ class ActionBox(urwid.ListBox):
         elif key in ["l", "right"]:
             self.keypress(size, "enter")
 
-        elif key.lower() == "b":
+        elif key == "b":
             self.change_focus(size, len(app.walker) - 1)
 
-        elif key.lower() == "t":
+        elif key == "t":
             self.change_focus(size, 0)
 
-        elif key == "c":
+        elif key in ["c", "R", "+"]:
             app.compose()
-
-        elif key == "6":
-            app.set_footer(app.overthrow_ext_edit())
 
         elif key == "r":
             app.refresh()
 
+        elif key == "o":
+            app.options_menu()
+
         elif key.lower() == "q":
-            if app.mode == "index":
-                frilly_exit()
-            else:
-                app.back()
+            app.back()
 
 
 def frilly_exit():
@@ -673,6 +777,18 @@ def log_in():
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
             motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
+
+
+def frame_theme(mode="default"):
+    """
+    Return the kwargs for a frame theme.
+    """
+    if mode == "default":
+        return dict(
+            tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
+            tline="=", bline="=", lline="|", rline="|"
+        )
+
 
 
 def bbjrc(mode, **params):
