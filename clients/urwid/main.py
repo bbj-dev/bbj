@@ -1,4 +1,25 @@
 # -*- fill-column: 72 -*-
+"""
+If you're looking for help on how to use the program, just press
+? while its running. This mess will not help you.
+
+Urwid aint my speed. Hell, making complex, UI-oriented programs
+aint my speed. So some of this code is pretty messy. I stand by
+it though, and it seems to be working rather well.
+
+Most of the functionality is crammed in the App() class. Key
+handling is found in the other subclasses for urwid widgets.
+An instantiation of App() is casted as `app` globally and
+the keypress methods will call into this global `app` object.
+
+There are few additional functions that are defined outside
+of the App class. They are delegated to the very bottom of
+this file.
+
+Please mail me (~desvox) for feedback and for any of your
+"OH MY GOD WHY WOULD YOU DO THIS"'s or "PEP8 IS A THING"'s.
+"""
+
 
 from network import BBJ, URLError
 from string import punctuation
@@ -11,40 +32,41 @@ import urwid
 import json
 import os
 
-
 try:
     network = BBJ(host="127.0.0.1", port=7099)
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))
 
-
 obnoxious_logo = """
-       OwO    8 888888888o    8 888888888o               8 8888         1337
-   %          8 8888    `88.  8 8888    `88.          !  8 8888   >><>
-       !!     8 8888     `88  8 8888     `88   *         8 8888
- $            8 8888     ,88  8 8888     ,88             8 8888    <><><><>
-    <3        8 8888.   ,88'  8 8888.   ,88'      !      8 8888    ^   >|
-           ^  8 8888888888    8 8888888888               8 8888    ----||
-      (       8 8888    `88.  8 8888    `88.  88.        8 8888         |
-              8 8888      88  8 8888      88  `88.    |  8 888'    !??!
-  g      ?    8 8888.   ,88'  8 8888.   ,88'    `88o.   .8 88'  ----_
-              8 888888888P    8 888888888P        `Y888888 '         |
-"""
+  %     _                 *              !            *
+%   8 888888888o  % 8 888888888o   .           8 8888
+    8 8888    `88.  8 8888    `88.      _   !  8 8888   &
+  ^ 8 8888     `88  8 8888     `88   *         8 8888 _
+    8 8888     ,88  8 8888     ,88             8 8888
+*   8 8888.   ,88'  8 8888.   ,88'      !      8 8888    "
+    8 8888888888    8 8888888888               8 8888 =
+  ! 8 8888    `88.  8 8888    `88.  88.        8 8888
+    8 8888      88  8 8888      88  `88.    |  8 888'   '
+ >  8 8888.   ,88'  8 8888.   ,88'    `88o.   .8 88'  .
+    8 888888888P    8 888888888P        `Y888888 '  .
+ %                                                     %"""
 
 welcome = """
->>> Welcome to Bulletin Butter & Jelly! ---------------------------------------@
-| BBJ is a persistent, chronologically ordered discussion board for tilde.town.|
-| You may log in, register as a new user, or participate anonymously.          |
-| \033[1;31mTo go anon, just press enter. Otherwise, give me a name (registered or not)\033[0m  |
-@______________________________________________________________________________@
+>>> Welcome to Bulletin Butter & Jelly! ------------------@
+| BBJ is a persistent, chronologically ordered text       |
+| discussion board for tilde.town. You may log in,        |
+| register as a new user, or participate anonymously.     |
+|---------------------------------------------------------|
+| \033[1;31mTo go anon, just press enter. Otherwise, give me a name\033[0m |
+| \033[1;31m(registered or not)\033[0m                                     |
+@_________________________________________________________@
 """
 
 colors = [
     "\033[1;31m", "\033[1;33m", "\033[1;33m",
     "\033[1;32m", "\033[1;34m", "\033[1;35m"
 ]
-
 
 editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "joe"]
 # defaults to internal editor, integrates the above as well
