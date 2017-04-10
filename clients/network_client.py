@@ -80,6 +80,13 @@ class BBJ(object):
         return self.request(*args, **kwargs)
 
 
+    def _hash(self, string):
+        """
+        Handy function to hash a password and return it.
+        """
+        return sha256(bytes(string, "utf8")).hexdigest()
+
+
     def request(self, endpoint, **params):
         """
         Takes the string endpoint, and a variable number of kwargs
@@ -378,6 +385,10 @@ class BBJ(object):
         Update the user's data on the server.
         """
         response = self("user_update", **params)
+        if params.get("user_name"):
+            self.user_name = params["user_name"]
+        if params.get("auth_hash"):
+            self.user_auth = params["auth_hash"]
         self.user = self("get_me")["data"]
         return response["data"]
 

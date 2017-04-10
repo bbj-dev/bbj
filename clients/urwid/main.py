@@ -92,6 +92,7 @@ class App(object):
             ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
+            ("opt_header", "yellow", "default"),
             ("hover", "light cyan", "default"),
             ("dim", "dark gray", "default"),
 
@@ -387,7 +388,8 @@ class App(object):
         self.loop.stop()
         run("clear", shell=True)
         print(welcome)
-        log_in()
+        try: log_in()
+        except (KeyboardInterrupt, InterruptedError): pass
         self.loop.start()
         self.set_default_header()
         self.options_menu()
@@ -410,6 +412,58 @@ class App(object):
         network.user_update(color=color)
 
 
+    def toggle_exit(self, button, value):
+        self.prefs["dramatic_exit"] = value
+        bbjrc("update", **self.prefs)
+
+
+    def change_username(self, *_):
+        self.loop.stop()
+        run("clear", shell=True)
+        def __loop(prompt, positive):
+            new_name = sane_value("user_name", prompt, positive)
+            if network.user_is_registered(new_name):
+                return __loop("%s is already registered" % new_name, False)
+            return new_name
+        try:
+            name = __loop("Choose a new username", True)
+            network.user_update(user_name=name)
+            motherfucking_rainbows("~~hello there %s~~" % name)
+            sleep(0.8)
+            self.loop.start()
+            self.loop.widget = self.loop.widget[0]
+            self.index()
+            self.options_menu()
+        except (KeyboardInterrupt, InterruptedError):
+            self.loop.start()
+
+
+    def change_password(self, *_):
+        self.loop.stop()
+        run("clear", shell=True)
+        def __loop(prompt, positive):
+            first = paren_prompt(prompt, positive)
+            if first == "":
+                confprompt = "Confirm empty password"
+            else:
+                confprompt = "Confirm it"
+            second = paren_prompt(confprompt)
+            if second != first:
+                return __loop("Those didnt match. Try again", False)
+            return first
+        try:
+            password = __loop("Choose a new password. Can be empty", True)
+            network.user_update(auth_hash=network._hash(password))
+            motherfucking_rainbows("SET NEW PASSWORD")
+            sleep(0.8)
+            self.loop.start()
+            self.loop.widget = self.loop.widget[0]
+            self.index()
+            self.options_menu()
+        except (KeyboardInterrupt, InterruptedError):
+            self.loop.start()
+
+
     def options_menu(self):
         """
         Create a popup for the user to configure their account and
@@ -429,18 +483,17 @@ class App(object):
                     self.set_color, index)
 
             account_stuff = [
-                urwid.Button("Change login.", on_press=self.relog),
-                urwid.Button("Go anonymous.", on_press=self.unlog),
+                urwid.Button("Relog", on_press=self.relog),
+                urwid.Button("Go anonymous", on_press=self.unlog),
+                urwid.Button("Change username", on_press=self.change_username),
+                urwid.Button("Change password", on_press=self.change_password),
                 urwid.Divider(),
                 urwid.Text(("button", "Your color:")),
                 *user_colors
-
             ]
         else:
             account_message = "You're browsing anonymously, and cannot set account preferences."
-            account_stuff = [
-                urwid.Button("Login/Register", on_press=self.relog)
-            ]
+            account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
 
         urwid.RadioButton(
@@ -468,15 +521,21 @@ class App(object):
         widget = OptionsMenu(
             urwid.Filler(
                 urwid.Pile([
-                    urwid.Text(("button", "Your account:")),
+                    urwid.Text(("opt_header", "Account"), 'center'),
                     urwid.Text(account_message),
                     urwid.Divider(),
                     *account_stuff,
                     urwid.Divider("-"),
-                    urwid.Text(("button", "Text editor:")),
+                    urwid.Text(("opt_header", "App"), 'center'),
                     urwid.Divider(),
+                    urwid.CheckBox(
+                        "Rainbow Vomit on Exit",
+                        state=self.prefs["dramatic_exit"],
+                        on_state_change=self.toggle_exit
+                    ),
+                    urwid.Text(("button", "Text editor:")),
                     *editor_buttons,
-                    urwid.Divider("-"),
+                    urwid.Divider(),
                     urwid.Text(("button", "External text editor mode:")),
                     urwid.Text("If you have problems using an external text editor, "
                                "set this to Overthrow."),
@@ -514,17 +573,19 @@ class App(object):
         self.loop.widget.focus_position = "footer"
 
 
-    def reset_footer(self, *_, **__):
+    def reset_footer(self, _, from_temp):
+        if from_temp and self.window_split:
+            return
         try:
-            self.set_footer(self.bars[self.mode])
+            self.set_default_footer()
             self.loop.widget.focus_position = "body"
         except:
-            # just keep trying until the widget can handle it
+            # just keep trying until the focus widget can handle it
             self.loop.set_alarm_in(0.5, self.reset_footer)
 
 
     def temp_footer_message(self, string, duration=3):
-        self.loop.set_alarm_in(duration, self.reset_footer)
+        self.loop.set_alarm_in(duration, self.reset_footer, True)
         self.set_footer(string)
 
 
@@ -545,6 +606,10 @@ class App(object):
 
 
     def compose(self, title=None):
+        """
+        Dispatches the appropriate composure mode and widget based on application
+        context and user preferences.
+        """
         if self.mode == "index" and not title:
             return self.footer_prompt("Title", self.compose)
 
@@ -621,11 +686,14 @@ class FootPrompt(urwid.Edit):
 
 
     def keypress(self, size, key):
-        if key != "enter":
-            return super(FootPrompt, self).keypress(size, key)
-        app.loop.widget.focus_position = "body"
-        app.set_footer(app.bars[app.mode])
-        self.callback(self.get_edit_text(), *self.args)
+        super(FootPrompt, self).keypress(size, key)
+        if key == "enter":
+            app.loop.widget.focus_position = "body"
+            app.set_default_footer()
+            self.callback(self.get_edit_text(), *self.args)
+        elif key.lower() in ["esc", "ctrl g", "ctrl c"]:
+            app.loop.widget.focus_position = "body"
+            app.set_default_footer()
 
 
 class InternalEditor(urwid.Edit):
@@ -843,8 +911,8 @@ def paren_prompt(text, positive=True, choices=[]):
         print("")
         return ""
 
-    except KeyboardInterrupt:
-        exit("\nNevermind then!")
+    # except KeyboardInterrupt:
+    #     exit("\nNevermind then!")
 
 
 def sane_value(key, prompt, positive=True, return_empty=False):
@@ -889,7 +957,7 @@ def log_in():
             motherfucking_rainbows("Nice to meet'cha, %s!" % name)
             response = paren_prompt(
                 "Register as %s?" % name,
-                choices=["yes!", "change name"]
+                choices=["yes!", "change name", "nevermind!"]
             )
 
             if response == "c":
@@ -899,6 +967,9 @@ def log_in():
                         return nameloop("%s is already registered" % name, False)
                     return name
                 name = nameloop("Pick a new name", True)
+
+            elif response == "n":
+                raise InterruptedError
 
             def password_loop(prompt, positive=True):
                 response1 = paren_prompt(prompt, positive)
@@ -961,11 +1032,15 @@ def main():
     run("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
-    log_in()
+    try: log_in()
+    except (InterruptedError, KeyboardInterrupt):
+        exit("\nwell alrighty then")
 
 if __name__ == "__main__":
-    # global app
     main()
+    # is global
     app = App()
-    app.loop.run()
-    # app.loop.widget.keypress(app.loop.screen_size, "up")
+    try:
+        app.loop.run()
+    except KeyboardInterrupt:
+        frilly_exit()
