@@ -92,6 +92,7 @@ class App(object):
             ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
+            ("opt_prompt", "black", "light gray"),
             ("opt_header", "yellow", "default"),
             ("hover", "light cyan", "default"),
             ("dim", "dark gray", "default"),
@@ -464,6 +465,18 @@ class App(object):
             self.loop.start()
 
 
+    def live_time_render(self, editor, text, args):
+        widget, key = args
+        try:
+            rendered = datetime.fromtimestamp(time()).strftime(text)
+            self.prefs[key] = text
+            bbjrc("update", **self.prefs)
+        except:
+            rendered = ("1", "Invalid Input")
+        widget.set_text(rendered)
+
+
+
     def options_menu(self):
         """
         Create a popup for the user to configure their account and
@@ -495,6 +508,23 @@ class App(object):
             account_message = "You're browsing anonymously, and cannot set account preferences."
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
+        time_box = urwid.Text(self.timestring(time(), "time"))
+        date_box = urwid.Text(self.timestring(time(), "date"))
+
+        time_edit = urwid.Edit(edit_text=self.prefs["time"])
+        urwid.connect_signal(time_edit, "change", self.live_time_render, (time_box, "time"))
+
+        date_edit = urwid.Edit(edit_text=self.prefs["date"])
+        urwid.connect_signal(date_edit, "change", self.live_time_render, (date_box, "date"))
+
+
+        time_stuff = [
+            urwid.Text(("button", "Time Format")),
+            time_box, urwid.AttrMap(time_edit, "opt_prompt"),
+            urwid.Divider(),
+            urwid.Text(("button", "Date Format")),
+            date_box, urwid.AttrMap(date_edit, "opt_prompt"),
+        ]
 
         urwid.RadioButton(
             editor_buttons, "Internal",
@@ -533,6 +563,9 @@ class App(object):
                         state=self.prefs["dramatic_exit"],
                         on_state_change=self.toggle_exit
                     ),
+                    urwid.Divider(),
+                    *time_stuff,
+                    urwid.Divider(),
                     urwid.Text(("button", "Text editor:")),
                     *editor_buttons,
                     urwid.Divider(),
@@ -758,8 +791,12 @@ class ExternalEditor(urwid.Terminal):
 
 class OptionsMenu(urwid.LineBox):
     def keypress(self, size, key):
-        super(OptionsMenu, self).keypress(size, key)
-        if key.lower() == "q":
+        if key == "esc":
+            app.loop.widget = app.loop.widget[0]
+        # try to let the base class handle the key, if not, we'll take over
+        elif not super(OptionsMenu, self).keypress(size, key):
+            return
+        elif key.lower() == "q":
             app.loop.widget = app.loop.widget[0]
         elif key in ["ctrl n", "j", "n"]:
             return self.keypress(size, "down")
