@@ -52,14 +52,13 @@ obnoxious_logo = """
     8 888888888P    8 888888888P        `Y888888 '  .
  %                                                     %"""
 
-welcome = """
->>> Welcome to Bulletin Butter & Jelly! ------------------@
+welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 | BBJ is a persistent, chronologically ordered text       |
 | discussion board for tilde.town. You may log in,        |
 | register as a new user, or participate anonymously.     |
 |---------------------------------------------------------|
 | \033[1;31mTo go anon, just press enter. Otherwise, give me a name\033[0m |
-| \033[1;31m(registered or not)\033[0m                                     |
+|                 \033[1;31m(registered or not)\033[0m                     |
 @_________________________________________________________@
 """
 
@@ -69,9 +68,8 @@ colors = [
 ]
 
 editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "joe"]
-# defaults to internal editor, integrates the above as well
 default_prefs = {
-    "editor": None,
+    "editor": os.getenv("EDITOR", default="nano"),
     "integrate_external_editor": True,
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
@@ -93,7 +91,7 @@ class App(object):
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
             ("opt_prompt", "black", "light gray"),
-            ("opt_header", "yellow", "default"),
+            ("opt_header", "light cyan", "default"),
             ("hover", "light cyan", "default"),
             ("dim", "dark gray", "default"),
 
@@ -359,14 +357,20 @@ class App(object):
             self.index()
 
 
-    def set_new_editor(self, button, value, key):
+    def set_new_editor(self, button, value, arg):
         """
         Callback for the option radio buttons to set the the text editor.
         """
         if value == False:
             return
-        elif key == "internal":
-            key = None
+        elif isinstance(value, str):
+            [button.set_state(False) for button in arg]
+            self.prefs["editor"] = value
+            bbjrc("update", **self.prefs)
+            return
+
+        key, widget = arg
+        widget.set_edit_text(key)
         self.prefs.update({"editor": key})
         bbjrc("update", **self.prefs)
 
@@ -509,14 +513,12 @@ class App(object):
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
         time_box = urwid.Text(self.timestring(time(), "time"))
-        date_box = urwid.Text(self.timestring(time(), "date"))
-
         time_edit = urwid.Edit(edit_text=self.prefs["time"])
         urwid.connect_signal(time_edit, "change", self.live_time_render, (time_box, "time"))
 
+        date_box = urwid.Text(self.timestring(time(), "date"))
         date_edit = urwid.Edit(edit_text=self.prefs["date"])
         urwid.connect_signal(date_edit, "change", self.live_time_render, (date_box, "date"))
-
 
         time_stuff = [
             urwid.Text(("button", "Time Format")),
@@ -526,18 +528,14 @@ class App(object):
             date_box, urwid.AttrMap(date_edit, "opt_prompt"),
         ]
 
-        urwid.RadioButton(
-            editor_buttons, "Internal",
-            state=not self.prefs["editor"],
-            on_state_change=self.set_new_editor,
-            user_data="internal")
-
+        editor_display = urwid.Edit(edit_text=self.prefs["editor"])
+        urwid.connect_signal(editor_display, "change", self.set_new_editor, editor_buttons)
         for editor in editors:
             urwid.RadioButton(
                 editor_buttons, editor,
                 state=self.prefs["editor"] == editor,
                 on_state_change=self.set_new_editor,
-                user_data=editor)
+                user_data=(editor, editor_display))
 
         urwid.RadioButton(
             edit_mode, "Integrate",
@@ -549,8 +547,8 @@ class App(object):
             state=not self.prefs["integrate_external_editor"])
 
         widget = OptionsMenu(
-            urwid.Filler(
-                urwid.Pile([
+            urwid.ListBox(
+                urwid.SimpleFocusListWalker([
                     urwid.Text(("opt_header", "Account"), 'center'),
                     urwid.Text(account_message),
                     urwid.Divider(),
@@ -567,6 +565,9 @@ class App(object):
                     *time_stuff,
                     urwid.Divider(),
                     urwid.Text(("button", "Text editor:")),
+                    urwid.Text("You can type in your own command or use one of these presets."),
+                    urwid.Divider(),
+                    urwid.AttrMap(editor_display, "opt_prompt"),
                     *editor_buttons,
                     urwid.Divider(),
                     urwid.Text(("button", "External text editor mode:")),
@@ -575,8 +576,9 @@ class App(object):
                     urwid.Divider(),
                     *edit_mode,
                     urwid.Divider("-"),
-                ]), "top"),
-            title="BBJ Options",
+                ])
+            ),
+            title="Options",
             **frame_theme()
         )
 
@@ -670,18 +672,10 @@ class App(object):
 
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
-            if self.prefs["editor"]:
-                editor = ExternalEditor("thread_create", title=title)
-                self.set_footer("[F1]Abort [Save and quit to submit your thread]")
-            else:
-                editor = urwid.Filler(
-                    InternalEditor("thread_create", title=title),
-                    valign=urwid.TOP)
-                self.set_footer("[F1]Abort [F3]Send")
-
+            self.set_footer("[F1]Abort [Save and quit to submit your thread]")
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
-                    editor,
+                    ExternalEditor("thread_create", title=title),
                     title=self.prefs["editor"] or "",
                     **frame_theme()),
                 self.loop.widget,
@@ -693,17 +687,16 @@ class App(object):
         elif self.mode == "thread":
             self.window_split=True
             self.set_header('Replying to "{}"', self.thread["title"])
-            if self.prefs["editor"]:
-                editor = ExternalEditor("thread_reply", thread_id=self.thread["thread_id"])
-            else:
-                editor = urwid.AttrMap(urwid.Filler(
-                    InternalEditor("thread_reply", thread_id=self.thread["thread_id"]),
-                    valign=urwid.TOP), "default")
             self.loop.widget.footer = urwid.Pile([
                 urwid.AttrMap(urwid.Text(""), "bar"),
-                urwid.BoxAdapter(urwid.AttrMap(urwid.LineBox(
-                    editor, **frame_theme()
-                ), "bar"), self.loop.screen_size[1] // 2),])
+                urwid.BoxAdapter(
+                    urwid.AttrMap(
+                        urwid.LineBox(
+                            ExternalEditor("thread_reply", thread_id=self.thread["thread_id"]),
+                            **frame_theme()
+                        ),
+                        "bar"),
+                    self.loop.screen_size[1] // 2),])
             self.switch_editor()
 
 
@@ -727,31 +720,6 @@ class FootPrompt(urwid.Edit):
         elif key.lower() in ["esc", "ctrl g", "ctrl c"]:
             app.loop.widget.focus_position = "body"
             app.set_default_footer()
-
-
-class InternalEditor(urwid.Edit):
-    def __init__(self, endpoint, **params):
-        super(InternalEditor, self).__init__(multiline=True)
-        self.endpoint = endpoint
-        self.params = params
-
-    def keypress(self, size, key):
-        if key not in ["f1", "f2", "f3"]:
-            return super(InternalEditor, self).keypress(size, key)
-        elif key == "f1":
-            app.close_editor()
-            return app.refresh()
-        elif key == "f2":
-            return app.switch_editor()
-
-        body = self.get_edit_text().strip()
-        app.close_editor()
-        if body:
-            self.params.update({"body": body})
-            network.request(self.endpoint, **self.params)
-            app.refresh(True)
-        else:
-            app.temp_footer_message("EMPTY POST DISCARDED")
 
 
 class ExternalEditor(urwid.Terminal):
