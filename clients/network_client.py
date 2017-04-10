@@ -67,7 +67,7 @@ class BBJ(object):
         self.user_name = self.user_auth = None
         self.send_auth = True
         try:
-            self("get_me")
+            self.user = self("get_me")["data"]
         except URLError:
             raise URLError("Cannot connect to %s (is the server down?)" % self.base[0:-2])
 
@@ -275,6 +275,7 @@ class BBJ(object):
 
         self.user_auth = user_auth
         self.user_name = user_name
+        self.user = self("get_me")["data"]
         return True
 
 
@@ -331,7 +332,6 @@ class BBJ(object):
         return response["data"]
 
 
-
     def user_register(self, user_name, user_auth, hash_auth=True, set_as_user=True):
         """
         Register user_name into the system with user_auth. Unless hash_auth
@@ -368,10 +368,18 @@ class BBJ(object):
         ])
 
         if set_as_user:
-            self.user_name = user_name
-            self.user_auth = user_auth
+            self.set_credentials(user_name, user_auth, False)
 
         return response
+
+
+    def user_update(self, **params):
+        """
+        Update the user's data on the server.
+        """
+        response = self("user_update", **params)
+        self.user = self("get_me")["data"]
+        return response["data"]
 
 
     def thread_index(self):

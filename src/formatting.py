@@ -16,13 +16,11 @@ markup = [
     "bold", "italic", "underline", "strike"
 ]
 
-tokens = re.compile(
-    r"\[({}): (.+?)]".format(
-        "|".join(colors + markup)),
-    flags=re.DOTALL)
+tokens = re.compile(r"\[(%s): (.+?)]" % "|".join(colors + markup),
+                    flags=re.DOTALL)
 
-quotes = re.compile("&gt;&gt;([0-9]+)")
-linequotes = re.compile("^(&gt;.+)$",
+quotes = re.compile(">>([0-9]+)")
+linequotes = re.compile("^(>.+)$",
     flags=re.MULTILINE)
 
 
@@ -31,9 +29,8 @@ def apply_formatting(msg_obj, formatter):
     Receives a messages object from a thread and returns it with
     all the message bodies passed through FORMATTER.
     """
-    for x in msg_obj["messages"].keys():
-        msg_obj["messages"][x]["body"] = \
-            formatter(msg_obj["messages"][x]["body"])
+    for x in range(len(msg_obj)):
+        msg_obj[x]["body"] = formatter(msg_obj[x]["body"])
     return msg_obj
 
 
@@ -42,6 +39,20 @@ def raw(text):
     Just return the message in the same state that it was submitted.
     """
     return text
+
+
+def strip(text):
+    """
+    Returns the text with all formatting directives removed.
+    Not to be confused with `raw`.
+    """
+
+
+
+def entities(text):
+    """
+    Returns a tuple where [0] is raw text
+    """
 
 
 def html(text):

@@ -268,7 +268,8 @@ def user_update(connection, user_object, parameters):
     user_id = user_object["user_id"]
     for key in ("user_name", "auth_hash", "quip", "bio", "color"):
         value = parameters.get(key)
-        if value:
+        # bool(0) == False hur hur hurrrrrr ::drools::
+        if value == 0 or value:
             validate([(key, value)])
             user_object[key] = value
 
@@ -383,7 +384,7 @@ def validate(keys_and_values):
 
 
         elif key == "color":
-            if value in range(0, 6):
+            if value in range(0, 7):
                 continue
             raise BBJParameterError(
                 "Color specification out of range (int 0-6)")

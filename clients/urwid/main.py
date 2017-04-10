@@ -46,11 +46,10 @@ colors = [
 ]
 
 
-editors = ["nano", "emacs", "vim", "micro", "ed", "joe"]
+editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "joe"]
 # defaults to internal editor, integrates the above as well
 default_prefs = {
-    # well, it WILL default to the internal editor when I write it =)
-    "editor": "vim",
+    "editor": None,
     "integrate_external_editor": True,
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
@@ -63,24 +62,26 @@ default_prefs = {
 class App(object):
     def __init__(self):
         self.bars = {
-            "index": "[C]ompose [R]efresh [/]Search [O]ptions [?]Help/More [Q]uit",
-            "thread": "[C]ompose [Q]Back [R]efresh [E]dit [/]Search [B/T]End [?]Help/More"
+            "index": "[C]ompose [R]efresh [O]ptions [?]Help/More [Q]uit",
+            "thread": "[C]ompose [Q]Back [R]efresh [Enter]Post Options [/]Search [B/T]End [?]Help/More"
         }
 
         colors = [
             ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
+            ("hover", "light cyan", "default"),
             ("dim", "dark gray", "default"),
 
             # map the bbj api color values for display
             ("0", "default", "default"),
-            ("1", "light red", "default"),
-            ("2", "yellow", "default"),
-            ("3", "light green", "default"),
-            ("4", "light blue", "default"),
-            ("5", "light cyan", "default"),
-            ("6", "light magenta", "default")
+            ("1", "dark red", "default"),
+            # sounds ugly but brown is as close as we can get to yellow without being bold
+            ("2", "brown", "default"),
+            ("3", "dark green", "default"),
+            ("4", "dark blue", "default"),
+            ("5", "dark cyan", "default"),
+            ("6", "dark magenta", "default")
         ]
 
         self.mode = None
@@ -124,6 +125,33 @@ class App(object):
         self.loop.widget.footer = urwid.AttrMap(urwid.Text(string), "bar")
 
 
+    def set_default_header(self):
+        """
+        Sets the header to the default for the current screen.
+        """
+        if self.mode == "thread":
+            name = self.usermap[self.thread["author"]]["user_name"]
+            self.set_header("~{}: {}", name, self.thread["title"])
+        else:
+            self.set_header("{} threads", len(self.walker))
+
+
+    def set_default_footer(self):
+        """
+        Sets the footer to the default for the current screen.
+        """
+        self.set_footer(self.bars[self.mode])
+
+
+    def set_bars(self):
+        """
+        Sets both the footer and header to their default values
+        for the current mode.
+        """
+        self.set_default_header()
+        self.set_default_footer()
+
+
     def close_editor(self):
         """
         Close whatever editing widget is open and restore proper
@@ -133,10 +161,9 @@ class App(object):
             self.window_split = False
             self.loop.widget.focus_position = "body"
             self.set_footer(self.bars["thread"])
-            name = self.usermap[self.thread["author"]]["user_name"]
-            self.set_header("~{}: {}", name, self.thread["title"])
         else:
             self.loop.widget = self.loop.widget[0]
+        self.set_default_header()
 
 
     def switch_editor(self):
@@ -188,6 +215,10 @@ class App(object):
 
 
     def make_message_body(self, message):
+        """
+        Returns the widgets that comprise a message in a thread, including the
+        text body, author info and the action button
+        """
         info = "@ " + self.timestring(message["created"])
         if message["edited"]:
             info += " [edited]"
@@ -195,7 +226,7 @@ class App(object):
         name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
         post = str(message["post_id"])
         head = urwid.Columns([
-                (2 + len(post), urwid.AttrMap(cute_button(">" + post), "button")),
+                (2 + len(post), urwid.AttrMap(cute_button(">" + post), "button", "hover")),
                 (len(name._text) + 1,
                    urwid.AttrMap(name, str(self.usermap[message["author"]]["color"]))),
                 urwid.AttrMap(urwid.Text(info), "dim")
@@ -212,6 +243,9 @@ class App(object):
 
 
     def timestring(self, epoch, mode="both"):
+        """
+        Returns a string of time representing a given epoch and mode.
+        """
         if mode == "delta":
             return self.readable_delta(epoch)
 
@@ -226,19 +260,24 @@ class App(object):
 
 
     def make_thread_body(self, thread):
+        """
+        Returns the pile widget that comprises a thread in the index.
+        """
         button = cute_button(">>", self.thread_load, thread["thread_id"])
         title = urwid.Text(thread["title"])
-        dateline = "by ~{} @ {}".format(
-            self.usermap[thread["author"]]["user_name"],
-            self.timestring(thread["created"])
-        )
+        user = self.usermap[thread["author"]]
+        dateline = [
+            ("default", "by "),
+            (str(user["color"]), "~%s " % user["user_name"]),
+            ("dim", "@ %s" % self.timestring(thread["created"]))
+        ]
 
         infoline = "%d replies; active %s" % (
             thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
 
         pile = urwid.Pile([
-            urwid.Columns([(3, urwid.AttrMap(button, "button")), title]),
-            urwid.AttrMap(urwid.Text(dateline), "dim"),
+            urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
+            urwid.Text(dateline),
             urwid.AttrMap(urwid.Text(infoline), "dim"),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ])
@@ -256,11 +295,10 @@ class App(object):
         self.window_split = False
         threads, usermap = network.thread_index()
         self.usermap.update(usermap)
-        self.set_header("{} threads", len(threads))
-        self.set_footer(self.bars["index"])
         self.walker.clear()
         for thread in threads:
             self.walker.append(self.make_thread_body(thread))
+        self.set_bars()
         try: self.loop.widget.body.base_widget.set_focus(self.last_pos)
         except IndexError:
             pass
@@ -277,14 +315,9 @@ class App(object):
         self.usermap.update(usermap)
         self.thread = thread
         self.walker.clear()
-        self.set_footer(self.bars["thread"])
-
-        self.set_header("~{}: {}",
-            usermap[thread["author"]]["user_name"],
-            thread["title"])
-
         for message in thread["messages"]:
             self.walker += self.make_message_body(message)
+        self.set_bars()
 
 
     def refresh(self, bottom=False):
@@ -303,6 +336,9 @@ class App(object):
 
 
     def set_new_editor(self, button, value, key):
+        """
+        Callback for the option radio buttons to set the the text editor.
+        """
         if value == False:
             return
         elif key == "internal":
@@ -312,13 +348,78 @@ class App(object):
 
 
     def set_editor_mode(self, button, value):
+        """
+        Callback for the editor mode radio buttons in the options.
+        """
         self.prefs["integrate_external_editor"] = value
         bbjrc("update", **self.prefs)
 
 
+    def relog(self, *_, **__):
+        """
+        Options menu callback to log the user in again.
+        Drops back to text mode because im too lazy to
+        write a responsive urwid thing for this.
+        """
+        self.loop.widget = self.loop.widget[0]
+        self.loop.stop()
+        run("clear", shell=True)
+        print(welcome)
+        log_in()
+        self.loop.start()
+        self.set_default_header()
+        self.options_menu()
+
+
+    def unlog(self, *_, **__):
+        """
+        Options menu callback to anonymize the user and
+        then redisplay the options menu.
+        """
+        network.user_name = network.user_auth = None
+        self.loop.widget = self.loop.widget[0]
+        self.set_default_header()
+        self.options_menu()
+
+
+    def set_color(self, button, value, color):
+        if value == False:
+            return
+        network.user_update(color=color)
+
+
     def options_menu(self):
+        """
+        Create a popup for the user to configure their account and
+        display settings.
+        """
         editor_buttons = []
         edit_mode = []
+        user_colors = []
+
+        if network.user_auth:
+            account_message = "Logged in as %s." % network.user_name
+            colors = ["None", "Red", "Yellow", "Green", "Blue", "Cyan", "Magenta"]
+            for index, color in enumerate(colors):
+                urwid.RadioButton(
+                    user_colors, color,
+                    network.user["color"] == index,
+                    self.set_color, index)
+
+            account_stuff = [
+                urwid.Button("Change login.", on_press=self.relog),
+                urwid.Button("Go anonymous.", on_press=self.unlog),
+                urwid.Divider(),
+                urwid.Text(("button", "Your color:")),
+                *user_colors
+
+            ]
+        else:
+            account_message = "You're browsing anonymously, and cannot set account preferences."
+            account_stuff = [
+                urwid.Button("Login/Register", on_press=self.relog)
+            ]
+
 
         urwid.RadioButton(
             editor_buttons, "Internal",
@@ -328,7 +429,7 @@ class App(object):
 
         for editor in editors:
             urwid.RadioButton(
-                editor_buttons, editor.title(),
+                editor_buttons, editor,
                 state=self.prefs["editor"] == editor,
                 on_state_change=self.set_new_editor,
                 user_data=editor)
@@ -345,11 +446,16 @@ class App(object):
         widget = OptionsMenu(
             urwid.Filler(
                 urwid.Pile([
-                    urwid.AttrMap(urwid.Text("Text editor:"), "button"),
+                    urwid.Text(("button", "Your account:")),
+                    urwid.Text(account_message),
+                    urwid.Divider(),
+                    *account_stuff,
+                    urwid.Divider("-"),
+                    urwid.Text(("button", "Text editor:")),
                     urwid.Divider(),
                     *editor_buttons,
                     urwid.Divider("-"),
-                    urwid.AttrMap(urwid.Text("External text editor mode:"), "button"),
+                    urwid.Text(("button", "External text editor mode:")),
                     urwid.Text("If you have problems using an external text editor, "
                                "set this to Overthrow."),
                     urwid.Divider(),
@@ -654,6 +760,15 @@ def cute_button(label, callback=None, data=None):
     return button
 
 
+def urwid_rainbows(string):
+    """
+    Same as below, but instead of printing rainbow text, returns
+    a markup list suitable for urwid's Text contructor.
+    """
+    colors = [str(x) for x in range(1, 7)]
+    return urwid.Text([(choice(colors), char) for char in string])
+
+
 def motherfucking_rainbows(string, inputmode=False, end="\n"):
     """
     I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee
@@ -777,6 +892,7 @@ def log_in():
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
             motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
+    sleep(0.8) # let that confirmation message shine
 
 
 def frame_theme(mode="default"):
@@ -824,10 +940,10 @@ def main():
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
     log_in()
-    sleep(0.8) # let that confirmation message shine
 
 if __name__ == "__main__":
     # global app
     main()
     app = App()
     app.loop.run()
+    # app.loop.widget.keypress(app.loop.screen_size, "up")
