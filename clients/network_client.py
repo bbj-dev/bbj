@@ -408,7 +408,7 @@ class BBJ(object):
         return response["data"], response["usermap"]
 
 
-    def thread_load(self, thread_id):
+    def thread_load(self, thread_id, format=None):
         """
         Returns a tuple where [0] is a thread object and [1] is a usermap object.
 
@@ -419,5 +419,5 @@ class BBJ(object):
               print(usermap[author_id]["user_name"])
               print(message["body"])
         """
-        response = self("thread_load", thread_id=thread_id)
+        response = self("thread_load", format=format, thread_id=thread_id)
         return response["data"], response["usermap"]

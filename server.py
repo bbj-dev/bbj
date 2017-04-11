@@ -1,5 +1,5 @@
 from src.exceptions import BBJException, BBJParameterError, BBJUserError
-from src import db, schema
+from src import db, schema, formatting
 from functools import wraps
 from uuid import uuid1
 import traceback
@@ -244,6 +244,9 @@ class API(object):
         thread = db.thread_get(database, args["thread_id"])
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
+        if args.get("format") == "sequential":
+            formatting.apply_formatting(thread["messages"],
+                formatting.sequential_expressions)
         return thread
 
 

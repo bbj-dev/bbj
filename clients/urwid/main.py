@@ -62,6 +62,11 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 @_________________________________________________________@
 """
 
+colornames = [
+    "none", "red", "yellow", "green", "blue",
+    "cyan", "magenta"
+]
+
 colors = [
     "\033[1;31m", "\033[1;33m", "\033[1;33m",
     "\033[1;32m", "\033[1;34m", "\033[1;35m"
@@ -90,10 +95,13 @@ class App(object):
             ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
+            ("quote", "light green,underline", "default"),
             ("opt_prompt", "black", "light gray"),
             ("opt_header", "light cyan", "default"),
             ("hover", "light cyan", "default"),
             ("dim", "dark gray", "default"),
+            ("bold", "default,bold", "default"),
+            ("underline", "default,underline", "default"),
 
             # map the bbj api color values for display
             ("0", "default", "default"),
@@ -258,7 +266,7 @@ class App(object):
         return [
             head,
             urwid.Divider(),
-            MessageBody(message["body"]),
+            urwid.Columns([(self.prefs["max_text_width"], MessageBody(message["body"]))]),
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ]
@@ -333,7 +341,7 @@ class App(object):
         if self.mode == "index":
             self.last_pos = self.loop.widget.body.base_widget.get_focus()[1]
         self.mode = "thread"
-        thread, usermap = network.thread_load(thread_id)
+        thread, usermap = network.thread_load(thread_id, format="sequential")
         self.usermap.update(usermap)
         self.thread = thread
         self.walker.clear()
@@ -480,6 +488,11 @@ class App(object):
         widget.set_text(rendered)
 
 
+    def edit_width(self, editor, content):
+        self.prefs["max_text_width"] = \
+            int(content) if content else 0
+        bbjrc("update", **self.prefs)
+
 
     def options_menu(self):
         """
@@ -488,14 +501,13 @@ class App(object):
         """
         editor_buttons = []
         edit_mode = []
-        user_colors = []
 
         if network.user_auth:
             account_message = "Logged in as %s." % network.user_name
-            colors = ["None", "Red", "Yellow", "Green", "Blue", "Cyan", "Magenta"]
-            for index, color in enumerate(colors):
+            user_colors = []
+            for index, color in enumerate(colornames):
                 urwid.RadioButton(
-                    user_colors, color,
+                    user_colors, color.title(),
                     network.user["color"] == index,
                     self.set_color, index)
 
@@ -513,11 +525,11 @@ class App(object):
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
         time_box = urwid.Text(self.timestring(time(), "time"))
-        time_edit = urwid.Edit(edit_text=self.prefs["time"])
+        time_edit = Prompt(edit_text=self.prefs["time"])
         urwid.connect_signal(time_edit, "change", self.live_time_render, (time_box, "time"))
 
         date_box = urwid.Text(self.timestring(time(), "date"))
-        date_edit = urwid.Edit(edit_text=self.prefs["date"])
+        date_edit = Prompt(edit_text=self.prefs["date"])
         urwid.connect_signal(date_edit, "change", self.live_time_render, (date_box, "date"))
 
         time_stuff = [
@@ -528,7 +540,10 @@ class App(object):
             date_box, urwid.AttrMap(date_edit, "opt_prompt"),
         ]
 
-        editor_display = urwid.Edit(edit_text=self.prefs["editor"])
+        width_edit = urwid.IntEdit(default=self.prefs["max_text_width"])
+        urwid.connect_signal(width_edit, "change", self.edit_width)
+
+        editor_display = Prompt(edit_text=self.prefs["editor"])
         urwid.connect_signal(editor_display, "change", self.set_new_editor, editor_buttons)
         for editor in editors:
             urwid.RadioButton(
@@ -564,6 +579,9 @@ class App(object):
                     urwid.Divider(),
                     *time_stuff,
                     urwid.Divider(),
+                    urwid.Text(("button", "Max message width:")),
+                    urwid.AttrMap(width_edit, "opt_prompt"),
+                    urwid.Divider(),
                     urwid.Text(("button", "Text editor:")),
                     urwid.Text("You can type in your own command or use one of these presets."),
                     urwid.Divider(),
@@ -587,7 +605,7 @@ class App(object):
             align="center",
             valign="middle",
             width=30,
-            height=(self.loop.screen_size[1] - 10)
+            height=("relative", 75)
         )
 
 
@@ -681,8 +699,8 @@ class App(object):
                 self.loop.widget,
                 align="center",
                 valign="middle",
-                width=self.loop.screen_size[0] - 2,
-                height=(self.loop.screen_size[1] - 4))
+                width=("relative", 90),
+                height=("relative", 80))
 
         elif self.mode == "thread":
             self.window_split=True
@@ -701,10 +719,87 @@ class App(object):
 
 
 class MessageBody(urwid.Text):
-    pass
+    def __init__(self, text_objects):
+        result = []
+        last_directive = None
+        for paragraph in text_objects:
+            for directive, body in paragraph:
+
+                if directive in colornames:
+                    color = str(colornames.index(directive))
+                    result.append((color, body))
+
+                elif directive in ["underline", "bold"]:
+                    result.append((directive, body))
+
+                elif directive == "linequote":
+                    if directive != last_directive and result[-1][-1][-1] != "\n":
+                        result.append(("default", "\n"))
+                    result.append(("3", "%s\n" % body.strip()))
+
+                elif directive == "quote":
+                    result.append(("quote", ">>%s" % body))
+
+                elif directive == "rainbow":
+                    color = 1
+                    for char in body:
+                        if color == 7:
+                            color = 1
+                        result.append((str(color), char))
+                        color += 1
+
+                else:
+                    result.append(("default", body))
+                last_directive = directive
+
+            result.append("\n\n")
+        result.pop()
+        super(MessageBody, self).__init__(result)
 
 
-class FootPrompt(urwid.Edit):
+class Prompt(urwid.Edit):
+    """
+    Supports basic bashmacs keybinds. Key casing is
+    ignored and ctrl/alt are treated the same. Only
+    character-wise (not word-wise) movements are
+    implemented.
+    """
+    def keypress(self, size, key):
+        if not super(Prompt, self).keypress(size, key):
+            return
+        elif key[0:4] not in ["meta", "ctrl"]:
+            return key
+
+        column = self.get_cursor_coords((app.loop.screen_size[0],))[0]
+        text = self.get_edit_text()
+        key = key[-1].lower()
+
+        if key == "u":
+            self.set_edit_pos(0)
+            self.set_edit_text(text[column:])
+
+        elif key == "k":
+            self.set_edit_text(text[:column])
+
+        elif key == "f":
+            self.keypress(size, "right")
+
+        elif key == "b":
+            self.keypress(size, "left")
+
+        elif key == "a":
+            self.set_edit_pos(0)
+
+        elif key == "e":
+            self.set_edit_pos(len(text))
+
+        elif key == "d":
+            self.set_edit_text(text[0:column] + text[column+1:])
+
+        return key
+
+
+class FootPrompt(Prompt):
     def __init__(self, callback, *callback_args):
         super(FootPrompt, self).__init__()
         self.callback = callback
@@ -728,6 +823,10 @@ class ExternalEditor(urwid.Terminal):
         self.endpoint = endpoint
         self.params = params
         env = os.environ
+        # barring this, programs will happily spit out unicode chars which
+        # urwid+python3 seem to choke on. This seems to be a bug on urwid's
+        # behalf. Users who take issue to programs trying to supress unicode
+        # should use the options menu to switch to Overthrow mode.
         env.update({"LANG": "POSIX"})
         command = ["bash", "-c", "{} {}; echo Press any key to kill this window...".format(
             app.prefs["editor"], self.path)]
@@ -755,6 +854,16 @@ class ExternalEditor(urwid.Terminal):
             app.refresh()
         # key == "f2"
         app.switch_editor()
+
+
+    def __del__(self):
+        """
+        Make damn sure we scoop up after ourselves here...
+        """
+        try:
+            os.remove(self.path)
+        except FileNotFoundError:
+            pass
 
 
 class OptionsMenu(urwid.LineBox):
