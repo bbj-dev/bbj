@@ -4,9 +4,6 @@ doesnt hold a connection itself, rather, a connection is passed in as
 an argument to all the functions and is maintained by CherryPy's threading
 system. This is clunky but fuck it, it works (for now at least).
 
-(foreword: formatting is not currently implemented but its an important
-  feature needed in the final version)
-
 All post and thread data are stored in the database without formatting.
 This is questionable, as it causes formatting to be reapplied with each
 pull for the database. Im debating whether posts should be stored in all
