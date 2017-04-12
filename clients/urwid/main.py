@@ -486,8 +486,13 @@ class App(object):
         if message["edited"]:
             info += " [edited]"
 
-        callback = self.on_post if not no_action else ignore
-        name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
+        if no_action:
+            callback = ignore
+            name = urwid_rainbows("~SYSTEM", True)
+        else:
+            callback = self.on_post
+            name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
+
         post = str(message["post_id"])
         head = urwid.Columns([
                 (2 + len(post), urwid.AttrMap(
