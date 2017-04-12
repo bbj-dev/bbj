@@ -166,8 +166,8 @@ default_prefs = {
 class App(object):
     def __init__(self):
         self.bars = {
-            "index": "[JKNP]Navigate [RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-            "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help/More"
+            "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
+            "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help"
         }
 
         colors = [
