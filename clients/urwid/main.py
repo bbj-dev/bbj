@@ -573,9 +573,9 @@ class App(object):
         for thread in threads:
             self.walker.append(self.make_thread_body(thread))
         self.set_bars()
-        try: self.loop.widget.body.base_widget.set_focus(self.last_pos)
+        try: self.box.set_focus(self.last_pos)
         except IndexError:
-            pass
+            self.box.change_focus(size, 0)
 
 
     def thread_load(self, button, thread_id):
@@ -583,7 +583,7 @@ class App(object):
         Open a thread.
         """
         if self.mode == "index":
-            self.last_pos = self.loop.widget.body.base_widget.get_focus()[1]
+            self.last_pos = self.box.get_focus()[1]
         self.mode = "thread"
         thread, usermap = network.thread_load(thread_id, format="sequential")
         self.usermap.update(usermap)
@@ -600,7 +600,7 @@ class App(object):
             return self.index()
         self.thread_load(None, self.thread["thread_id"])
         if bottom:
-            self.loop.widget.body.base_widget.set_focus(len(self.walker) - 5)
+            self.box.set_focus(len(self.walker) - 5)
 
 
     def back(self):
@@ -1381,9 +1381,6 @@ def paren_prompt(text, positive=True, choices=[]):
         print("")
         return ""
 
-    # except KeyboardInterrupt:
-    #     exit("\nNevermind then!")
-
 
 def sane_value(key, prompt, positive=True, return_empty=False):
     response = paren_prompt(prompt, positive)
@@ -1488,9 +1485,8 @@ def bbjrc(mode, **params):
     except FileNotFoundError:
         values = default_prefs
 
-    if mode == "update":
-        values.update(params)
-
+    values.update(params)
+    # we always write
     with open(path, "w") as _out:
         json.dump(values, _out)
 
@@ -1504,21 +1500,19 @@ def ignore(*_, **__):
     pass
 
 
-
 def main():
+    global app
     run("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
-    try: log_in()
+    try:
+        log_in()
+        app = App()
+        app.usermap.update(network.user)
+        app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
-        exit("\nwell alrighty then")
+        frilly_exit()
+
 
 if __name__ == "__main__":
     main()
-    # is global
-    app = App()
-    app.usermap.update(network.user)
-    try:
-        app.loop.run()
-    except KeyboardInterrupt:
-        frilly_exit()
