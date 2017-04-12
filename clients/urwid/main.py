@@ -62,6 +62,7 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 """
 
 format_help = [
+    "Quick reminder: \[rainbow: expressions work like this]\n\n"
     "BBJ supports **bolding**, __underlining__, and [rainbow: coloring] text "
     "using markdown-style symbols as well as tag-like expressions. Markdown "
     "is **NOT** fully implemented, but several of the more obvious concepts "
@@ -91,8 +92,8 @@ format_help = [
     "The colon and the space following it are important. When you use these "
     "expressions, the __first__ space is not part of the content, but any characters, "
     "including spaces, that follow it are included in the body. The formatting will "
-    "apply until the closing ]. You can escape such an expression \\[cyan: like this]"
-    "and can also \\[blue: escape \\] other closing brackets] inside of it. Only "
+    "apply until the closing ]. You can escape such an expression \\\[cyan: like this] "
+    "and can also \\[blue: escape \\\] other closing brackets] inside of it. Only "
     "closing brackets need to be escaped within an expression. Any backslashes used "
     "for escaping will not show in the body unless you use two slashes.",
 
