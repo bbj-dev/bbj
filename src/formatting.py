@@ -11,7 +11,7 @@ A B A N D O N                               ,:
                                     /.' '
 This module includes a couple     '/'
 of custom (GROAN) formatting    +
-specifications and parsers      '    me irl
+specifications and parsers      '
 for them. Why did i do this?  `.
       I have no idea!      .-"-
                           (    |
@@ -70,7 +70,7 @@ colors = [
 ]
 
 markup = [
-    "bold", "italic", "underline", "linequote", "quote", "rainbow"
+    "bold", "underline", "linequote", "quote", "rainbow"
 ]
 
 # PS: regex parsing is no longer used for these, preserving anyways
@@ -82,6 +82,8 @@ markup = [
 
 # quotes being references to other post_ids, like >>34 or >>0 for OP
 quotes = re.compile(">>([0-9]+)")
+bold = re.compile(r"\*{2}(.{1,20})\*{2}")
+underline = re.compile(r"__(.{1,20})__")
 
 
 def parse_segments(text, sanitize_linequotes=True):
@@ -98,6 +100,8 @@ def parse_segments(text, sanitize_linequotes=True):
             if not segment:
                 continue
             segment = quotes.sub(lambda m: "[quote: %s]" % m.group(1), segment)
+            segment = bold.sub(lambda m: "[bold: %s]" % m.group(1), segment)
+            segment = underline.sub(lambda m: "[underline: %s]" % m.group(1), segment)
             if segment.startswith(">"):
                 if sanitize_linequotes:
                     inner = segment.replace("]", "\\]")

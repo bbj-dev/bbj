@@ -238,7 +238,9 @@ class API(object):
     def thread_load(self, args, database, user, **kwargs):
         """
         Returns the thread object with all of its messages loaded.
-        Requires the argument `thread_id`
+        Requires the argument `thread_id`. `format` may also be
+        specified as a formatter to run the messages through.
+        Currently only "sequential" is supported.
         """
         validate(args, ["thread_id"])
         thread = db.thread_get(database, args["thread_id"])
@@ -298,6 +300,23 @@ class API(object):
         validate(args, ["thread_id", "post_id"])
         return db.message_edit_query(
             database, user["user_id"], args["thread_id"], args["post_id"])
+
+
+    @api_method
+    def format_message(self, args, database, user, **kwargs):
+        """
+        Requires the arguments `body` and `format`. Applies
+        `format` to `body` and returns the new object. See
+        `thread_load` for supported specifications for `format`.
+        """
+        validate(args, ["format", "body"])
+        message = [{"body": args["body"]}]
+        if args["format"] == "sequential":
+            formatter = formatting.sequential_expressions
+        else:
+            raise BBJParameterError("invalid format directive.")
+        formatting.apply_formatting(message, formatter)
+        return message[0]["body"]
 
 
     @api_method

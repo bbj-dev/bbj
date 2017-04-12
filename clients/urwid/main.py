@@ -20,7 +20,6 @@ Please mail me (~desvox) for feedback and for any of your
 "OH MY GOD WHY WOULD YOU DO THIS"'s or "PEP8 IS A THING"'s.
 """
 
-
 from network import BBJ, URLError
 from string import punctuation
 from datetime import datetime
@@ -62,6 +61,86 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 @_________________________________________________________@
 """
 
+format_help = [
+    "BBJ supports **bolding**, __underlining__, and [rainbow: coloring] text "
+    "using markdown-style symbols as well as tag-like expressions. Markdown "
+    "is **NOT** fully implemented, but several of the more obvious concepts "
+    "have been brought over. Additionally, we have chan-style greentext and "
+    "numeric post referencing, ala >>3 for the third reply.",
+
+    "[red: Whitespace]",
+
+    "When you're composing, it is desirable to introduce linebreaks into the "
+    "body to keep it from overflowing the screen. However, you __dont__ want "
+    "that same spacing to bleed over to other people's screens, because clients "
+    "will wrap the text themselves.",
+
+    "Single line breaks in the body join into eachother to form sentences, "
+    "putting a space where the break was. This works like html. When you want "
+    "to split it off into a paragraph, **use two line breaks.**",
+
+    "[red: Colors, Bold, Underline & Expressions]",
+
+    "You can use [rainbow: rainbow], [red: red], [yellow: yellow], [green: green], "
+    "[blue: blue], [cyan: cyan], [magenta: and magenta], **bold**, and __underline__ "
+    "inside of your posts. **bold\nworks like this**, __and\nunderlines like this__. "
+    "The symbolic, markdown form of these directives does NOT allow escaping, and "
+    "can only apply to up to 20 characters on the same line. They are best used on short "
+    "phrases. However, you can use a different syntax for it, which is also required to use "
+    "colors: these expressions \[bold: look like this] and are much more reliable. "
+    "The colon and the space following it are important. When you use these "
+    "expressions, the __first__ space is not part of the content, but any characters, "
+    "including spaces, that follow it are included in the body. The formatting will "
+    "apply until the closing ]. You can escape such an expression \\[cyan: like this]"
+    "and can also \\[blue: escape \\] other closing brackets] inside of it. Only "
+    "closing brackets need to be escaped within an expression. Any backslashes used "
+    "for escaping will not show in the body unless you use two slashes.",
+
+    "This peculiar syntax elimiates false positives. You never have to escape [normal] "
+    "brackets when using the board. Only expressions with **valid and defined** directives "
+    "will be affected. [so: this is totally valid and requires no escapes] because 'so' is "
+    "not a directive. [red this will pass too] because the colon is missing.",
+
+    "The following directives may be used in this form: red, yellow, green, blue, cyan, "
+    "magenta, bold, underline, and rainbow. Nesting expressions into eachother will "
+    "override the parent directives until it closes. Thus, nesting is valid but doesn't produce "
+    "layered results.",
+
+    "[red: Quotes & Greentext]",
+
+    "You can refer to a post number using two angle brackets pointing into a number. >>432 "
+    "like this. You can color a whole line green by proceeding it with a '>'. Note that "
+    "this violates the sentence structure outlined in the **Whitespace** section above, "
+    "so you may introduce >greentext without splicing into seperate paragraphs. The '>' "
+    "must be the first character on the line with no whitespace before it.\n>it looks like this\n"
+    "and the paragraph doesnt have to break on either side.",
+
+    "When using numeric quotes, they are highlighted and the author's name will show "
+    "next to them in the thread. You can press enter when focused on a message to view "
+    "the parent posts. You may insert these directives manually or use the <Reply> function "
+    "on post menus.",
+
+    "Quoting directives cannot be escaped."
+]
+
+general_help = [
+    ("bold", "use q or escape to close dialogs and menus (including this one)\n\n"),
+
+    "You may use the arrow keys, or use jk/np/Control-n|p to move up and down by "
+    "an element. If an element is overflowing the screen, it will scroll only one line. "
+    "To make scrolling faster, hold shift when using a control: it will repeat 5 times.\n\n"
+
+    "To go back and forth between threads, you may also use the left/right arrow keys, "
+    "or h/l to do it vi-style.\n\n"
+
+    "In the thread index and any open thread, the b and t keys may be used to go to "
+    "very top or bottom.\n\n"
+
+    "Aside from those, primary controls are shown on the very bottom of the screen "
+    "in the footer line, or may be placed in window titles for other actions like "
+    "dialogs or composers."
+]
+
 colornames = [
     "none", "red", "yellow", "green", "blue",
     "cyan", "magenta"
@@ -87,7 +166,7 @@ default_prefs = {
 class App(object):
     def __init__(self):
         self.bars = {
-            "index": "[Arrows|JK|NP]Navigate [RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
+            "index": "[JKNP]Navigate [RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
             "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help/More"
         }
 
@@ -222,9 +301,8 @@ class App(object):
             focus = "[focused on thread]"
             attr = ("dim", "bar")
 
-        control = "[save/quit to send]" if self.prefs["editor"] else "[F3]Send"
         self.loop.widget.footer[0].set_text(
-            "[F1]Abort [F2]Swap %s %s" % (control, focus))
+            "[F1]Abort [F2]Swap [F3]Formatting Help [save/quit to send] " + focus)
 
         # this hideous and awful sinful horrid unspeakable shithack changes
         # the color of the help/title lines and editor border to reflect which
@@ -339,7 +417,7 @@ class App(object):
                     init_body=message["body"],
                     post_id=post_id,
                     thread_id=thread_id),
-                title="[F1]Abort (save/quit to commit)",
+                title="[F1]Abort [F3]Formatting Help (save/quit to commit)",
                 **frame_theme()),
             self.loop.widget,
             align="center",
@@ -382,7 +460,7 @@ class App(object):
             align=("relative", 50),
             valign=("relative", 50),
             width=30,
-            height=len(buttons) + 3
+            height=len(buttons) + 2
         )
 
 
@@ -399,7 +477,7 @@ class App(object):
         return [value_type(q) for q in quotes]
 
 
-    def make_message_body(self, message):
+    def make_message_body(self, message, no_action=False):
         """
         Returns the widgets that comprise a message in a thread, including the
         text body, author info and the action button
@@ -408,11 +486,12 @@ class App(object):
         if message["edited"]:
             info += " [edited]"
 
+        callback = self.on_post if not no_action else ignore
         name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
         post = str(message["post_id"])
         head = urwid.Columns([
                 (2 + len(post), urwid.AttrMap(
-                    cute_button(">" + post, self.on_post, message), "button", "hover")),
+                    cute_button(">" + post, callback, message), "button", "hover")),
                 (len(name._text) + 1, urwid.AttrMap(
                     name, str(self.usermap[message["author"]]["color"]))),
                 urwid.AttrMap(urwid.Text(info), "dim")
@@ -508,7 +587,7 @@ class App(object):
         self.set_bars()
 
 
-    def refresh(self, bottom=False):
+    def refresh(self, bottom=True):
         self.remove_overlays()
         if self.mode == "index":
             return self.index()
@@ -576,6 +655,60 @@ class App(object):
         self.loop.widget = self.loop.widget[0]
         self.set_default_header()
         self.options_menu()
+
+
+    def general_help(self):
+        """
+        Show a general help dialog. In all honestly, its not
+        very useful and will only help people who have never
+        really used terminal software before =)
+        """
+        widget = OptionsMenu(
+            urwid.ListBox(
+                urwid.SimpleFocusListWalker([
+                    urwid_rainbows(
+                        "This is BBJ, a client/server textboard made for tilde.town!",
+                        True),
+                    urwid.Text(("dim", "...by ~desvox")),
+                    urwid.Divider("-"),
+                    urwid.Button("Post Formatting Help", self.formatting_help),
+                    urwid.Divider("-"),
+                    urwid.Text(general_help)
+                ])),
+            title="?????",
+            **frame_theme()
+        )
+
+        app.loop.widget = urwid.Overlay(
+            widget, app.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=30,
+            height=("relative", 60)
+        )
+
+
+    def formatting_help(self, *_):
+        """
+        Pops a help window with formatting directives.
+        """
+        message = network.fake_message("\n\n".join(format_help))
+        widget = OptionsMenu(
+            urwid.ListBox(
+                urwid.SimpleFocusListWalker([
+                    *app.make_message_body(message, True)
+                ])),
+            title="Formatting Help",
+            **frame_theme()
+        )
+
+        app.loop.widget = urwid.Overlay(
+            widget, app.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=("relative", 98),
+            height=("relative", 60)
+        )
 
 
     def set_color(self, button, value, color):
@@ -854,7 +987,7 @@ class App(object):
 
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
-            self.set_footer("[F1]Abort [Save and quit to submit your thread]")
+            self.set_footer("[F1]Abort [F3]Formatting Help [Save and quit to submit your thread]")
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
                     ExternalEditor("thread_create", title=title),
@@ -1049,15 +1182,17 @@ class ExternalEditor(urwid.Terminal):
             else:
                 return app.temp_footer_message("EMPTY POST DISCARDED")
 
-        elif key not in ["f1", "f2"]:
+        elif key not in ["f1", "f2", "f3"]:
             return super(ExternalEditor, self).keypress(size, key)
 
         elif key == "f1":
             self.terminate()
             app.close_editor()
             app.refresh()
-        # key == "f2"
-        app.switch_editor()
+        elif key == "f2":
+            app.switch_editor()
+        elif key == "f3":
+            app.formatting_help()
 
 
     def __del__(self):
@@ -1077,6 +1212,12 @@ class OptionsMenu(urwid.LineBox):
         # try to let the base class handle the key, if not, we'll take over
         elif not super(OptionsMenu, self).keypress(size, key):
             return
+        elif key in ["shift down", "J", "N"]:
+            for x in range(5):
+                self.keypress(size, "down")
+        elif key in ["shift up", "K", "P"]:
+            for x in range(5):
+                self.keypress(size, "up")
         elif key.lower() == "q":
             app.loop.widget = app.loop.widget[0]
         elif key in ["ctrl n", "j", "n"]:
@@ -1102,11 +1243,11 @@ class ActionBox(urwid.ListBox):
         elif key in ["k", "p", "ctrl p"]:
             self._keypress_up(size)
 
-        elif key in ["J", "N"]:
+        elif key in ["shift down", "J", "N"]:
             for x in range(5):
                 self._keypress_down(size)
 
-        elif key in ["K", "P"]:
+        elif key in ["shift up", "K", "P"]:
             for x in range(5):
                 self._keypress_up(size)
 
@@ -1130,6 +1271,9 @@ class ActionBox(urwid.ListBox):
 
         elif key == "o":
             app.options_menu()
+
+        elif key == "?":
+            app.general_help()
 
         elif key.lower() == "q":
             app.back()
@@ -1168,12 +1312,13 @@ def cute_button(label, callback=None, data=None):
     return button
 
 
-def urwid_rainbows(string):
+def urwid_rainbows(string, bold=False):
     """
     Same as below, but instead of printing rainbow text, returns
     a markup list suitable for urwid's Text contructor.
     """
     colors = [str(x) for x in range(1, 7)]
+    if bold: colors = [(c + "0") for c in colors]
     return urwid.Text([(choice(colors), char) for char in string])
 
 
@@ -1343,6 +1488,13 @@ def bbjrc(mode, **params):
         json.dump(values, _out)
 
     return values
+
+
+def ignore(*_, **__):
+    """
+    The blackness of my soul.
+    """
+    pass
 
 
 

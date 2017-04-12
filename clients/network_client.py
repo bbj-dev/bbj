@@ -1,6 +1,7 @@
 from urllib.error import URLError
 import urllib.request as url
 from hashlib import sha256
+from time import time
 import json
 
 
@@ -421,6 +422,32 @@ class BBJ(object):
         """
         response = self("thread_load", format=format, thread_id=thread_id)
         return response["data"], response["usermap"]
+
+
+    def fake_message(self, body="!!", format="sequential", author=None, post_id=0):
+        """
+        Produce a a valid message object with `body`. Useful for
+        testing and can also be used mimic server messages in a
+        client.
+        """
+        return {
+            "body": self.format_message(body, format),
+            "author": author or self.user["user_id"],
+            "post_id": post_id,
+            "created": time(),
+            "edited": False,
+            "thread_id": "gibberish"
+        }
+
+
+
+    def format_message(self, body, format="sequential"):
+        """
+        Send `body` to the server to be formatted according to `format`,
+        defaulting to the sequential parser. Returns the body object.
+        """
+        response = self("format_message", body=body, format=format)
+        return response["data"]
 
 
     def edit_query(self, thread_id, post_id):
