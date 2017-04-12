@@ -1510,6 +1510,7 @@ if __name__ == "__main__":
     main()
     # is global
     app = App()
+    app.usermap.update(network.user)
     try:
         app.loop.run()
     except KeyboardInterrupt:
