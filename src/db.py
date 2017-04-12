@@ -24,7 +24,6 @@ from src.utils import ordered_keys, schema_values
 from src import schema
 from uuid import uuid1
 from time import time
-import pickle
 import json
 import os
 
