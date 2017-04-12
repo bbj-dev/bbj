@@ -489,16 +489,17 @@ class App(object):
         if no_action:
             callback = ignore
             name = urwid_rainbows("~SYSTEM", True)
+            color = "0"
         else:
             callback = self.on_post
             name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
+            color = str(self.usermap[message["author"]]["color"])
 
         post = str(message["post_id"])
         head = urwid.Columns([
                 (2 + len(post), urwid.AttrMap(
                     cute_button(">" + post, callback, message), "button", "hover")),
-                (len(name._text) + 1, urwid.AttrMap(
-                    name, str(self.usermap[message["author"]]["color"]))),
+                (len(name._text) + 1, urwid.AttrMap(name, color)),
                 urwid.AttrMap(urwid.Text(info), "dim")
             ])
 
