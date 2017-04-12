@@ -1,22 +1,67 @@
 """
-This module is not complete and none of its functions are currently
-used elsewhere. Subject to major refactoring.
+A B A N D O N                               ,:
+   A L L  H O P E                         ,' |
+                                         /   :
+                                      --'   /
+       F O R  Y E  W H O              \/ /:/
+           E N T E R  H E R E         / ://_\
+                                   __/   /
+                                   )'-. /
+ Crude hacks lie beneath us.      ./  :\
+                                    /.' '
+This module includes a couple     '/'
+of custom (GROAN) formatting    +
+specifications and parsers      '    me irl
+for them. Why did i do this?  `.
+      I have no idea!      .-"-
+                          (    |
+                       . .-'  '.
+                      ( (.   )8:
+                  .'    / (_  )
+                   _. :(.   )8P  `
+               .  (  `-' (  `.   .
+                .  :  (   .a8a)
+               /_`( "a `a. )"'
+           (  (/  .  ' )=='
+          (   (    )  .8"   +
+            (`'8a.( _(   (
+         ..-. `8P    ) `  )  +
+       -'   (      -ab:  )
+     '    _  `    (8P"Ya
+   _(    (    )b  -`.  ) +
+  ( 8)  ( _.aP" _a   \( \   *
++  )/    (8P   (88    )  )
+   (a:f   "     `"`
+
+
+The internal representation of formatted text is much like an s-expression.
+
+They are specified as follows:
+            [directive: this is the body of text to apply it to]
+
+The colon and the space following are important! The first space is not part
+of the body, but any trailing spaces after it or at the end of the body are
+included in the output.
+
+Escaping via backslash is supported. Nesting is supported as well, but escaping
+the delimiters is a bit tricky when nesting (both ends need to be escaped).
+See the following examples:
+
+[bold: this here \] is totally valid, and so is [<-TOTALLY OK this]
+[bold: \[red: but both]<-CHOKE delimiters within a nest must be escaped.]
+
+Directives are only parsed whenever the directive name is defined, and the
+colon/space follow it. Thus, including [brackets like this] in a post body
+will NOT require you to escape it! Even [brackets: like this] is safe, because
+brackets is not a defined formatting parameter. So, any amount of unescaped brackets
+may exist within the body unless they mimic a directive. To escape a valid directive,
+escaping only the opening is suffiecient: \[bold: like this]. The literal body of
+text outputted by that will be [bold: like this], with the backslash removed.
+
+Just like the brackets themselves, backslashes may occur freely within bodies,
+they are only removed when they occur before a valid expression.
 """
 
-test = """
-This is a small paragraph
-thats divided between a
-few rows.
-
-this opens a few linequotes.
->this is a few
->rows of
->sequential line breaks
-and this is what follows right after
-"""
-
-# from markdown import markdown
-# from html import escape
 import re
 
 colors = [
@@ -28,15 +73,15 @@ markup = [
     "bold", "italic", "underline", "linequote", "quote", "rainbow"
 ]
 
+# PS: regex parsing is no longer used for these, preserving anyways
 # tokens being [red: this will be red] and [bold: this will be bold]
 # tokens = re.compile(r"\[(%s): (.+?)]" % "|".join(colors + markup), flags=re.DOTALL)
+# linequotes being chan-style greentext,
+# >like this
+# linequotes = re.compile("^(>.+)$", flags=re.MULTILINE)
 
 # quotes being references to other post_ids, like >>34 or >>0 for OP
 quotes = re.compile(">>([0-9]+)")
-
-# linequotes being chan-style greentext,
-# >like this
-linequotes = re.compile("^(>.+)$", flags=re.MULTILINE)
 
 
 def parse_segments(text, sanitize_linequotes=True):

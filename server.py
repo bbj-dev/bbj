@@ -291,7 +291,7 @@ class API(object):
         (does not require a new body)
 
         Returns the original message object without any formatting
-        on success.
+        on success. Returns a descriptive code 4 otherwise.
         """
         if user == db.anon:
             raise BBJUserError("Anons cannot edit messages.")

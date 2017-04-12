@@ -95,7 +95,7 @@ class App(object):
             ("default", "default", "default"),
             ("bar", "light magenta", "default"),
             ("button", "light red", "default"),
-            ("quote", "light green,underline", "default"),
+            ("quote", "brown", "default"),
             ("opt_prompt", "black", "light gray"),
             ("opt_header", "light cyan", "default"),
             ("hover", "light cyan", "default"),
@@ -111,7 +111,15 @@ class App(object):
             ("3", "dark green", "default"),
             ("4", "dark blue", "default"),
             ("5", "dark cyan", "default"),
-            ("6", "dark magenta", "default")
+            ("6", "dark magenta", "default"),
+
+            # and have the bolded colors use the same values times 10
+            ("10", "light red", "default"),
+            ("20", "yellow", "default"),
+            ("30", "light green", "default"),
+            ("40", "light blue", "default"),
+            ("50", "light cyan", "default"),
+            ("60", "light magenta", "default")
         ]
 
         self.mode = None
@@ -120,11 +128,12 @@ class App(object):
         self.prefs = bbjrc("load")
         self.window_split = False
         self.last_pos = 0
-
+        # self.jump_stack = []
         self.walker = urwid.SimpleFocusListWalker([])
+        self.box = ActionBox(self.walker)
         self.loop = urwid.MainLoop(urwid.Frame(
             urwid.LineBox(
-                ActionBox(self.walker),
+                self.box,
                 title=self.prefs["frame_title"],
                 **frame_theme()
             )), colors)
@@ -244,6 +253,152 @@ class App(object):
         return "less than a minute ago"
 
 
+    def quote_view_action(self, button, post_id):
+        message = self.thread["messages"][post_id]
+        author = self.usermap[message["author"]]
+        color = str(author["color"])
+        pid_string = ">>%d" % post_id
+        title = [
+            ("button", pid_string),
+            ("default", " by "),
+            (color, "~" + author["user_name"])
+        ]
+        widget = OptionsMenu(
+            urwid.ListBox(
+                urwid.SimpleFocusListWalker([
+                    *self.make_message_body(message)
+                ])),
+            title=pid_string,
+            **frame_theme()
+        )
+
+        self.loop.widget = urwid.Overlay(
+            widget, self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=("relative", 98),
+            height=("relative", 60)
+        )
+
+
+
+    def quote_view_menu(self, button, post_ids):
+        if len(post_ids) == 1:
+            return self.quote_view_action(button, post_ids[0])
+        # else:
+        #     self.loop.widget = self.loop.widget[0]
+        buttons = []
+        for pid in post_ids:
+            try:
+                message = self.thread["messages"][pid]
+                author = self.usermap[message["author"]]
+                color = str(author["color"])
+                label = [
+                    ("button", ">>%d " % pid),
+                    "(", (color, author["user_name"]), ")"]
+            except:
+                label = ("button", ">>%d")
+            buttons.append(cute_button(label, self.quote_view_action, pid))
+
+        widget = OptionsMenu(
+            urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
+            title="View a Quote",
+            **frame_theme()
+        )
+
+        self.loop.widget = urwid.Overlay(
+            widget, self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=30,
+            height=len(buttons) + 3
+        )
+
+
+    def remove_overlays(self):
+        while True:
+            try: self.loop.widget = self.loop.widget[0]
+            except: break
+
+
+    def edit_post(self, button, message):
+        post_id = message["post_id"]
+        thread_id = message["thread_id"]
+        # first we need to get the server's version of the message
+        # instead of our formatted one
+        try:
+            message = network.edit_query(thread_id, post_id)
+        except UserWarning as e:
+            self.remove_overlays()
+            return self.temp_footer_message(e.description)
+
+        self.loop.widget = urwid.Overlay(
+            urwid.LineBox(
+                ExternalEditor(
+                    "edit_post",
+                    init_body=message["body"],
+                    post_id=post_id,
+                    thread_id=thread_id),
+                title="[F1]Abort (save/quit to commit)",
+                **frame_theme()),
+            self.loop.widget,
+            align="center",
+            valign="middle",
+            width=("relative", 75),
+            height=("relative", 75))
+
+
+    def reply(self, button, message):
+        self.remove_overlays()
+        self.compose(init_body=">>%d\n\n" % message["post_id"])
+
+
+
+    def on_post(self, button, message):
+        quotes = self.get_quotes(message)
+        author = self.usermap[message["author"]]
+        buttons = [
+            urwid.Button("Reply", self.reply, message),
+        ]
+
+        if quotes and message["post_id"] != 0:
+            buttons.insert(1, urwid.Button(
+                "View %sQuote" % ("a " if len(quotes) != 1 else ""),
+                self.quote_view_menu, quotes))
+
+        if network.can_edit(message["thread_id"], message["post_id"]):
+            buttons.insert(0, urwid.Button("Edit Post", self.edit_post, message))
+
+        widget = OptionsMenu(
+            urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
+            title=str(">>%d (%s)" % (message["post_id"], author["user_name"])),
+            **frame_theme()
+        )
+        size = self.loop.screen_size
+
+        self.loop.widget = urwid.Overlay(
+            urwid.AttrMap(widget, str(author["color"]*10)),
+            self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=30,
+            height=len(buttons) + 3
+        )
+
+
+    def get_quotes(self, msg_object, value_type=int):
+        """
+        Returns the post_ids that msg_object is quoting.
+        Is a list, may be empty. ids are ints by default
+        but can be passed `str` for strings.
+        """
+        quotes = []
+        for paragraph in msg_object["body"]:
+            # yes python is lisp fuck you
+            [quotes.append(cdr) for car, cdr in paragraph if car == "quote"]
+        return [value_type(q) for q in quotes]
+
+
     def make_message_body(self, message):
         """
         Returns the widgets that comprise a message in a thread, including the
@@ -256,9 +411,10 @@ class App(object):
         name = urwid.Text("~{}".format(self.usermap[message["author"]]["user_name"]))
         post = str(message["post_id"])
         head = urwid.Columns([
-                (2 + len(post), urwid.AttrMap(cute_button(">" + post), "button", "hover")),
-                (len(name._text) + 1,
-                   urwid.AttrMap(name, str(self.usermap[message["author"]]["color"]))),
+                (2 + len(post), urwid.AttrMap(
+                    cute_button(">" + post, self.on_post, message), "button", "hover")),
+                (len(name._text) + 1, urwid.AttrMap(
+                    name, str(self.usermap[message["author"]]["color"]))),
                 urwid.AttrMap(urwid.Text(info), "dim")
             ])
 
@@ -266,7 +422,9 @@ class App(object):
         return [
             head,
             urwid.Divider(),
-            urwid.Columns([(self.prefs["max_text_width"], MessageBody(message["body"]))]),
+            urwid.Columns([
+                (self.prefs["max_text_width"], MessageBody(message))
+            ]),
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ]
@@ -351,6 +509,7 @@ class App(object):
 
 
     def refresh(self, bottom=False):
+        self.remove_overlays()
         if self.mode == "index":
             return self.index()
         self.thread_load(None, self.thread["thread_id"])
@@ -518,6 +677,9 @@ class App(object):
                 urwid.Button("Change password", on_press=self.change_password),
                 urwid.Divider(),
                 urwid.Text(("button", "Your color:")),
+                urwid.Text(("default", "This color will show on your "
+                            "post headers and when people quote you.")),
+                urwid.Divider(),
                 *user_colors
             ]
         else:
@@ -651,14 +813,14 @@ class App(object):
         self.loop.stop()
         descriptor, path = tempfile.mkstemp()
         run("%s %s" % (self.prefs["editor"], path), shell=True)
-        with open(descriptor) as _:
+        with open(path) as _:
             body = _.read()
         os.remove(path)
         self.loop.start()
         return body.strip()
 
 
-    def compose(self, title=None):
+    def compose(self, title=None, init_body=""):
         """
         Dispatches the appropriate composure mode and widget based on application
         context and user preferences.
@@ -710,7 +872,10 @@ class App(object):
                 urwid.BoxAdapter(
                     urwid.AttrMap(
                         urwid.LineBox(
-                            ExternalEditor("thread_reply", thread_id=self.thread["thread_id"]),
+                            ExternalEditor(
+                                "thread_reply",
+                                init_body=init_body,
+                                thread_id=self.thread["thread_id"]),
                             **frame_theme()
                         ),
                         "bar"),
@@ -719,7 +884,11 @@ class App(object):
 
 
 class MessageBody(urwid.Text):
-    def __init__(self, text_objects):
+    """
+    An urwid.Text object that works with the BBJ formatting directives.
+    """
+    def __init__(self, message):
+        text_objects = message["body"]
         result = []
         last_directive = None
         for paragraph in text_objects:
@@ -738,7 +907,34 @@ class MessageBody(urwid.Text):
                     result.append(("3", "%s\n" % body.strip()))
 
                 elif directive == "quote":
-                    result.append(("quote", ">>%s" % body))
+                    if message["post_id"] == 0:
+                        # Quotes in OP have no meaning, just insert them plainly
+                        result.append(("default", ">>%s" % body))
+                        continue
+                    elif body == "0":
+                        # quoting the OP, lets make it stand out a little
+                        result.append(("50", ">>OP"))
+                        continue
+
+                    color = "2"
+                    try:
+                        # we can get this quote by its index in the thread
+                        message = app.thread["messages"][int(body)]
+                        user = app.usermap[message["author"]]
+                        # try to get the user's color, if its default use the normal one
+                        _c = user["color"]
+                        if _c != 0:
+                            color = str(_c)
+
+                        if user != "anonymous" and user["user_name"] == network.user_name:
+                            display = "[You]"
+                            # bold it
+                            color += "0"
+                        else:
+                            display = "[%s]" % user["user_name"]
+                    except: # the quote may be garbage and refer to a nonexistant post
+                        display = ""
+                    result.append((color, ">>%s%s" % (body, display)))
 
                 elif directive == "rainbow":
                     color = 1
@@ -751,9 +947,8 @@ class MessageBody(urwid.Text):
                 else:
                     result.append(("default", body))
                 last_directive = directive
-
             result.append("\n\n")
-        result.pop()
+        result.pop() # lazily ensure \n\n between paragraphs but not at the end
         super(MessageBody, self).__init__(result)
 
 
@@ -820,6 +1015,13 @@ class FootPrompt(Prompt):
 class ExternalEditor(urwid.Terminal):
     def __init__(self, endpoint, **params):
         self.file_descriptor, self.path = tempfile.mkstemp()
+        with open(self.path, "w") as _:
+            if params.get("init_body"):
+                init_body = params.pop("init_body")
+            else:
+                init_body = ""
+            _.write(init_body)
+
         self.endpoint = endpoint
         self.params = params
         env = os.environ
@@ -836,7 +1038,7 @@ class ExternalEditor(urwid.Terminal):
     def keypress(self, size, key):
         if self.terminated:
             app.close_editor()
-            with open(self.file_descriptor) as _:
+            with open(self.path) as _:
                 self.params.update({"body": _.read().strip()})
             os.remove(self.path)
             if self.params["body"]:

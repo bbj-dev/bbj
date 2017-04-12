@@ -421,3 +421,28 @@ class BBJ(object):
         """
         response = self("thread_load", format=format, thread_id=thread_id)
         return response["data"], response["usermap"]
+
+
+    def edit_query(self, thread_id, post_id):
+        """
+        Queries ther server database to see if a post can
+        be edited by the logged in user. thread_id and
+        post_id are required.
+
+        Returns a message object on success, or raises
+        a UserWarning describing why it failed.
+        """
+        response = self("edit_query", thread_id=thread_id, post_id=int(post_id))
+        return response["data"]
+
+
+    def can_edit(self, thread_id, post_id):
+        """
+        Return bool True/False that the post at thread_id | post_id
+        can be edited by the logged in user. Will not raise UserWarning.
+        """
+        try:
+            result = bool(self.edit_query(thread_id, post_id))
+        except UserWarning:
+            result = False
+        return result
