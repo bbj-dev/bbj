@@ -804,7 +804,7 @@ class App(object):
         self.set_footer(string)
 
 
-    def overthrow_ext_edit(self):
+    def overthrow_ext_edit(self, init_body=""):
         """
         Opens the external editor, but instead of integreating it into the app,
         stops the mainloop and blocks until the editor is killed. Returns the
@@ -812,6 +812,8 @@ class App(object):
         """
         self.loop.stop()
         descriptor, path = tempfile.mkstemp()
+        with open(path, "w") as _:
+            _.write(init_body)
         run("%s %s" % (self.prefs["editor"], path), shell=True)
         with open(path) as _:
             body = _.read()
@@ -835,7 +837,7 @@ class App(object):
                     "Title", self.compose, extra_text=e.description)
 
         if self.prefs["editor"] and not self.prefs["integrate_external_editor"]:
-            body = self.overthrow_ext_edit()
+            body = self.overthrow_ext_edit(init_body)
             if not body:
                 return self.temp_footer_message("EMPTY POST DISCARDED")
             params = {"body": body}
