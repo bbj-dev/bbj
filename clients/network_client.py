@@ -432,6 +432,27 @@ class BBJ(object):
         return response["data"], response["usermap"]
 
 
+    def thread_create(self, title, body):
+        """
+        Submit a new thread, and return its new object. Requires the
+        string arguments `title` and `body`. Title must be under
+        120 chars in length, else UserWarning is raised. Body must
+        also not be empty.
+        """
+        response = self("thread_create", title=title, body=body)
+        return response["data"]
+
+
+    def thread_reply(self, thread_id, body):
+        """
+        Submits a new reply to a thread and returns the new object.
+        Requires the thread's id and a non-empty body string.
+        """
+        response = self("thread_reply", thread_id=thread_id, body=body)
+        return response["data"]
+
+
+
     def fake_message(self, body="!!", format="sequential", author=None, post_id=0):
         """
         Produce a a valid message object with `body`. Useful for
