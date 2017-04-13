@@ -1118,8 +1118,12 @@ class MessageBody(urwid.Text):
                     result.append((directive, body))
 
                 elif directive == "linequote":
-                    if directive != last_directive and result[-1][-1][-1] != "\n":
-                        result.append(("default", "\n"))
+                    try:
+                        # this /naughty/ hack is supposed to keep spacing consistent....needs tweaking
+                        if directive != last_directive and result[-1][-1][-1] != "\n":
+                            result.append(("default", "\n"))
+                    except IndexError:
+                        pass
                     result.append(("3", "%s\n" % body.strip()))
 
                 elif directive == "quote":
