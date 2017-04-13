@@ -228,7 +228,8 @@ class App(object):
                     title=self.prefs["frame_title"],
                     **frame_theme()
                 )),
-            colormap)
+            palette=colormap,
+            handle_mouse=False)
 
         self.index()
 
@@ -295,7 +296,7 @@ class App(object):
         self.set_default_header()
 
 
-    def remove_overlays(self):
+    def remove_overlays(self, *_):
         """
         Remove ALL urwid.Overlay objects which are currently covering the base
         widget.
@@ -579,7 +580,7 @@ class App(object):
 
 
 
-    def index(self):
+    def index(self, *_):
         """
         Browse the index.
         """
@@ -622,10 +623,34 @@ class App(object):
             self.box.set_focus(len(self.walker) - 5)
 
 
-    def back(self, and_quit=True):
-        if app.mode == "index" and and_quit:
+    def back(self, terminate=False):
+        if app.mode == "index" and terminate:
             frilly_exit()
-        elif app.mode == "thread":
+
+        elif self.window_split:
+            # display a confirmation dialog before killing off an in-progress post
+            buttons = [
+                urwid.Text(("bold", "Discard current post?")),
+                urwid.Divider(),
+                cute_button(("10" ,">> Yes"), lambda _: [
+                    self.remove_overlays(),
+                    self.index()
+                ]),
+                cute_button(("30", "<< No"), self.remove_overlays)
+            ]
+
+            # TODO: create a central routine for creating popups. this is getting really ridiculous
+            popup = OptionsMenu(
+                urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
+                **frame_theme())
+
+            self.loop.widget = urwid.Overlay(
+                popup, self.loop.widget,
+                align=("relative", 50),
+                valign=("relative", 25),
+                width=30, height=6)
+
+        else:
             self.index()
 
 
@@ -1246,8 +1271,10 @@ class OptionsMenu(urwid.LineBox):
         elif key in ["shift up", "K", "P"]:
             for x in range(5):
                 self.keypress(size, "up")
-        elif key.lower() == "q":
+        elif key.lower() in ["left", "h", "q"]:
             app.loop.widget = app.loop.widget[0]
+        elif key.lower() in ["right", "l"]:
+            return self.keypress(size, "enter")
         elif key in ["ctrl n", "j", "n"]:
             return self.keypress(size, "down")
         elif key in ["ctrl p", "k", "p"]:
@@ -1280,7 +1307,7 @@ class ActionBox(urwid.ListBox):
                 self._keypress_up(size)
 
         elif key in ["h", "left"]:
-            app.back(False)
+            app.back()
 
         elif key in ["l", "right"]:
             self.keypress(size, "enter")
@@ -1304,7 +1331,7 @@ class ActionBox(urwid.ListBox):
             app.general_help()
 
         elif key.lower() == "q":
-            app.back()
+            app.back(True)
 
 
 def frilly_exit():
