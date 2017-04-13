@@ -26,13 +26,22 @@ from datetime import datetime
 from time import time, sleep
 from subprocess import run
 from random import choice
+from sys import argv
 import tempfile
 import urwid
 import json
 import os
 
 try:
-    network = BBJ(host="127.0.0.1", port=7099)
+    port_spec = argv.index("--port")
+    port = argv[port_spec+1]
+except ValueError: # --port not specified
+    port = 7099
+except IndexError: # flag given but no value
+    exit("thats not how this works, silly! --port 7099")
+
+try:
+    network = BBJ(host="127.0.0.1", port=port)
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))
@@ -63,6 +72,7 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 
 format_help = [
     "Quick reminder: \[rainbow: expressions work like this]\n\n"
+
     "BBJ supports **bolding**, __underlining__, and [rainbow: coloring] text "
     "using markdown-style symbols as well as tag-like expressions. Markdown "
     "is **NOT** fully implemented, but several of the more obvious concepts "
@@ -142,7 +152,6 @@ general_help = [
     "dialogs or composers."
 ]
 
-
 colors = [
     "\033[1;31m", "\033[1;33m", "\033[1;33m",
     "\033[1;32m", "\033[1;34m", "\033[1;35m"
@@ -178,18 +187,18 @@ colormap = [
     ("bold", "default,bold", "default"),
     ("underline", "default,underline", "default"),
 
-            # map the bbj api color values for display
-            ("0", "default", "default"),
+    # map the bbj api color values for display
+    ("0", "default", "default"),
     ("1", "dark red", "default"),
     # sounds ugly but brown is as close as we can get to yellow without being bold
-            ("2", "brown", "default"),
+    ("2", "brown", "default"),
     ("3", "dark green", "default"),
     ("4", "dark blue", "default"),
     ("5", "dark cyan", "default"),
     ("6", "dark magenta", "default"),
 
-            # and have the bolded colors use the same values times 10
-            ("10", "light red", "default"),
+    # and have the bolded colors use the same values times 10
+    ("10", "light red", "default"),
     ("20", "yellow", "default"),
     ("30", "light green", "default"),
     ("40", "light blue", "default"),
@@ -285,6 +294,18 @@ class App(object):
         self.set_default_header()
 
 
+    def remove_overlays(self):
+        """
+        Remove ALL urwid.Overlay objects which are currently covering the base
+        widget.
+        """
+        while True:
+            try:
+                self.loop.widget = self.loop.widget[0]
+            except:
+                break
+
+
     def switch_editor(self):
         """
         Switch focus between the thread viewer and the open editor
@@ -305,9 +326,8 @@ class App(object):
         self.loop.widget.footer[0].set_text(
             "[F1]Abort [F2]Swap [F3]Formatting Help [save/quit to send] " + focus)
 
-        # this hideous and awful sinful horrid unspeakable shithack changes
-        # the color of the help/title lines and editor border to reflect which
-        # object is currently in focus.
+        # HACK WHY WHY WHY WHYW HWY
+        # this sets the focus color for the editor frame
         self.loop.widget.footer.contents[1][0].original_widget.attr_map = \
             self.loop.widget.footer.contents[0][0].attr_map = {None: attr[0]}
         self.loop.widget.header.attr_map = {None: attr[1]}
@@ -332,22 +352,16 @@ class App(object):
         return "less than a minute ago"
 
 
-    def quote_view_action(self, button, post_id):
-        message = self.thread["messages"][post_id]
-        author = self.usermap[message["author"]]
-        color = str(author["color"])
-        pid_string = ">>%d" % post_id
-        title = [
-            ("button", pid_string),
-            ("default", " by "),
-            (color, "~" + author["user_name"])
-        ]
+    def quote_view_action(self, button, message):
+        """
+        Callback function to view a quote from the message object menu.
+        """
         widget = OptionsMenu(
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
                     *self.make_message_body(message)
                 ])),
-            title=pid_string,
+            title=">>%d" % message["post_id"],
             **frame_theme()
         )
 
@@ -360,44 +374,45 @@ class App(object):
         )
 
 
-
     def quote_view_menu(self, button, post_ids):
-        if len(post_ids) == 1:
-            return self.quote_view_action(button, post_ids[0])
-        # else:
-        #     self.loop.widget = self.loop.widget[0]
+        """
+        Receives a list of quote ids and makes a frilly menu to pick one to view.
+        It retrieves messages objects from the thread and attaches them to a
+        callback to `quote_view_action`
+        """
         buttons = []
         for pid in post_ids:
             try:
                 message = self.thread["messages"][pid]
+                if len(post_ids) == 1:
+                    return self.quote_view_action(button, message)
                 author = self.usermap[message["author"]]
-                color = str(author["color"])
                 label = [
                     ("button", ">>%d " % pid),
-                    "(", (color, author["user_name"]), ")"]
-            except:
-                label = ("button", ">>%d")
-            buttons.append(cute_button(label, self.quote_view_action, pid))
+                    "(",
+                    (str(author["color"]),
+                     author["user_name"]),
+                    ")"
+                ]
+                buttons.append(cute_button(label, self.quote_view_action, message))
+            except IndexError:
+                continue # users can submit >>29384234 garbage references
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
-            title="View a Quote",
-            **frame_theme()
+            title="View a Quote", **frame_theme()
         )
 
         self.loop.widget = urwid.Overlay(
             widget, self.loop.widget,
             align=("relative", 50),
             valign=("relative", 50),
-            width=30,
-            height=len(buttons) + 3
+            height=len(buttons) + 3,
+            width=30
         )
 
 
-    def remove_overlays(self):
-        while True:
-            try: self.loop.widget = self.loop.widget[0]
-            except: break
+
 
 
     def edit_post(self, button, message):
@@ -478,6 +493,33 @@ class App(object):
         return [value_type(q) for q in quotes]
 
 
+    def make_thread_body(self, thread):
+        """
+        Returns the pile widget that comprises a thread in the index.
+        """
+        button = cute_button(">>", self.thread_load, thread["thread_id"])
+        title = urwid.Text(thread["title"])
+        user = self.usermap[thread["author"]]
+        dateline = [
+            ("default", "by "),
+            (str(user["color"]), "~%s " % user["user_name"]),
+            ("dim", "@ %s" % self.timestring(thread["created"]))
+        ]
+
+        infoline = "%d replies; active %s" % (
+            thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
+
+        pile = urwid.Pile([
+            urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
+            urwid.Text(dateline),
+            urwid.AttrMap(urwid.Text(infoline), "dim"),
+            urwid.AttrMap(urwid.Divider("-"), "dim")
+        ])
+
+        pile.thread = thread
+        return pile
+
+
     def make_message_body(self, message, no_action=False):
         """
         Returns the widgets that comprise a message in a thread, including the
@@ -533,31 +575,7 @@ class App(object):
         return date.strftime(directive)
 
 
-    def make_thread_body(self, thread):
-        """
-        Returns the pile widget that comprises a thread in the index.
-        """
-        button = cute_button(">>", self.thread_load, thread["thread_id"])
-        title = urwid.Text(thread["title"])
-        user = self.usermap[thread["author"]]
-        dateline = [
-            ("default", "by "),
-            (str(user["color"]), "~%s " % user["user_name"]),
-            ("dim", "@ %s" % self.timestring(thread["created"]))
-        ]
 
-        infoline = "%d replies; active %s" % (
-            thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
-
-        pile = urwid.Pile([
-            urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
-            urwid.Text(dateline),
-            urwid.AttrMap(urwid.Text(infoline), "dim"),
-            urwid.AttrMap(urwid.Divider("-"), "dim")
-        ])
-
-        pile.thread = thread
-        return pile
 
 
     def index(self):
@@ -874,7 +892,7 @@ class App(object):
                     urwid.Text(("opt_header", "App"), 'center'),
                     urwid.Divider(),
                     urwid.CheckBox(
-                        "Rainbow Vomit on Exit",
+                        "Dump rainbows on exit",
                         state=self.prefs["dramatic_exit"],
                         on_state_change=self.toggle_exit
                     ),

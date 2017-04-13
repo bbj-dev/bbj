@@ -2,6 +2,7 @@ from src.exceptions import BBJException, BBJParameterError, BBJUserError
 from src import db, schema, formatting
 from functools import wraps
 from uuid import uuid1
+from sys import argv
 import traceback
 import cherrypy
 import sqlite3
@@ -381,7 +382,6 @@ class API(object):
 def api_http_error(status, message, traceback, version):
     return json.dumps(schema.error(2, "HTTP error {}: {}".format(status, message)))
 
-cherrypy.config.update({'server.socket_port': 7099})
 
 CONFIG = {
     "/": {
@@ -403,10 +403,17 @@ def run():
                 "1ccf1ab6b9802b09a313be1478a4d614")
     finally:
         _c.close()
-        del _c
-
     cherrypy.quickstart(API(), "/api", CONFIG)
 
 
 if __name__ == "__main__":
-    print("yo lets do that -i shit mang")
+    try:
+        port_spec = argv.index("--port")
+        port = argv[port_spec+1]
+    except ValueError: # --port not specified
+        port = 7099
+    except IndexError: # flag given but no value
+        exit("thats not how this works, silly! --port 7099")
+
+    cherrypy.config.update({'server.socket_port': int(port)})
+    run()
