@@ -1635,8 +1635,8 @@ def main():
     print(welcome)
     try:
         log_in()
-        app.loop.run()
         app.index()
+        app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
         frilly_exit()
 
