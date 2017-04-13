@@ -31,6 +31,7 @@ import tempfile
 import urwid
 import json
 import os
+import re
 
 try:
     port_spec = argv.index("--port")
@@ -1199,9 +1200,11 @@ class ExternalEditor(urwid.Terminal):
         if self.terminated:
             app.close_editor()
             with open(self.path) as _:
-                self.params.update({"body": _.read().strip()})
+                body = _.read().strip()
             os.remove(self.path)
-            if self.params["body"]:
+
+            if body and not re.search("^>>[0-9]+$", body):
+                self.params.update({"body": body})
                 network.request(self.endpoint, **self.params)
                 return app.refresh(True)
             else:
