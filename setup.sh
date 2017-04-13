@@ -2,7 +2,7 @@
 
 DEPS=(
     cherrypy
-    markdown
+    urwid
 )
 
 case $1 in
