@@ -276,6 +276,26 @@ class API(object):
 
 
     @api_method
+    def delete_post(self, args, database, user, **kwargs):
+        """
+        Requires the arguments `thread_id` and `post_id`.
+
+        Delete a message from a thread. The same rules apply
+        here as `edit_post` and `edit_query`: the logged in user
+        must either be the one who posted the message within 24hrs,
+        or have admin rights. The same error descriptions and code
+        are returned on falilure. Boolean true is returned on
+        success.
+        """
+        if user == db.anon:
+            raise BBJUserError("Anons cannot delete messages.")
+        validate(args, ["thread_id", "post_id"])
+        return db.message_delete(
+            database, user["user_id"], args["thread_id"], args["post_id"])
+
+
+
+    @api_method
     def is_admin(self, args, database, user, **kwargs):
         """
         Requires the argument `target_user`. Returns a boolean

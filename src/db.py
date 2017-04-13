@@ -16,6 +16,10 @@ hashes that != 64 characters in length, as a basic measure to enforce the
 use of sha256.
 """
 
+# TODO: Move methods from requiring an author id to requiring a
+# database user object: these user objects are always resolved on
+# incoming requests and re-resolving them from their ID is wasteful.
+
 from src.exceptions import BBJParameterError, BBJUserError
 from src.utils import ordered_keys, schema_values
 from src import schema
@@ -148,6 +152,43 @@ def thread_reply(connection, author_id, thread_id, body, time_override=None):
 
     connection.commit()
     return scheme
+
+
+def message_delete(connection, author, thread_id, post_id):
+    """
+    'Delete' a message from a thread. If the message being
+    deleted is an OP [pid 0], delete the whole thread.
+
+    Requires an author id, the thread_id, and post_id.
+    The same rules for edits apply to deletions: the same
+    error objects are returned. Returns True on success.
+    """
+    message_edit_query(connection, author, thread_id, post_id)
+
+    if post_id == 0:
+        # NUKE NUKE NUKE NUKE
+        connection.execute("DELETE FROM threads WHERE thread_id = ?", (thread_id,))
+        connection.execute("DELETE FROM messages WHERE thread_id = ?", (thread_id,))
+
+    else:
+        connection.execute("""
+            UPDATE messages SET
+            author = ?,
+            body = ?,
+            edited = ?
+            WHERE thread_id = ?
+            AND post_id = ?
+        """, (anon["user_id"], "[deleted]", False, thread_id, post_id))
+        # DONT deincrement the reply_count of this thread,
+        # or even delete the message itself. This breaks
+        # balance between post_id and the post's index when
+        # the thread is served with the messages in an array.
+        # *actually* deleting messages, which would be ideal,
+        # would increase implementation complexity for clients.
+        # IMO, that is not worth it. Threads are fair game.
+
+    connection.commit()
+    return True
 
 
 def message_edit_query(connection, author, thread_id, post_id):

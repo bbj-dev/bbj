@@ -6,6 +6,14 @@ import json
 
 
 class BBJ(object):
+    # YO WHATS UP MAN
+    # this module isnt exactly complete. The below description claims
+    # `all of its endpoints are mapped to native methods` though this
+    # is not yet true. The documentation for the API is not yet
+    # complete, and neither is this client. Currently this module is
+    # being adapted to fit the needs of the urwid client. As it evolves,
+    # and the rest of the project evolves, this client will be completed
+    # and well documented.
     """
     A python implementation to the BBJ api: all of its endpoints are
     mapped to native methods, it maps error responses to exceptions, and
@@ -461,6 +469,16 @@ class BBJ(object):
         """
         response = self("edit_query", thread_id=thread_id, post_id=int(post_id))
         return response["data"]
+
+
+    def message_delete(self, thread_id, post_id):
+        """
+        Delete message `post_id` from `thread_id`. The same rules apply
+        to deletions as they do for edits. The same exceptions are raised
+        with the same descriptions. If post_id is 0, this will also delete
+        the entire thread. Returns True on success.
+        """
+        return self("delete_post", thread_id=thread_id, post_id=post_id)
 
 
     def can_edit(self, thread_id, post_id):

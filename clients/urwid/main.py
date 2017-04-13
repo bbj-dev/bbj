@@ -163,6 +163,7 @@ editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "jo
 
 default_prefs = {
     "editor": os.getenv("EDITOR", default="nano"),
+    "shift_multiplier": 5,
     "integrate_external_editor": True,
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
@@ -449,6 +450,34 @@ class App(object):
         self.compose(init_body=">>%d\n\n" % message["post_id"])
 
 
+    def deletion_dialog(self, button, message):
+        """
+        Prompts the user to confirm deletion of an item.
+        This can delete either a thread or a post.
+        """
+        op = message["post_id"] == 0
+        buttons = [
+            urwid.Text(("bold", "Delete this %s?" % ("whole thred" if op else "post"))),
+            urwid.Divider(),
+            cute_button(("10" , ">> Yes"), lambda _: [
+                network.message_delete(message["thread_id"], message["post_id"]),
+                self.remove_overlays(),
+                self.index() if op else self.refresh(False)
+            ]),
+            cute_button(("30", "<< No"), self.remove_overlays)
+        ]
+
+        # TODO: create a central routine for creating popups. this is getting really ridiculous
+        popup = OptionsMenu(
+            urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
+            **frame_theme())
+
+        self.loop.widget = urwid.Overlay(
+            popup, self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=30, height=6)
+
 
     def on_post(self, button, message):
         quotes = self.get_quotes(message)
@@ -463,6 +492,11 @@ class App(object):
                 self.quote_view_menu, quotes))
 
         if network.can_edit(message["thread_id"], message["post_id"]):
+            if message["post_id"] == 0:
+                msg = "Thread"
+            else: msg = "Post"
+
+            buttons.insert(0, urwid.Button("Delete %s" % msg, self.deletion_dialog, message))
             buttons.insert(0, urwid.Button("Edit Post", self.edit_post, message))
 
         widget = OptionsMenu(
@@ -632,7 +666,7 @@ class App(object):
             buttons = [
                 urwid.Text(("bold", "Discard current post?")),
                 urwid.Divider(),
-                cute_button(("10" ,">> Yes"), lambda _: [
+                cute_button(("10" , ">> Yes"), lambda _: [
                     self.remove_overlays(),
                     self.index()
                 ]),
@@ -837,6 +871,12 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def edit_shift(self, editor, content):
+        self.prefs["shift_multiplier"] = \
+            int(content) if content else 0
+        bbjrc("update", **self.prefs)
+
+
     def options_menu(self):
         """
         Create a popup for the user to configure their account and
@@ -889,6 +929,9 @@ class App(object):
         width_edit = urwid.IntEdit(default=self.prefs["max_text_width"])
         urwid.connect_signal(width_edit, "change", self.edit_width)
 
+        shift_edit = urwid.IntEdit(default=self.prefs["shift_multiplier"])
+        urwid.connect_signal(shift_edit, "change", self.edit_shift)
+
         editor_display = Prompt(edit_text=self.prefs["editor"])
         urwid.connect_signal(editor_display, "change", self.set_new_editor, editor_buttons)
         for editor in editors:
@@ -927,6 +970,9 @@ class App(object):
                     urwid.Divider(),
                     urwid.Text(("button", "Max message width:")),
                     urwid.AttrMap(width_edit, "opt_prompt"),
+                    urwid.Divider(),
+                    urwid.Text(("button", "Scroll multiplier when holding shift:")),
+                    urwid.AttrMap(shift_edit, "opt_prompt"),
                     urwid.Divider(),
                     urwid.Text(("button", "Text editor:")),
                     urwid.Text("You can type in your own command or use one of these presets."),
@@ -1065,7 +1111,7 @@ class App(object):
                             **frame_theme()
                         ),
                         "bar"),
-                    self.loop.screen_size[1] // 2),])
+                    self.loop.screen_size[1] // 2)])
             self.switch_editor()
 
 
@@ -1193,6 +1239,7 @@ class FootPrompt(Prompt):
             app.loop.widget.focus_position = "body"
             app.set_default_footer()
             self.callback(self.get_edit_text(), *self.args)
+
         elif key.lower() in ["esc", "ctrl g", "ctrl c"]:
             app.loop.widget.focus_position = "body"
             app.set_default_footer()
@@ -1222,6 +1269,10 @@ class ExternalEditor(urwid.Terminal):
 
 
     def keypress(self, size, key):
+        if key.lower() == "ctrl l":
+            # always do this, and also pass it to the terminal
+            wipe_screen()
+
         if self.terminated:
             app.close_editor()
             with open(self.path) as _:
@@ -1242,8 +1293,10 @@ class ExternalEditor(urwid.Terminal):
             self.terminate()
             app.close_editor()
             app.refresh()
+
         elif key == "f2":
             app.switch_editor()
+
         elif key == "f3":
             app.formatting_help()
 
@@ -1271,7 +1324,7 @@ class OptionsMenu(urwid.LineBox):
                 self.keypress(size, "down")
 
         elif key in ["shift up", "K", "P"]:
-            for x in range(5):
+            for x in range(app.prefs["shift_multiplier"]):
                 self.keypress(size, "up")
 
         elif key.lower() in ["left", "h", "q"]:
@@ -1286,7 +1339,7 @@ class OptionsMenu(urwid.LineBox):
         elif key in ["ctrl p", "k", "p"]:
             return self.keypress(size, "up")
 
-        elif key == "ctrl l":
+        elif key.lower() == "ctrl l":
             wipe_screen()
 
 
@@ -1308,11 +1361,11 @@ class ActionBox(urwid.ListBox):
             self._keypress_up(size)
 
         elif key in ["shift down", "J", "N"]:
-            for x in range(5):
+            for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_down(size)
 
         elif key in ["shift up", "K", "P"]:
-            for x in range(5):
+            for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_up(size)
 
         elif key in ["h", "left"]:
