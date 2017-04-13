@@ -1265,20 +1265,29 @@ class OptionsMenu(urwid.LineBox):
         # try to let the base class handle the key, if not, we'll take over
         elif not super(OptionsMenu, self).keypress(size, key):
             return
+
         elif key in ["shift down", "J", "N"]:
             for x in range(5):
                 self.keypress(size, "down")
+
         elif key in ["shift up", "K", "P"]:
             for x in range(5):
                 self.keypress(size, "up")
+
         elif key.lower() in ["left", "h", "q"]:
             app.loop.widget = app.loop.widget[0]
+
         elif key.lower() in ["right", "l"]:
             return self.keypress(size, "enter")
+
         elif key in ["ctrl n", "j", "n"]:
             return self.keypress(size, "down")
+
         elif key in ["ctrl p", "k", "p"]:
             return self.keypress(size, "up")
+
+        elif key == "ctrl l":
+            wipe_screen()
 
 
 class ActionBox(urwid.ListBox):
@@ -1332,6 +1341,9 @@ class ActionBox(urwid.ListBox):
 
         elif key.lower() == "q":
             app.back(True)
+
+        elif key == "ctrl l":
+            wipe_screen()
 
 
 def frilly_exit():
@@ -1546,6 +1558,17 @@ def ignore(*_, **__):
     The blackness of my soul.
     """
     pass
+
+
+def wipe_screen(*_):
+    """
+    A crude hack to repaint the whole screen. I didnt immediately
+    see anything to acheive this in the MainLoop methods so this
+    will do, I suppose.
+    """
+    app.loop.stop()
+    run("clear", shell=True)
+    app.loop.start()
 
 
 def main():
