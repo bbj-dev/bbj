@@ -24,6 +24,7 @@ from network import BBJ, URLError
 from string import punctuation
 from datetime import datetime
 from time import time, sleep
+from getpass import getpass
 from subprocess import run
 from random import choice
 from sys import argv
@@ -808,13 +809,8 @@ class App(object):
     def change_username(self, *_):
         self.loop.stop()
         run("clear", shell=True)
-        def __loop(prompt, positive):
-            new_name = sane_value("user_name", prompt, positive)
-            if network.user_is_registered(new_name):
-                return __loop("%s is already registered" % new_name, False)
-            return new_name
         try:
-            name = __loop("Choose a new username", True)
+            name = nameloop("Choose a new username", True)
             network.user_update(user_name=name)
             motherfucking_rainbows("~~hello there %s~~" % name)
             sleep(0.8)
@@ -829,18 +825,8 @@ class App(object):
     def change_password(self, *_):
         self.loop.stop()
         run("clear", shell=True)
-        def __loop(prompt, positive):
-            first = paren_prompt(prompt, positive)
-            if first == "":
-                confprompt = "Confirm empty password"
-            else:
-                confprompt = "Confirm it"
-            second = paren_prompt(confprompt)
-            if second != first:
-                return __loop("Those didnt match. Try again", False)
-            return first
         try:
-            password = __loop("Choose a new password. Can be empty", True)
+            password = password_loop("Choose a new password. Can be empty", True)
             network.user_update(auth_hash=network._hash(password))
             motherfucking_rainbows("SET NEW PASSWORD")
             sleep(0.8)
@@ -1456,7 +1442,7 @@ def motherfucking_rainbows(string, inputmode=False, end="\n"):
     return print(end, end="")
 
 
-def paren_prompt(text, positive=True, choices=[]):
+def paren_prompt(text, positive=True, choices=[], function=input):
     """
     input(), but riced the fuck out. Changes color depending on
     the value of positive (blue/green for good stuff, red/yellow
@@ -1481,7 +1467,7 @@ def paren_prompt(text, positive=True, choices=[]):
         formatted_choices = ""
 
     try:
-        response = input("{0}({1}{2}{0}){3}> \033[0m".format(
+        response = function("{0}({1}{2}{0}){3}> \033[0m".format(
             *mood, text, formatted_choices))
         if not choices:
             return response
@@ -1490,7 +1476,7 @@ def paren_prompt(text, positive=True, choices=[]):
         char = response.lower()[0]
         if char in [c[0] for c in choices]:
             return char
-        return paren_prompt("Invalid choice", False, choices)
+        return paren_prompt("Invalid choice", False, choices, function)
 
     except EOFError:
         print("")
@@ -1505,6 +1491,25 @@ def sane_value(key, prompt, positive=True, return_empty=False):
     except AssertionError as e:
         return sane_value(key, e.description, False)
     return response
+
+
+def password_loop(prompt, positive=True):
+    response1 = paren_prompt(prompt, positive, function=getpass)
+    if response1 == "":
+        confprompt = "Confirm empty password"
+    else:
+        confprompt = "Confirm it"
+    response2 = paren_prompt(confprompt, function=getpass)
+    if response1 != response2:
+        return password_loop("Those didnt match. Try again", False)
+    return response1
+
+
+def nameloop(prompt, positive):
+    name = sane_value("user_name", prompt, positive)
+    if network.user_is_registered(name):
+        return nameloop("%s is already registered" % name, False)
+    return name
 
 
 def log_in():
@@ -1527,7 +1532,7 @@ def log_in():
         except ConnectionRefusedError:
             def login_loop(prompt, positive):
                 try:
-                    password = paren_prompt(prompt, positive)
+                    password = paren_prompt(prompt, positive, function=getpass)
                     network.set_credentials(name, password)
                 except ConnectionRefusedError:
                     login_loop("// R E J E C T E D //.", False)
@@ -1543,26 +1548,10 @@ def log_in():
             )
 
             if response == "c":
-                def nameloop(prompt, positive):
-                    name = sane_value("user_name", prompt, positive)
-                    if network.user_is_registered(name):
-                        return nameloop("%s is already registered" % name, False)
-                    return name
                 name = nameloop("Pick a new name", True)
 
             elif response == "n":
                 raise InterruptedError
-
-            def password_loop(prompt, positive=True):
-                response1 = paren_prompt(prompt, positive)
-                if response1 == "":
-                    confprompt = "Confirm empty password"
-                else:
-                    confprompt = "Confirm it"
-                response2 = paren_prompt(confprompt)
-                if response1 != response2:
-                    return password_loop("Those didnt match. Try again", False)
-                return response1
 
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
