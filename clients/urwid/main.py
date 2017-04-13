@@ -552,9 +552,9 @@ class App(object):
         return [
             head,
             urwid.Divider(),
-            urwid.Columns([
-                (self.prefs["max_text_width"], MessageBody(message))
-            ]),
+            urwid.Padding(
+                MessageBody(message),
+                width=self.prefs["max_text_width"]),
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ]
