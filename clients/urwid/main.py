@@ -1194,6 +1194,7 @@ class Prompt(urwid.Edit):
     def keypress(self, size, key):
         if not super(Prompt, self).keypress(size, key):
             return
+
         elif key[0:4] not in ["meta", "ctrl"]:
             return key
 
@@ -1313,6 +1314,7 @@ class ExternalEditor(urwid.Terminal):
 
 class OptionsMenu(urwid.LineBox):
     def keypress(self, size, key):
+        keyl = key.lower()
         if key == "esc":
             app.loop.widget = app.loop.widget[0]
         # try to let the base class handle the key, if not, we'll take over
@@ -1320,18 +1322,12 @@ class OptionsMenu(urwid.LineBox):
             return
 
         elif key in ["shift down", "J", "N"]:
-            for x in range(5):
+            for x in range(app.prefs["shift_multiplier"]):
                 self.keypress(size, "down")
 
         elif key in ["shift up", "K", "P"]:
             for x in range(app.prefs["shift_multiplier"]):
                 self.keypress(size, "up")
-
-        elif key.lower() in ["left", "h", "q"]:
-            app.loop.widget = app.loop.widget[0]
-
-        elif key.lower() in ["right", "l"]:
-            return self.keypress(size, "enter")
 
         elif key in ["ctrl n", "j", "n"]:
             return self.keypress(size, "down")
@@ -1339,7 +1335,13 @@ class OptionsMenu(urwid.LineBox):
         elif key in ["ctrl p", "k", "p"]:
             return self.keypress(size, "up")
 
-        elif key.lower() == "ctrl l":
+        elif keyl in ["left", "h", "q"]:
+            app.loop.widget = app.loop.widget[0]
+
+        elif keyl in ["right", "l"]:
+            return self.keypress(size, "enter")
+
+        elif keyl == "ctrl l":
             wipe_screen()
 
 
@@ -1350,6 +1352,7 @@ class ActionBox(urwid.ListBox):
     """
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
+        keyl = key.lower()
 
         if key == "f2":
             app.switch_editor()
@@ -1368,35 +1371,36 @@ class ActionBox(urwid.ListBox):
             for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_up(size)
 
-        elif key in ["h", "left"]:
+        elif key == "ctrl l":
+            wipe_screen()
+
+        elif keyl in ["h", "left"]:
             app.back()
 
-        elif key in ["l", "right"]:
+        elif keyl in ["l", "right"]:
             self.keypress(size, "enter")
 
-        elif key == "b":
-            self.change_focus(size, len(app.walker) - 1)
+        elif keyl == "b":
+            offset = 5 if (app.mode == "thread") else 1
+            self.change_focus(size, len(app.walker) - offset)
 
-        elif key == "t":
+        elif keyl == "t":
             self.change_focus(size, 0)
 
-        elif key in ["c", "R", "+"]:
+        elif keyl in "c+":
             app.compose()
 
-        elif key == "r":
+        elif keyl in ["r", "f5"]:
             app.refresh()
 
-        elif key == "o":
+        elif keyl == "o":
             app.options_menu()
 
         elif key == "?":
             app.general_help()
 
-        elif key.lower() == "q":
+        elif keyl == "q":
             app.back(True)
-
-        elif key == "ctrl l":
-            wipe_screen()
 
 
 def frilly_exit():
