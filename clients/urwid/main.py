@@ -232,8 +232,6 @@ class App(object):
             palette=colormap,
             handle_mouse=False)
 
-        self.index()
-
 
     def set_header(self, text, *format_specs):
         """
@@ -1638,6 +1636,7 @@ def main():
     try:
         log_in()
         app.loop.run()
+        app.index()
     except (InterruptedError, KeyboardInterrupt):
         frilly_exit()
 
