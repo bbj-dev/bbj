@@ -142,17 +142,15 @@ general_help = [
     "dialogs or composers."
 ]
 
-colornames = [
-    "none", "red", "yellow", "green", "blue",
-    "cyan", "magenta"
-]
 
 colors = [
     "\033[1;31m", "\033[1;33m", "\033[1;33m",
     "\033[1;32m", "\033[1;34m", "\033[1;35m"
 ]
 
+colornames = ["none", "red", "yellow", "green", "blue", "cyan", "magenta"]
 editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "joe"]
+
 default_prefs = {
     "editor": os.getenv("EDITOR", default="nano"),
     "integrate_external_editor": True,
@@ -163,60 +161,64 @@ default_prefs = {
     "max_text_width": 80
 }
 
+bars = {
+    "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
+    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help"
+}
 
-class App(object):
-    def __init__(self):
-        self.bars = {
-            "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-            "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help"
-        }
-
-        colors = [
-            ("default", "default", "default"),
-            ("bar", "light magenta", "default"),
-            ("button", "light red", "default"),
-            ("quote", "brown", "default"),
-            ("opt_prompt", "black", "light gray"),
-            ("opt_header", "light cyan", "default"),
-            ("hover", "light cyan", "default"),
-            ("dim", "dark gray", "default"),
-            ("bold", "default,bold", "default"),
-            ("underline", "default,underline", "default"),
+colormap = [
+    ("default", "default", "default"),
+    ("bar", "light magenta", "default"),
+    ("button", "light red", "default"),
+    ("quote", "brown", "default"),
+    ("opt_prompt", "black", "light gray"),
+    ("opt_header", "light cyan", "default"),
+    ("hover", "light cyan", "default"),
+    ("dim", "dark gray", "default"),
+    ("bold", "default,bold", "default"),
+    ("underline", "default,underline", "default"),
 
             # map the bbj api color values for display
             ("0", "default", "default"),
-            ("1", "dark red", "default"),
-            # sounds ugly but brown is as close as we can get to yellow without being bold
+    ("1", "dark red", "default"),
+    # sounds ugly but brown is as close as we can get to yellow without being bold
             ("2", "brown", "default"),
-            ("3", "dark green", "default"),
-            ("4", "dark blue", "default"),
-            ("5", "dark cyan", "default"),
-            ("6", "dark magenta", "default"),
+    ("3", "dark green", "default"),
+    ("4", "dark blue", "default"),
+    ("5", "dark cyan", "default"),
+    ("6", "dark magenta", "default"),
 
             # and have the bolded colors use the same values times 10
             ("10", "light red", "default"),
-            ("20", "yellow", "default"),
-            ("30", "light green", "default"),
-            ("40", "light blue", "default"),
-            ("50", "light cyan", "default"),
-            ("60", "light magenta", "default")
-        ]
+    ("20", "yellow", "default"),
+    ("30", "light green", "default"),
+    ("40", "light blue", "default"),
+    ("50", "light cyan", "default"),
+    ("60", "light magenta", "default")
+]
+
+class App(object):
+    def __init__(self):
+        self.prefs = bbjrc("load")
 
         self.mode = None
         self.thread = None
         self.usermap = {}
-        self.prefs = bbjrc("load")
         self.window_split = False
         self.last_pos = 0
-        # self.jump_stack = []
+
+        # these can be changed and manipulated by other methods
         self.walker = urwid.SimpleFocusListWalker([])
         self.box = ActionBox(self.walker)
-        self.loop = urwid.MainLoop(urwid.Frame(
-            urwid.LineBox(
-                self.box,
-                title=self.prefs["frame_title"],
-                **frame_theme()
-            )), colors)
+
+        self.loop = urwid.MainLoop(
+            urwid.Frame(
+                urwid.LineBox(
+                    self.box,
+                    title=self.prefs["frame_title"],
+                    **frame_theme()
+                )),
+            colormap)
 
         self.index()
 
@@ -227,13 +229,11 @@ class App(object):
         then concat text with format_specs applied to it. Applies
         bar formatting to it.
         """
-        self.loop.widget.header = \
-            urwid.AttrMap(
-                urwid.Text(
-                    ("{}@bbj | " + text).format(
-                        (network.user_name or "anonymous"),
-                        *format_specs)),
-                "bar")
+        header = ("{}@bbj | " + text).format(
+            (network.user_name or "anonymous"),
+            *format_specs
+        )
+        self.loop.widget.header = urwid.AttrMap(urwid.Text(header), "bar")
 
 
     def set_footer(self, string):
@@ -259,7 +259,7 @@ class App(object):
         """
         Sets the footer to the default for the current screen.
         """
-        self.set_footer(self.bars[self.mode])
+        self.set_footer(bars[self.mode])
 
 
     def set_bars(self):
@@ -279,7 +279,7 @@ class App(object):
         if self.window_split:
             self.window_split = False
             self.loop.widget.focus_position = "body"
-            self.set_footer(self.bars["thread"])
+            self.set_footer(bars["thread"])
         else:
             self.loop.widget = self.loop.widget[0]
         self.set_default_header()
@@ -603,8 +603,8 @@ class App(object):
             self.box.set_focus(len(self.walker) - 5)
 
 
-    def back(self):
-        if app.mode == "index":
+    def back(self, and_quit=True):
+        if app.mode == "index" and and_quit:
             frilly_exit()
         elif app.mode == "thread":
             self.index()
@@ -1259,7 +1259,7 @@ class ActionBox(urwid.ListBox):
                 self._keypress_up(size)
 
         elif key in ["h", "left"]:
-            app.back()
+            app.back(False)
 
         elif key in ["l", "right"]:
             self.keypress(size, "enter")
@@ -1502,13 +1502,13 @@ def ignore(*_, **__):
 
 def main():
     global app
+    app = App()
+    app.usermap.update(network.user)
     run("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
     try:
         log_in()
-        app = App()
-        app.usermap.update(network.user)
         app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
         frilly_exit()
