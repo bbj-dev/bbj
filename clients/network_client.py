@@ -402,6 +402,22 @@ class BBJ(object):
         return response["data"]
 
 
+    def user_get(self, user_id_or_name):
+        """
+        Return a full user object by their id or username.
+        Note that this isn't required when using thread_load
+        or thread_index, because they return a usermap which
+        is a dictionary with keys of the ids connected to these
+        same objects. You shouldn't use this method when a usermap
+        is provided.
+
+        If the user element isnt found, ValueError is raised.
+        See also `user_is_registered`
+        """
+        response = self("user_get", user=user_id_or_name)
+        return response["data"]
+
+
     def thread_index(self):
         """
         Returns a tuple where [0] is a list of all threads ordered by
@@ -450,7 +466,6 @@ class BBJ(object):
         """
         response = self("thread_reply", thread_id=thread_id, body=body)
         return response["data"]
-
 
 
     def fake_message(self, body="!!", format="sequential", author=None, post_id=0):
