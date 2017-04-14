@@ -163,7 +163,8 @@ colornames = ["none", "red", "yellow", "green", "blue", "cyan", "magenta"]
 editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "joe"]
 
 default_prefs = {
-    "editor": os.getenv("EDITOR", default="nano"),
+    # using default= is not completely reliable, sadly...
+    "editor": os.getenv("EDITOR") or "nano",
     "shift_multiplier": 5,
     "integrate_external_editor": True,
     "dramatic_exit": True,
@@ -1588,6 +1589,12 @@ def bbjrc(mode, **params):
         # update it with new keys if necessary
         for key, default_value in default_prefs.items():
             if key not in values:
+                values[key] = default_value
+            elif values[key] == None:
+                # HACK: settings should never be null, ~vilmibm ran into
+                # a null value and im not sure where. putting this here
+                # to correct it automatically for anyone else that may
+                # have been affected
                 values[key] = default_value
     # else make one
     except FileNotFoundError:
