@@ -116,7 +116,7 @@ def user_external(
         "quip":      quip,
         "bio":       bio,
         "color":     color,
-        "is_admin":  admin,
+        "is_admin":  bool(admin),
         "created":   created
     }
 
