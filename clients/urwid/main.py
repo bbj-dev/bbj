@@ -1262,25 +1262,40 @@ class ExternalEditor(urwid.Terminal):
         command = ["bash", "-c", "{} {}; echo Press any key to kill this window...".format(
             app.prefs["editor"], self.path)]
         super(ExternalEditor, self).__init__(command, env, app.loop, "f1")
+        urwid.connect_signal(self, "closed", self.exterminate)
+
+
+    def exterminate(self, *_):
+        app.close_editor()
+        with open(self.path) as _:
+            body = _.read().strip()
+        os.remove(self.path)
+
+        if body and not re.search("^>>[0-9]+$", body):
+            self.params.update({"body": body})
+            network.request(self.endpoint, **self.params)
+            return app.refresh(True)
+        else:
+            return app.temp_footer_message("EMPTY POST DISCARDED")
 
 
     def keypress(self, size, key):
-        if key.lower() == "ctrl l":
+        if key in ["down", "up", "left", "right"]:
+            # HACK HACK HACK HACK: something somewhere is capturing some keys within
+            # the parent keypress method until some other keys are pressed. So when
+            # this widget was spawned, it would ignore arrow keys, C-n/C-p, pager keys,
+            # but when some _OTHER_ keys were pressed, this lock was released. Weird shit.
+            # instead of figuring out why lets just //TAKE_THE_REIGNS// #YOLO
+            if self.term_modes.keys_decckm and key in urwid.vterm.KEY_TRANSLATIONS_DECCKM:
+                key = urwid.vterm.KEY_TRANSLATIONS_DECCKM.get(key)
+            else:
+                key = urwid.vterm.KEY_TRANSLATIONS.get(key, key)
+            key = key.encode('ascii')
+            return os.write(self.master, key)
+
+        elif key.lower() == "ctrl l":
             # always do this, and also pass it to the terminal
             wipe_screen()
-
-        if self.terminated:
-            app.close_editor()
-            with open(self.path) as _:
-                body = _.read().strip()
-            os.remove(self.path)
-
-            if body and not re.search("^>>[0-9]+$", body):
-                self.params.update({"body": body})
-                network.request(self.endpoint, **self.params)
-                return app.refresh(True)
-            else:
-                return app.temp_footer_message("EMPTY POST DISCARDED")
 
         elif key not in ["f1", "f2", "f3"]:
             return super(ExternalEditor, self).keypress(size, key)
