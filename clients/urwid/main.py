@@ -1407,7 +1407,7 @@ def frilly_exit():
     # sometimes this gets called before the loop is set up properly
     try: app.loop.stop()
     except: pass
-    if app.prefs["dramatic_exit"] and app.loop.screen_size:
+    if app.prefs["dramatic_exit"]:
         width, height = app.loop.screen_size
         for x in range(height - 1):
             motherfucking_rainbows(
