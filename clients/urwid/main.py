@@ -716,7 +716,7 @@ class App(object):
         self.loop.widget = urwid.Overlay(
             popup, self.loop.widget,
             align=("relative", 50),
-            valign=("relative", 50),
+            valign=("relative", 25 if self.window_split else 50),
             width=20, height=6)
 
 
@@ -895,8 +895,9 @@ class App(object):
 
 
     def edit_width(self, editor, content):
-        self.prefs["max_text_width"] = \
-            int(content) if content else 0
+        value = int(content) if content else 0
+        if value < 10: value = 10
+        self.prefs["max_text_width"] = value
         bbjrc("update", **self.prefs)
 
 
