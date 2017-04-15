@@ -1404,7 +1404,9 @@ def frilly_exit():
     and shit, or just say bye, depending on the user's bbjrc
     setting, `dramatic_exit`
     """
-    app.loop.stop()
+    # sometimes this gets called before the loop is set up properly
+    try: app.loop.stop()
+    except: pass
     if app.prefs["dramatic_exit"]:
         width, height = app.loop.screen_size
         for x in range(height - 1):
