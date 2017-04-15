@@ -691,6 +691,41 @@ class App(object):
             self.index()
 
 
+    def goto_post(self, number):
+        if self.mode != "thread":
+            return
+
+        size = self.loop.screen_size
+        new_pos = number*5
+        cur_pos = self.box.get_cursor_coords(size)[0]
+        self.box.change_focus(
+            size, new_pos, coming_from=
+            "below" if (cur_pos < new_pos)
+              else "above")
+
+
+    def goto_post_prompt(self, init):
+        items = [
+            urwid.Text(("button", "   Jump to post")),
+            urwid.Text(("bold", ("(max >>%d)" % self.thread["reply_count"]).center(18, " ")))
+        ]
+
+        edit = IntPrompt(lambda x: self.goto_post(x))
+        edit.keypress((self.loop.screen_size[0],), init)
+        items.insert(1, urwid.AttrMap(edit, "opt_prompt"))
+
+        popup = OptionsMenu(
+            urwid.ListBox(urwid.SimpleFocusListWalker(items)),
+            **frame_theme())
+
+        self.loop.widget = urwid.Overlay(
+            popup, self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=20, height=6)
+
+
+
     def set_new_editor(self, button, value, arg):
         """
         Callback for the option radio buttons to set the the text editor.
@@ -1242,6 +1277,22 @@ class FootPrompt(Prompt):
             app.set_default_footer()
 
 
+class IntPrompt(Prompt, urwid.IntEdit):
+    def __init__(self, callback, *callback_args):
+        super(IntPrompt, self).__init__()
+        self.callback = callback
+        self.args = callback_args
+
+    def keypress(self, size, key):
+        super(IntPrompt, self).keypress(size, key)
+        if key == "enter":
+            app.remove_overlays()
+            self.callback(self.value(), *self.args)
+
+        elif key.lower() in ["q", "esc", "ctrl g", "ctrl c"]:
+            app.remove_overlays()
+
+
 class ExternalEditor(urwid.Terminal):
     def __init__(self, endpoint, **params):
         self.file_descriptor, self.path = tempfile.mkstemp()
@@ -1390,6 +1441,9 @@ class ActionBox(urwid.ListBox):
 
         elif keyl in ["l", "right"]:
             self.keypress(size, "enter")
+
+        elif keyl in "1234567890g":
+            app.goto_post_prompt(keyl)
 
         elif keyl == "b":
             offset = 5 if (app.mode == "thread") else 1
