@@ -617,9 +617,6 @@ class App(object):
         return date.strftime(directive)
 
 
-
-
-
     def index(self, *_):
         """
         Browse the index.
