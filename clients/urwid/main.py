@@ -1079,6 +1079,7 @@ class App(object):
                 valign="middle",
                 width=("relative", 90),
                 height=("relative", 80))
+            return
 
         params = {"thread_id": self.thread["thread_id"]}
 
