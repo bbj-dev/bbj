@@ -720,6 +720,10 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def toggle_thread_pin(self, thread_id):
+        pass
+
+
     def relog(self, *_, **__):
         """
         Options menu callback to log the user in again.

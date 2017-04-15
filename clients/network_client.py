@@ -141,7 +141,7 @@ class BBJ(object):
 
     def raise_exception(self, error_object):
         """
-        Takes an API error opbject and raises the appropriate exception,
+        Takes an API error object and raises the appropriate exception,
         attaching the code and description to the object. The classes
         are mapped to the codes as follows:
 
@@ -164,12 +164,16 @@ class BBJ(object):
         code = error_object["code"]
         if code in [0, 1, 2]:
             e = ChildProcessError(description)
+
         elif code == 3:
             e = ValueError(description)
+
         elif code == 4:
             e = UserWarning(description)
+
         elif code == 5:
             e = ConnectionRefusedError(description)
+
         e.code, e.description, e.body = code, description, error_object
         raise e
 
@@ -267,7 +271,7 @@ class BBJ(object):
 
         Examples:
           try:
-              bbj.set_credentials("desvox", "i has sandvich")
+              bbj.set_credentials("desvox", "i am sandvich")
           except ConnectionRefusedError:
               # bad auth info
           except ValueError:
@@ -282,7 +286,7 @@ class BBJ(object):
           )
         """
         if hash_auth:
-            user_auth = sha256(bytes(user_auth, "utf8")).hexdigest()
+            user_auth = self._hash(user_auth)
 
         if check_validity and not self.validate_credentials(user_name, user_auth):
             self.user_auth = self.user_name = None
@@ -390,7 +394,10 @@ class BBJ(object):
 
     def user_update(self, **params):
         """
-        Update the user's data on the server.
+        Update the user's data on the server. The new parameters
+        may be any of `user_name`, `auth_hash`, `quip`, `bio`,
+        `color`. On success, the newly updated user object is
+        returned and is also internalized as self.user.
         """
         response = self("user_update", **params)
         if params.get("user_name"):
@@ -483,13 +490,23 @@ class BBJ(object):
         }
 
 
-
     def format_message(self, body, format="sequential"):
         """
         Send `body` to the server to be formatted according to `format`,
         defaulting to the sequential parser. Returns the body object.
         """
         response = self("format_message", body=body, format=format)
+        return response["data"]
+
+
+    def message_delete(self, thread_id, post_id):
+        """
+        Delete message `post_id` from `thread_id`. The same rules apply
+        to deletions as they do for edits. The same exceptions are raised
+        with the same descriptions. If post_id is 0, this will also delete
+        the entire thread. Returns True on success.
+        """
+        response = self("delete_post", thread_id=thread_id, post_id=post_id)
         return response["data"]
 
 
@@ -506,16 +523,6 @@ class BBJ(object):
         return response["data"]
 
 
-    def message_delete(self, thread_id, post_id):
-        """
-        Delete message `post_id` from `thread_id`. The same rules apply
-        to deletions as they do for edits. The same exceptions are raised
-        with the same descriptions. If post_id is 0, this will also delete
-        the entire thread. Returns True on success.
-        """
-        return self("delete_post", thread_id=thread_id, post_id=post_id)
-
-
     def can_edit(self, thread_id, post_id):
         """
         Return bool True/False that the post at thread_id | post_id
@@ -526,3 +533,40 @@ class BBJ(object):
         except UserWarning:
             result = False
         return result
+
+
+    def edit_message(self, thread_id, post_id, new_body):
+        """
+        Requires the thread_id and post_id. The edit flag is then
+        set on the message, new_body is set on the server, and the
+        newly edited message object is returned on success.
+
+        Will raise UserWarning if server editing rules are violated.
+        See also `can_edit` and `edit_query`
+        """
+        response = self(
+            "edit_post", thread_id=thread_id,
+            post_id=post_id, body=new_body)
+        return response["data"]
+
+
+    def user_is_admin(self, user_name_or_id):
+        """
+        Return boolean True or False whether the given user identifier
+        is an admin on the server. Will raise ValueError if this user
+        is not registered.
+        """
+        response = self("is_admin", target_user=user_name_or_id)
+        return response["data"]
+
+
+    def set_thread_pin(self, thread_id, new_status):
+        """
+        Set whether a thread should be pinned or not. new_status
+        is evaluated as a boolean, and given that the logged in
+        user is an admin, the thread is set to this status on
+        the server, and the boolean is returned.
+        """
+        assert self.get_me()["is_admin"]
+        response = self("set_thread_pin", thread_id=pinned, pinned=new_status)
+        return response["data"]
