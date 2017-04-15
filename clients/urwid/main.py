@@ -482,22 +482,28 @@ class App(object):
     def on_post(self, button, message):
         quotes = self.get_quotes(message)
         author = self.usermap[message["author"]]
-        buttons = [
-            urwid.Button("Reply", self.reply, message),
-        ]
+        buttons = []
+
+        if not self.window_split:
+            buttons.append(urwid.Button("Reply", self.reply, message))
 
         if quotes and message["post_id"] != 0:
-            buttons.insert(1, urwid.Button(
+            buttons.append(urwid.Button(
                 "View %sQuote" % ("a " if len(quotes) != 1 else ""),
                 self.quote_view_menu, quotes))
 
-        if network.can_edit(message["thread_id"], message["post_id"]):
+        if network.can_edit(message["thread_id"], message["post_id"]) \
+               and not self.window_split:
+
             if message["post_id"] == 0:
                 msg = "Thread"
             else: msg = "Post"
 
             buttons.insert(0, urwid.Button("Delete %s" % msg, self.deletion_dialog, message))
             buttons.insert(0, urwid.Button("Edit Post", self.edit_post, message))
+
+        if not buttons:
+            return
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
