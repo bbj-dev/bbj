@@ -176,7 +176,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [B/T]End [?]Help"
+    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [B/T]End [<>]Jump [?]Help"
 }
 
 colormap = [
@@ -675,13 +675,36 @@ class App(object):
             self.index()
 
 
+    def get_focus_post(self):
+        pos = self.box.get_focus_path()[0]
+        if self.mode == "thread":
+            return (pos - (pos % 5)) // 5
+        return pos
+
+
+    def header_jump_next(self):
+        if self.mode == "index":
+            return self.box.keypress(self.loop.screen_size, "down")
+        post = self.get_focus_post()
+        if post != self.thread["reply_count"]:
+            self.goto_post(post + 1)
+
+
+    def header_jump_previous(self):
+        if self.mode == "index":
+            return self.box.keypress(self.loop.screen_size, "up")
+        post = self.get_focus_post()
+        if post != 0:
+            self.goto_post(post - 1)
+
+
     def goto_post(self, number):
         if self.mode != "thread":
             return
 
         size = self.loop.screen_size
-        new_pos = number*5
-        cur_pos = self.box.get_cursor_coords(size)[0]
+        new_pos = number * 5
+        cur_pos = self.box.get_focus_path()[0]
 
         try:
             self.box.change_focus(
@@ -1476,6 +1499,12 @@ class ActionBox(urwid.ListBox):
 
         elif key == "ctrl l":
             wipe_screen()
+
+        elif key == ">":
+            app.header_jump_next()
+
+        elif key == "<":
+            app.header_jump_previous()
 
         elif keyl in ["h", "left"]:
             app.back()
