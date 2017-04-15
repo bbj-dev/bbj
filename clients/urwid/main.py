@@ -415,9 +415,6 @@ class App(object):
         )
 
 
-
-
-
     def edit_post(self, button, message):
         post_id = message["post_id"]
         thread_id = message["thread_id"]
@@ -428,21 +425,8 @@ class App(object):
         except UserWarning as e:
             self.remove_overlays()
             return self.temp_footer_message(e.description)
-
-        self.loop.widget = urwid.Overlay(
-            urwid.LineBox(
-                ExternalEditor(
-                    "edit_post",
-                    init_body=message["body"],
-                    post_id=post_id,
-                    thread_id=thread_id),
-                title="[F1]Abort [F3]Formatting Help (save/quit to commit)",
-                **frame_theme()),
-            self.loop.widget,
-            align="center",
-            valign="middle",
-            width=("relative", 75),
-            height=("relative", 75))
+        self.remove_overlays()
+        self.compose(init_body=message["body"], edit=message)
 
 
     def reply(self, button, message):
@@ -1097,7 +1081,7 @@ class App(object):
         return body.strip()
 
 
-    def compose(self, title=None, init_body=""):
+    def compose(self, title=None, init_body="", edit=False):
         """
         Dispatches the appropriate composure mode and widget based on application
         context and user preferences.
@@ -1111,20 +1095,28 @@ class App(object):
                 return self.footer_prompt(
                     "Title", self.compose, extra_text=e.description)
 
-        if self.prefs["editor"] and not self.prefs["integrate_external_editor"]:
+        if not self.prefs["integrate_external_editor"]:
             body = self.overthrow_ext_edit(init_body)
             if not body:
                 return self.temp_footer_message("EMPTY POST DISCARDED")
             params = {"body": body}
 
-            if self.mode == "thread":
-                endpoint = "reply"
+            if self.mode == "thread" and not edit:
+                endpoint = "thread_reply"
                 params.update({"thread_id": self.thread["thread_id"]})
+
+            elif edit:
+                endpoint = "edit_post"
+                params.update({
+                    "thread_id": self.thread["thread_id"],
+                    "post_id": edit["post_id"]
+                })
+
             else:
-                endpoint = "create"
+                endpoint = "thread_create"
                 params.update({"title": title})
 
-            network.request("thread_" + endpoint, **params)
+            network.request(endpoint, **params)
             return self.refresh(True)
 
         if self.mode == "index":
@@ -1140,24 +1132,32 @@ class App(object):
                 valign="middle",
                 width=("relative", 90),
                 height=("relative", 80))
+            return
 
-        elif self.mode == "thread":
-            self.window_split=True
-            self.set_header('Replying to "{}"', self.thread["title"])
-            self.loop.widget.footer = urwid.Pile([
-                urwid.AttrMap(urwid.Text(""), "bar"),
-                urwid.BoxAdapter(
-                    urwid.AttrMap(
-                        urwid.LineBox(
-                            ExternalEditor(
-                                "thread_reply",
-                                init_body=init_body,
-                                thread_id=self.thread["thread_id"]),
-                            **frame_theme()
-                        ),
-                        "bar"),
-                    self.loop.screen_size[1] // 2)])
-            self.switch_editor()
+        params = {"thread_id": self.thread["thread_id"]}
+
+        if edit:
+            _id = edit["post_id"]
+            params.update({"post_id": _id})
+            header = ["Editing your post; >>{}", _id]
+            endpoint = "edit_post"
+        else:
+            header = ['Replying to "{}"', self.thread["title"]]
+            endpoint = "thread_reply"
+
+        self.loop.widget.footer = urwid.Pile([
+            urwid.AttrMap(urwid.Text(""), "bar"),
+            urwid.BoxAdapter(
+                urwid.AttrMap(
+                    urwid.LineBox(
+                        ExternalEditor(endpoint, init_body=init_body, **params),
+                        **frame_theme()
+                    ), "bar"),
+                self.loop.screen_size[1] // 2)])
+
+        self.set_header(*header)
+        self.window_split=True
+        self.switch_editor()
 
 
 class MessageBody(urwid.Text):
