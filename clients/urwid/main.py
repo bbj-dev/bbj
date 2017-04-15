@@ -176,7 +176,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [B/T]End [?]Help"
+    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [B/T]End [?]Help"
 }
 
 colormap = [
@@ -698,21 +698,32 @@ class App(object):
         size = self.loop.screen_size
         new_pos = number*5
         cur_pos = self.box.get_cursor_coords(size)[0]
-        self.box.change_focus(
-            size, new_pos, coming_from=
-            "below" if (cur_pos < new_pos)
-              else "above")
+
+        try:
+            self.box.change_focus(
+                size, new_pos, coming_from=
+                "below" if (cur_pos < new_pos) else "above")
+        except IndexError:
+            self.temp_footer_message("OUT OF BOUNDS")
 
 
     def goto_post_prompt(self, init):
+        if self.mode != "thread":
+            return
+
+        count = self.thread["reply_count"]
+        live_display = urwid.Text("")
+        edit = JumpPrompt(count, lambda x: self.goto_post(x))
         items = [
             urwid.Text(("button", "   Jump to post")),
-            urwid.Text(("bold", ("(max >>%d)" % self.thread["reply_count"]).center(18, " ")))
+            urwid.AttrMap(edit, "opt_prompt"),
+            urwid.Text(("bold", ("(max %d)" % count).center(18, " "))),
+            live_display
         ]
 
-        edit = IntPrompt(lambda x: self.goto_post(x))
-        edit.keypress((self.loop.screen_size[0],), init)
-        items.insert(1, urwid.AttrMap(edit, "opt_prompt"))
+        urwid.connect_signal(edit, "change", self.jump_peek, live_display)
+        if init.isdigit():
+            edit.keypress((self.loop.screen_size[0],), init)
 
         popup = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(items)),
@@ -724,6 +735,13 @@ class App(object):
             valign=("relative", 50),
             width=20, height=6)
 
+
+    def jump_peek(self, editor, value, display):
+        if not value:
+            return display.set_text("")
+        msg = self.thread["messages"][int(value)]
+        author = self.usermap[msg["author"]]
+        display.set_text((str(author["color"]), ">>%s %s" % (value, author["user_name"])))
 
 
     def set_new_editor(self, button, value, arg):
@@ -1277,20 +1295,42 @@ class FootPrompt(Prompt):
             app.set_default_footer()
 
 
-class IntPrompt(Prompt, urwid.IntEdit):
-    def __init__(self, callback, *callback_args):
-        super(IntPrompt, self).__init__()
+class JumpPrompt(Prompt, urwid.IntEdit):
+    def __init__(self, max_length, callback, *callback_args):
+        super(JumpPrompt, self).__init__()
+        self.max_length = max_length
         self.callback = callback
         self.args = callback_args
 
+
+    def valid_char(self, char):
+        if not (len(char) == 1 and char in "0123456789"):
+            return False
+        elif int(self.get_edit_text() + char) <= self.max_length:
+            return True
+        try:
+            # flash the display text to indicate bad value
+            text = app.loop.widget.top_w.original_widget.body[2]
+            body = text.get_text()[0]
+            for attr in ("button", "20", "button", "bold"):
+                text.set_text((attr, body))
+                app.loop.draw_screen()
+                sleep(0.05)
+        except: # fuck it who cares
+            pass
+        return False
+
+
     def keypress(self, size, key):
-        super(IntPrompt, self).keypress(size, key)
         if key == "enter":
             app.remove_overlays()
             self.callback(self.value(), *self.args)
 
         elif key.lower() in ["q", "esc", "ctrl g", "ctrl c"]:
             app.remove_overlays()
+
+        else: # dont use super because we want to allow zeros in this box
+            urwid.Edit.keypress(self, (size[0],), key)
 
 
 class ExternalEditor(urwid.Terminal):
