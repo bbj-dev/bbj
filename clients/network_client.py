@@ -6,7 +6,6 @@ import json
 
 
 class BBJ(object):
-    # YO WHATS UP MAN
     # this module isnt exactly complete. The below description claims
     # `all of its endpoints are mapped to native methods` though this
     # is not yet true. The documentation for the API is not yet
