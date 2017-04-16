@@ -138,6 +138,8 @@ format_help = [
 
 general_help = [
     ("bold", "use q or escape to close dialogs and menus (including this one)\n\n"),
+    ("10", "use q, escape, or a left directional key to go back at any point"
+     " from just about anywhere.\n\n"),
     ("20", "use the o key to change your settings when this dialog is closed\n\n"),
 
     "You may use the arrow keys, or use ", ("button", "jk/np/Control-n|p"),
@@ -186,7 +188,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d"
+    "thread": "[C]ompose [^R]eply [R]efresh [RET]Menu [0-9]Goto [B/T]End [</>]Jump[X]%d"
 }
 
 colormap = [
@@ -1567,7 +1569,7 @@ class ActionBox(urwid.ListBox):
         elif keyl in ["l", "right"]:
             self.keypress(size, "enter")
 
-        elif keyl in ["h", "left", "q"]:
+        elif keyl in ["esc", "h", "left", "q"]:
             app.back(keyl == "q")
 
         elif keyl == "b":
@@ -1610,7 +1612,7 @@ class ActionBox(urwid.ListBox):
         elif keyl in ["r", "f5"] and not overlay:
             app.refresh()
 
-        elif app.mode == "thread" and not app.window_split:
+        elif app.mode == "thread" and not app.window_split and not overlay:
             message = app.thread["messages"][app.get_focus_post()]
 
             if keyl == "ctrl e":
@@ -1619,12 +1621,12 @@ class ActionBox(urwid.ListBox):
             elif keyl == "ctrl r":
                 app.reply(None, message)
 
-            elif keyl == '"':
-                quotes = app.get_quotes(message)
-                if quotes:
-                    app.quote_view_menu(None, quotes)
-                else:
-                    app.temp_footer_message("This message has no quotes.")
+            # elif keyl == '"':
+            #     quotes = app.get_quotes(message)
+            #     if quotes:
+            #         app.quote_view_menu(None, quotes)
+            #     else:
+            #         app.temp_footer_message("This message has no quotes.")
 
 
 
