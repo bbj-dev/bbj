@@ -176,6 +176,7 @@ default_prefs = {
     "jump_count": 1,
     "shift_multiplier": 5,
     "integrate_external_editor": True,
+    "index_spacing": False,
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
     "time": "%H:%M",
@@ -311,6 +312,13 @@ class App(object):
         self.set_default_header()
 
 
+    def overlay_p(self):
+        """
+        Return True or False if the current widget is an overlay.
+        """
+        return isinstance(self.loop.widget, urwid.Overlay)
+
+
     def remove_overlays(self, *_):
         """
         Remove ALL urwid.Overlay objects which are currently covering the base
@@ -374,7 +382,7 @@ class App(object):
         Callback function to view a quote from the message object menu.
         """
         widget = OptionsMenu(
-            urwid.ListBox(
+            ActionBox(
                 urwid.SimpleFocusListWalker([
                     *self.make_message_body(message)
                 ])),
@@ -549,13 +557,17 @@ class App(object):
         infoline = "%d replies; active %s" % (
             thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
 
-        pile = urwid.Pile([
+        pile = [
             urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
             urwid.Text(dateline),
             urwid.AttrMap(urwid.Text(infoline), "dim"),
             urwid.AttrMap(urwid.Divider("-"), "dim")
-        ])
+        ]
 
+        if self.prefs["index_spacing"]:
+            pile.insert(3, urwid.Divider())
+
+        pile = urwid.Pile(pile)
         pile.thread = thread
         return pile
 
@@ -661,6 +673,9 @@ class App(object):
     def back(self, terminate=False):
         if app.mode == "index" and terminate:
             frilly_exit()
+
+        elif self.overlay_p():
+            self.loop.widget = self.loop.widget[0]
 
         elif self.window_split:
             # display a confirmation dialog before killing off an in-progress post
@@ -892,6 +907,11 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def toggle_spacing(self, button, value):
+        self.prefs["index_spacing"] = value
+        bbjrc("update", **self.prefs)
+
+
     def change_username(self, *_):
         self.loop.stop()
         run("clear", shell=True)
@@ -949,18 +969,26 @@ class App(object):
 
 
     def incr_jump(self):
+        if self.mode != "thread":
+            return
+
         value = self.prefs["jump_count"] * 2
         if value > 64:
             value = 1
+
         self.prefs["jump_count"] = value
         self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
     def decr_jump(self):
+        if self.mode != "thread":
+            return
+
         value = self.prefs["jump_count"] // 2
         if value < 1:
             value = 64
+
         self.prefs["jump_count"] = value
         self.set_default_footer()
         bbjrc("update", **self.prefs)
@@ -995,6 +1023,7 @@ class App(object):
                 urwid.Divider(),
                 *user_colors
             ]
+
         else:
             account_message = "You're browsing anonymously, and cannot set account preferences."
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
@@ -1054,6 +1083,11 @@ class App(object):
                         state=self.prefs["dramatic_exit"],
                         on_state_change=self.toggle_exit
                     ),
+                    urwid.CheckBox(
+                        "Increase index padding",
+                        state=self.prefs["index_spacing"],
+                        on_state_change=self.toggle_spacing
+                    ),
                     urwid.Divider(),
                     *time_stuff,
                     urwid.Divider(),
@@ -1078,8 +1112,7 @@ class App(object):
                 ])
             ),
             title="Options",
-            **frame_theme()
-        )
+            **frame_theme())
 
         self.loop.widget = urwid.Overlay(
             widget, self.loop.widget,
@@ -1514,12 +1547,10 @@ class ActionBox(urwid.ListBox):
     """
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
+        overlay = app.overlay_p()
         keyl = key.lower()
 
-        if key == "f2":
-            app.switch_editor()
-
-        elif key in ["j", "n", "ctrl n"]:
+        if key in ["j", "n", "ctrl n"]:
             self._keypress_down(size)
 
         elif key in ["k", "p", "ctrl p"]:
@@ -1533,42 +1564,21 @@ class ActionBox(urwid.ListBox):
             for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_up(size)
 
-        elif key == "ctrl l":
-            wipe_screen()
-
-        elif key == ">":
-            app.header_jump_next()
-
-        elif key == "<":
-            app.header_jump_previous()
-
-        elif key == "x":
-            app.incr_jump()
-
-        elif key == "X":
-            app.decr_jump()
-
-        elif keyl in ["h", "left"]:
-            app.back()
-
         elif keyl in ["l", "right"]:
             self.keypress(size, "enter")
 
-        elif keyl in "1234567890g":
-            app.goto_post_prompt(keyl)
+        elif keyl in ["h", "left", "q"]:
+            app.back(keyl == "q")
 
         elif keyl == "b":
             offset = 5 if (app.mode == "thread") else 1
-            self.change_focus(size, len(app.walker) - offset)
+            self.change_focus(size, len(self.body) - offset)
 
         elif keyl == "t":
             self.change_focus(size, 0)
 
-        elif keyl in "c+":
-            app.compose()
-
-        elif keyl in ["r", "f5"]:
-            app.refresh()
+        elif key == "ctrl l":
+            wipe_screen()
 
         elif keyl == "o":
             app.options_menu()
@@ -1576,8 +1586,48 @@ class ActionBox(urwid.ListBox):
         elif key == "?":
             app.general_help()
 
-        elif keyl == "q":
-            app.back(True)
+        elif key == "f2" and not overlay:
+            app.switch_editor()
+
+        elif key == ">" and not overlay:
+            app.header_jump_next()
+
+        elif key == "<" and not overlay:
+            app.header_jump_previous()
+
+        elif key == "x" and not overlay:
+            app.incr_jump()
+
+        elif key == "X" and not overlay:
+            app.decr_jump()
+
+        elif keyl in "1234567890g" and not overlay:
+            app.goto_post_prompt(keyl)
+
+        elif keyl in "c+" and not overlay:
+            app.compose()
+
+        elif keyl in ["r", "f5"] and not overlay:
+            app.refresh()
+
+        elif app.mode == "thread" and not app.window_split:
+            message = app.thread["messages"][app.get_focus_post()]
+
+            if keyl == "ctrl e":
+                app.edit_post(None, message)
+
+            elif keyl == "ctrl r":
+                app.reply(None, message)
+
+            elif keyl == '"':
+                quotes = app.get_quotes(message)
+                if quotes:
+                    app.quote_view_menu(None, quotes)
+                else:
+                    app.temp_footer_message("This message has no quotes.")
+
+
+
 
 
 def frilly_exit():
