@@ -276,7 +276,7 @@ class App(object):
         """
         if self.mode == "thread":
             footer = bars["thread"] % self.prefs["jump_count"]
-        else: footer = ["index"]
+        else: footer = bars["index"]
         self.set_footer(footer)
 
 
