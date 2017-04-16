@@ -165,6 +165,7 @@ editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "jo
 default_prefs = {
     # using default= is not completely reliable, sadly...
     "editor": os.getenv("EDITOR") or "nano",
+    "jump_count": 1,
     "shift_multiplier": 5,
     "integrate_external_editor": True,
     "dramatic_exit": True,
@@ -176,7 +177,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [<>]Jump [B/T]End [?]Help"
+    "thread": "[C]ompose [RET]Interact [Q]Back [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d"
 }
 
 colormap = [
@@ -209,6 +210,8 @@ colormap = [
     ("50", "light cyan", "default"),
     ("60", "light magenta", "default")
 ]
+
+rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 
 class App(object):
     def __init__(self):
@@ -271,7 +274,10 @@ class App(object):
         """
         Sets the footer to the default for the current screen.
         """
-        self.set_footer(bars[self.mode])
+        if self.mode == "thread":
+            footer = bars["thread"] % self.prefs["jump_count"]
+        else: footer = ["index"]
+        self.set_footer(footer)
 
 
     def set_bars(self):
@@ -685,17 +691,21 @@ class App(object):
     def header_jump_next(self):
         if self.mode == "index":
             return self.box.keypress(self.loop.screen_size, "down")
-        post = self.get_focus_post()
-        if post != self.thread["reply_count"]:
-            self.goto_post(post + 1)
+        for x in range(self.prefs["jump_count"]):
+            post = self.get_focus_post()
+            if post != self.thread["reply_count"]:
+                self.goto_post(post + 1)
+            else: break
 
 
     def header_jump_previous(self):
         if self.mode == "index":
             return self.box.keypress(self.loop.screen_size, "up")
-        post = self.get_focus_post()
-        if post != 0:
-            self.goto_post(post - 1)
+        for x in range(self.prefs["jump_count"]):
+            post = self.get_focus_post()
+            if post != 0:
+                self.goto_post(post - 1)
+            else: break
 
 
     def goto_post(self, number):
@@ -927,6 +937,24 @@ class App(object):
     def edit_shift(self, editor, content):
         self.prefs["shift_multiplier"] = \
             int(content) if content else 0
+        bbjrc("update", **self.prefs)
+
+
+    def incr_jump(self):
+        value = self.prefs["jump_count"] * 2
+        if value > 64:
+            value = 1
+        self.prefs["jump_count"] = value
+        self.set_default_footer()
+        bbjrc("update", **self.prefs)
+
+
+    def decr_jump(self):
+        value = self.prefs["jump_count"] // 2
+        if value < 1:
+            value = 64
+        self.prefs["jump_count"] = value
+        self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
@@ -1506,6 +1534,12 @@ class ActionBox(urwid.ListBox):
         elif key == "<":
             app.header_jump_previous()
 
+        elif key == "x":
+            app.incr_jump()
+
+        elif key == "X":
+            app.decr_jump()
+
         elif keyl in ["h", "left"]:
             app.back()
 
@@ -1729,20 +1763,17 @@ def bbjrc(mode, **params):
     Maintains a user a preferences file, setting or returning
     values depending on `mode`.
     """
-    path = os.path.join(os.getenv("HOME"), ".bbjrc")
     try:
-        # load it up
-        with open(path, "r") as _in:
+        with open(rcpath, "r") as _in:
             values = json.load(_in)
         # update it with new keys if necessary
         for key, default_value in default_prefs.items():
-            if key not in values:
-                values[key] = default_value
-            elif values[key] == None:
-                # HACK: settings should never be null, ~vilmibm ran into
-                # a null value and im not sure where. putting this here
-                # to correct it automatically for anyone else that may
-                # have been affected
+            # HACK: checking if they == None should not be necessary, as the program
+            # should never store a preference value as a NoneType. However ~vilmibm
+            # encountered the editor being stored as None, so there is a misstep somewhere
+            # and this will at least keep the program from continuing to crash should
+            # anyone else ever run into it
+            if key not in values or values[key] == None:
                 values[key] = default_value
     # else make one
     except FileNotFoundError:
@@ -1750,7 +1781,7 @@ def bbjrc(mode, **params):
 
     values.update(params)
     # we always write
-    with open(path, "w") as _out:
+    with open(rcpath, "w") as _out:
         json.dump(values, _out)
 
     return values
