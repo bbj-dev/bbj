@@ -447,7 +447,7 @@ class App(object):
         """
         op = message["post_id"] == 0
         buttons = [
-            urwid.Text(("bold", "Delete this %s?" % ("whole thred" if op else "post"))),
+            urwid.Text(("bold", "Delete this %s?" % ("whole thread" if op else "post"))),
             urwid.Divider(),
             cute_button(("10" , ">> Yes"), lambda _: [
                 network.message_delete(message["thread_id"], message["post_id"]),
