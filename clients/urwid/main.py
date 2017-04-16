@@ -138,16 +138,24 @@ format_help = [
 
 general_help = [
     ("bold", "use q or escape to close dialogs and menus (including this one)\n\n"),
+    ("20", "use the o key to change your settings when this dialog is closed\n\n"),
 
-    "You may use the arrow keys, or use jk/np/Control-n|p to move up and down by "
+    "You may use the arrow keys, or use ", ("button", "jk/np/Control-n|p"),
+    " to move up and down by "
     "an element. If an element is overflowing the screen, it will scroll only one line. "
-    "To make scrolling faster, hold shift when using a control: it will repeat 5 times.\n\n"
+    "To make scrolling faster, ", ("button", "hold shift"), " when using a control: it "
+    "will repeat 5 times by default, and you can change this number in your settings.\n\n"
+
+    "In threads, The ", ("button", "<"), " and ", ("button", ">"), " keys will jump by "
+    "a chosen number of post headers. You can see the count inside of the footer line at "
+    "the far right side: press ", ("button", "x"), " to cycle it upwards or ",
+    ("button", "X"), " to cycle it downwards.\n\n"
+
+    "In the thread index and any open thread, the ", ("button", "b"), " and ", ("button", "t "),
+    "keys may be used to go to very top or bottom.\n\n"
 
     "To go back and forth between threads, you may also use the left/right arrow keys, "
-    "or h/l to do it vi-style.\n\n"
-
-    "In the thread index and any open thread, the b and t keys may be used to go to "
-    "very top or bottom.\n\n"
+    "or ", ("button", "h"), "/", ("button", "l"), " to do it vi-style.\n\n"
 
     "Aside from those, primary controls are shown on the very bottom of the screen "
     "in the footer line, or may be placed in window titles for other actions like "
