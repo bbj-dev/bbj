@@ -223,6 +223,7 @@ colormap = [
 ]
 
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
+markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
 
 class App(object):
     def __init__(self):
@@ -470,7 +471,7 @@ class App(object):
             cute_button(("10" , ">> Yes"), lambda _: [
                 network.message_delete(message["thread_id"], message["post_id"]),
                 self.remove_overlays(),
-                self.index() if op else self.refresh(False)
+                self.index() if op else self.refresh()
             ]),
             cute_button(("30", "<< No"), self.remove_overlays)
         ]
@@ -660,16 +661,20 @@ class App(object):
         self.walker.clear()
         for message in thread["messages"]:
             self.walker += self.make_message_body(message)
-        self.set_bars()
+        self.set_default_header()
+        if not self.window_split:
+            self.set_default_footer()
+        self.goto_post(mark(thread_id))
 
 
-    def refresh(self, bottom=True):
+    def refresh(self):
         self.remove_overlays()
         if self.mode == "index":
             return self.index()
-        self.thread_load(None, self.thread["thread_id"])
-        if bottom:
-            self.box.set_focus(len(self.walker) - 5)
+        thread = self.thread["thread_id"]
+        mark()
+        self.thread_load(None, thread)
+        self.goto_post(mark(thread))
 
 
     def back(self, terminate=False):
@@ -703,6 +708,7 @@ class App(object):
                 width=30, height=6)
 
         else:
+            mark()
             self.index()
 
 
@@ -1212,7 +1218,7 @@ class App(object):
                 params.update({"title": title})
 
             network.request(endpoint, **params)
-            return self.refresh(True)
+            return self.refresh()
 
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
@@ -1461,7 +1467,7 @@ class ExternalEditor(urwid.Terminal):
         if body and not re.search("^>>[0-9]+$", body):
             self.params.update({"body": body})
             network.request(self.endpoint, **self.params)
-            return app.refresh(True)
+            return app.refresh()
         else:
             return app.temp_footer_message("EMPTY POST DISCARDED")
 
@@ -1551,6 +1557,9 @@ class ActionBox(urwid.ListBox):
         super(ActionBox, self).keypress(size, key)
         overlay = app.overlay_p()
         keyl = key.lower()
+
+        if not overlay:
+            mark()
 
         if key in ["j", "n", "ctrl n"]:
             self._keypress_down(size)
@@ -1847,6 +1856,32 @@ def bbjrc(mode, **params):
     return values
 
 
+def mark(directive=True):
+    """
+    Set and retrieve positional marks for threads.
+    This uses a seperate file from the preferences
+    to keep it free from clutter.
+    """
+    try:
+        with open(markpath, "r") as _in:
+            values = json.load(_in)
+    except FileNotFoundError:
+        values = {}
+
+    if directive == True and app.mode == "thread":
+        pos = app.get_focus_post()
+        values[app.thread["thread_id"]] = pos
+        with open(markpath, "w") as _out:
+            json.dump(values, _out)
+        return pos
+
+    elif isinstance(directive, str):
+        try:
+            return values[directive]
+        except KeyError:
+            return 0
+
+
 def ignore(*_, **__):
     """
     The blackness of my soul.
@@ -1868,7 +1903,6 @@ def wipe_screen(*_):
 def main():
     global app
     app = App()
-    app.usermap.update(network.user)
     run("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
