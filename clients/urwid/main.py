@@ -622,7 +622,7 @@ class App(object):
         self.set_bars()
         try: self.box.set_focus(self.last_pos)
         except IndexError:
-            self.box.change_focus(size, 0)
+            pass
 
 
     def thread_load(self, button, thread_id):
