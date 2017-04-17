@@ -282,23 +282,29 @@ class App(object):
             self.set_header("{} threads", len(self.walker))
 
 
-    def set_default_footer(self):
+    def set_default_footer(self, clobber_composer=False):
         """
         Sets the footer to the default for the current screen.
         """
-        if self.mode == "thread":
+        if not clobber_composer and self.window_split:
+            return
+
+        elif self.mode == "thread":
             footer = bars["thread"] % self.prefs["jump_count"]
-        else: footer = bars["index"]
+
+        else:
+            footer = bars["index"]
+
         self.set_footer(footer)
 
 
-    def set_bars(self):
+    def set_bars(self, clobber_composer=False):
         """
         Sets both the footer and header to their default values
         for the current mode.
         """
         self.set_default_header()
-        self.set_default_footer()
+        self.set_default_footer(clobber_composer)
 
 
     def close_editor(self):
@@ -662,8 +668,7 @@ class App(object):
         for message in thread["messages"]:
             self.walker += self.make_message_body(message)
         self.set_default_header()
-        if not self.window_split:
-            self.set_default_footer()
+        self.set_default_footer()
         self.goto_post(mark(thread_id))
 
 
@@ -985,8 +990,7 @@ class App(object):
             value = 1
 
         self.prefs["jump_count"] = value
-        if not self.window_split:
-            self.set_default_footer()
+        self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
@@ -999,8 +1003,7 @@ class App(object):
             value = 64
 
         self.prefs["jump_count"] = value
-        if not self.window_split:
-            self.set_default_footer()
+        self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
