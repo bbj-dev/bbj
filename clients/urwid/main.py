@@ -1652,7 +1652,8 @@ class ActionBox(urwid.ListBox):
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
-            run("sl", shell=True)
+            try: run("sl", shell=True)
+            except: pass
             app.loop.start()
 
         elif app.mode == "thread" and not app.window_split and not overlay:
