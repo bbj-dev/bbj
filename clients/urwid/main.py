@@ -1649,6 +1649,12 @@ class ActionBox(urwid.ListBox):
         elif keyl in ["r", "f5"] and not overlay:
             app.refresh()
 
+        elif key == "~":
+            # sssssshhhhhhhh
+            app.loop.stop()
+            run("sl", shell=True)
+            app.loop.start()
+
         elif app.mode == "thread" and not app.window_split and not overlay:
             message = app.thread["messages"][app.get_focus_post()]
 
