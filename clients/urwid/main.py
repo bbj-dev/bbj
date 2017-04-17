@@ -985,7 +985,8 @@ class App(object):
             value = 1
 
         self.prefs["jump_count"] = value
-        self.set_default_footer()
+        if not self.window_split:
+            self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
@@ -998,7 +999,8 @@ class App(object):
             value = 64
 
         self.prefs["jump_count"] = value
-        self.set_default_footer()
+        if not self.window_split:
+            self.set_default_footer()
         bbjrc("update", **self.prefs)
 
 
