@@ -196,13 +196,18 @@ def strip(text):
     Returns the text with all formatting directives removed.
     Not to be confused with `raw`.
     """
+    pass # me the bong im boutta smash tha bish
 
 
 
 def entities(text):
     """
-    Returns a tuple where [0] is raw text
+    Returns a tuple where [0] is raw text and [1] is documentation
     """
+    # once someone asked me if i wanted a life
+    # and i said
+    pass
+
 
 
 def html(text):
@@ -215,17 +220,34 @@ def html(text):
     and compliant html renderer in your client, you should use one of the
     simpler directives like strip, indice, or raw.
     """
+    return "where is your god now"
 
-    text = TOKENS.sub(map_html, escape(text))
-    text = QUOTES.sub(r'<span post="\1" class="quote">\g<0></span>', text)
-    return markdown(
-        LINEQUOTES.sub(r'<span class="linequote">\1</span><br>', text))
 
-# and this is the callback used by the sub statement
+# and this is drunk too
 def map_html(match):
-    directive, body = match.group(1).lower(), match.group(2)
-    if directive in colors:
-        return '<span color="{0}" style="color: {0};">{1}</span>'.format(directive, body)
-    elif directive in markup:
-        return '<{0}>{1}</{0}>'.format(directive[0], body)
-    return body
+    return """
+    If there is a place you got to go
+    I am the one you need to know
+    I'm the Map!
+    I'm the Map!
+    I'm the Map!
+
+    If there is a place you got to get
+    I can get you there I bet
+    I'm the Map!
+    I'm the Map!
+    I'm the Map!
+
+    I'm the Map!
+
+    I'm the Map!
+    I'm the Map!
+
+    I'm the Map!
+    I'm the Map!
+    I'm the Map!
+
+    I'm the Map!
+    I'm the Map!
+    I'm the Map!
+    """
