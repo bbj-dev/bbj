@@ -137,6 +137,7 @@ format_help = [
 ]
 
 general_help = [
+    ("bold", "use the arrow keys, j/k, or n/p to scroll down this menu\n\n"),
     ("bold", "use q or escape to close dialogs and menus (including this one)\n\n"),
     ("10", "use q, escape, or a left directional key to go back at any point"
      " from just about anywhere.\n\n"),
