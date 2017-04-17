@@ -233,19 +233,21 @@ class App(object):
         self.thread = None
         self.usermap = {}
         self.window_split = False
-        self.last_pos = 0
+        self.last_pos = None
 
         # these can be changed and manipulated by other methods
         self.walker = urwid.SimpleFocusListWalker([])
         self.box = ActionBox(self.walker)
+        self.body = urwid.AttrMap(
+            urwid.LineBox(
+                self.box,
+                title=self.prefs["frame_title"],
+                **frame_theme()),
+            "default"
+        )
 
         self.loop = urwid.MainLoop(
-            urwid.Frame(
-                urwid.LineBox(
-                    self.box,
-                    title=self.prefs["frame_title"],
-                    **frame_theme()
-                )),
+            urwid.Frame(self.body),
             palette=colormap,
             handle_mouse=False)
 
@@ -286,7 +288,7 @@ class App(object):
         """
         Sets the footer to the default for the current screen.
         """
-        if not clobber_composer and self.window_split:
+        if self.window_split and not clobber_composer:
             return
 
         elif self.mode == "thread":
@@ -344,18 +346,20 @@ class App(object):
         """
         Switch focus between the thread viewer and the open editor
         """
+        pos = self.loop.widget.focus_position
+        attr = ["bar" if pos == "body" else "30", "dim"]
+
         if not self.window_split:
             return
 
-        elif self.loop.widget.focus_position == "body":
+        elif pos == "body":
             self.loop.widget.focus_position = "footer"
             focus = "[focused on editor]"
-            attr = ("bar", "dim")
 
         else:
             self.loop.widget.focus_position = "body"
             focus = "[focused on thread]"
-            attr = ("dim", "bar")
+            attr.reverse()
 
         self.loop.widget.footer[0].set_text(
             "[F1]Abort [F2]Swap [F3]Formatting Help [save/quit to send] " + focus)
@@ -365,6 +369,7 @@ class App(object):
         self.loop.widget.footer.contents[1][0].original_widget.attr_map = \
             self.loop.widget.footer.contents[0][0].attr_map = {None: attr[0]}
         self.loop.widget.header.attr_map = {None: attr[1]}
+        self.body.attr_map = {None: attr[1]}
 
 
     def readable_delta(self, modified):
@@ -638,19 +643,34 @@ class App(object):
 
     def index(self, *_):
         """
-        Browse the index.
+        Browse or return to the index.
         """
+        if self.mode == "thread":
+            # mark the current position in this thread before going back to the index
+            mark()
+
+        self.body.attr_map = {None: "default"}
         self.mode = "index"
         self.thread = None
         self.window_split = False
         threads, usermap = network.thread_index()
         self.usermap.update(usermap)
         self.walker.clear()
-        for thread in threads:
+
+        try:
+            target_id, pos = self.last_pos
+        except:
+            target_id = pos = 0
+
+        for index, thread in enumerate(threads):
             self.walker.append(self.make_thread_body(thread))
-        self.set_bars()
-        try: self.box.set_focus(self.last_pos)
-        except IndexError:
+            if thread["thread_id"] == target_id:
+                pos = index
+        self.set_bars(True)
+        try:
+            self.box.change_focus(self.loop.screen_size, pos)
+            self.box.set_focus_valign("middle")
+        except:
             pass
 
 
@@ -658,8 +678,13 @@ class App(object):
         """
         Open a thread.
         """
-        if self.mode == "index":
-            self.last_pos = self.box.get_focus()[1]
+        if app.mode == "index":
+            pos = app.get_focus_post()
+            self.last_pos = (self.walker[pos].thread["thread_id"], pos)
+
+        if not self.window_split:
+            self.body.attr_map = {None: "default"}
+
         self.mode = "thread"
         thread, usermap = network.thread_load(thread_id, format="sequential")
         self.usermap.update(usermap)
@@ -676,8 +701,8 @@ class App(object):
         self.remove_overlays()
         if self.mode == "index":
             return self.index()
-        thread = self.thread["thread_id"]
         mark()
+        thread = self.thread["thread_id"]
         self.thread_load(None, thread)
         self.goto_post(mark(thread))
 
@@ -1157,7 +1182,7 @@ class App(object):
         if from_temp and self.window_split:
             return
         try:
-            self.set_default_footer()
+            self.set_default_footer(True)
             self.loop.widget.focus_position = "body"
         except:
             # just keep trying until the focus widget can handle it
@@ -1562,9 +1587,6 @@ class ActionBox(urwid.ListBox):
         super(ActionBox, self).keypress(size, key)
         overlay = app.overlay_p()
         keyl = key.lower()
-
-        if not overlay:
-            mark()
 
         if key in ["j", "n", "ctrl n"]:
             self._keypress_down(size)
