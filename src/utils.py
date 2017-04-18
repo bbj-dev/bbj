@@ -27,4 +27,4 @@ def schema_values(scheme, obj):
     elif scheme == "message":
         return ordered_keys(obj,
             "thread_id", "post_id", "author",
-            "created", "edited", "body")
+            "created", "edited", "body", "send_raw")

@@ -32,5 +32,6 @@ create table messages (
   author text,      -- string (uuid1, user.user_id)
   created real,     -- floating point unix timestamp (when reply was posted)
   edited int,       -- bool
-  body text         -- string
+  body text,        -- string
+  send_raw int      -- bool (1/true == never apply formatting)
 );

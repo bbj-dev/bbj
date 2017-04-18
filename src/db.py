@@ -93,7 +93,7 @@ def thread_set_pin(connection, thread_id, pin_bool):
     return pin_bool
 
 
-def thread_create(connection, author_id, body, title):
+def thread_create(connection, author_id, body, title, send_raw=False):
     """
     Create a new thread and return it.
     """
@@ -116,31 +116,32 @@ def thread_create(connection, author_id, body, title):
     # the thread is initially commited with reply_count -1 so that i can
     # just pass the message to the reply method, instead of duplicating
     # its code here. It then increments to 0.
-    thread_reply(connection, author_id, thread_id, body, time_override=now)
+    thread_reply(connection, author_id, thread_id, body, send_raw, time_override=now)
     # fetch the new thread out of the database instead of reusing the returned
     # objects, just to be 100% sure what is returned is what was committed
     return thread_get(connection, thread_id)
 
 
-def thread_reply(connection, author_id, thread_id, body, time_override=None):
+def thread_reply(connection, author_id, thread_id, body, send_raw=False, time_override=None):
     """
     Submit a new reply for thread_id. Return the new reply object.
 
-    time_overide can be time() value to set as the new message time.
+    time_overide can be a time() value to set as the new message time.
     This is to keep post_id 0 in exact parity with its parent thread.
     """
     validate([("body", body)])
 
     now = time_override or time()
     thread = thread_get(connection, thread_id, messages=False)
-    count = thread["reply_count"] + 1
+    thread["reply_count"] += 1
+    count = thread["reply_count"]
     scheme = schema.message(
         thread_id, count, author_id,
-        now, False, body)
+        now, False, body, bool(send_raw))
 
     connection.execute("""
         INSERT INTO messages
-        VALUES (?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?)
     """, schema_values("message", scheme))
 
     connection.execute("""
@@ -157,7 +158,7 @@ def thread_reply(connection, author_id, thread_id, body, time_override=None):
 def message_delete(connection, author, thread_id, post_id):
     """
     'Delete' a message from a thread. If the message being
-    deleted is an OP [pid 0], delete the whole thread.
+    deleted is an OP [post_id == 0], delete the whole thread.
 
     Requires an author id, the thread_id, and post_id.
     The same rules for edits apply to deletions: the same
@@ -215,25 +216,58 @@ def message_edit_query(connection, author, thread_id, post_id):
     return message
 
 
-def message_edit_commit(connection, author_id, thread_id, post_id, new_body):
+def message_edit_commit(
+        connection,
+        author_id,
+        thread_id,
+        post_id,
+        new_body,
+        send_raw=None,
+        set_display=True):
     """
-    Attempt to commit new_body to the existing message. Touches base with
-    message_edit_query first. Returns the newly updated message object.
+    Attempt to commit new_body, and optionally send_raw (default doesnt modify),
+    to the existing message.
+
+    The send_raw and set_display paramter may be specified as the NoneType
+    to leave its old value intact. Otherwise its given value is coerced to
+    a boolean and is set on the message. send_raw when not explicitly specified
+    will keep its old value, while an unspecified set_display will set it to True.
+
+    new_body may also be a NoneType to retain its old value.
+
+    Touches base with message_edit_query first. Returns
+    the newly updated message object.
     """
-    validate([("body", new_body)])
     message = message_edit_query(connection, author_id, thread_id, post_id)
-    message["body"] = new_body
-    message["edited"] = True
+
+    if new_body == None:
+        new_body = message["body"]
+    validate([("body", new_body)])
+
+    if send_raw == None:
+        send_raw = message["send_raw"]
+    else:
+        send_raw = bool(send_raw)
+
+    if set_display == None:
+        display = message["edited"]
+    else:
+        display = bool(set_display)
 
     connection.execute("""
         UPDATE messages SET
         body = ?,
+        send_raw = ?,
         edited = ?
         WHERE thread_id = ?
           AND post_id = ?
-    """, (new_body, True, thread_id, post_id))
-
+    """, (new_body, send_raw, display, thread_id, post_id))
     connection.commit()
+
+    message["body"] = new_body
+    message["send_raw"] = send_raw
+    message["edited"] = display
+
     return message
 
 

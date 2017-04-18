@@ -147,7 +147,8 @@ def message(
         author,    # string (uuid1, user.user_id)
         created,   # floating point unix timestamp (when reply was posted)
         edited,    # bool
-        body):     # string
+        body,      # string
+        send_raw): # bool
 
     return {
         "thread_id": thread_id,
@@ -155,5 +156,6 @@ def message(
         "author":    author,
         "created":   created,
         "edited":    bool(edited),
-        "body":      body
+        "body":      body,
+        "send_raw":  bool(send_raw)
     }

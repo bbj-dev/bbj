@@ -214,11 +214,15 @@ class API(object):
     def thread_create(self, args, database, user, **kwargs):
         """
         Creates a new thread and returns it. Requires the non-empty
-        string arguments `body` and `title`
+        string arguments `body` and `title`.
+
+        If the argument `send_raw` is specified and has a non-nil
+        value, the OP message will never recieve special formatting.
         """
         validate(args, ["body", "title"])
         thread = db.thread_create(
-            database, user["user_id"], args["body"], args["title"])
+            database, user["user_id"], args["body"],
+            args["title"], args.get("send_raw"))
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
         return thread
@@ -229,10 +233,14 @@ class API(object):
         """
         Creates a new reply for the given thread and returns it.
         Requires the string arguments `thread_id` and `body`
+
+        If the argument `send_raw` is specified and has a non-nil
+        value, the message will never recieve special formatting.
         """
         validate(args, ["thread_id", "body"])
         return db.thread_reply(
-            database, user["user_id"], args["thread_id"], args["body"])
+            database, user["user_id"], args["thread_id"],
+            args["body"], args.get("send_raw"))
 
 
     @api_method
@@ -266,13 +274,19 @@ class API(object):
         of a post without actually attempting to replace it, use
         `edit_query` first.
 
+        Optionally you may also include the argument `send_raw` to
+        set the message's formatting flag. However, if this is the
+        only change you would like to make, you should use the
+        endpoint `set_post_raw` instead.
+
         Returns the new message object.
         """
         if user == db.anon:
             raise BBJUserError("Anons cannot edit messages.")
         validate(args, ["body", "thread_id", "post_id"])
         return db.message_edit_commit(
-            database, user["user_id"], args["thread_id"], args["post_id"], args["body"])
+            database, user["user_id"], args["thread_id"],
+            args["post_id"], args["body"], args.get("send_raw"))
 
 
     @api_method
@@ -286,6 +300,8 @@ class API(object):
         or have admin rights. The same error descriptions and code
         are returned on falilure. Boolean true is returned on
         success.
+
+        If the post_id is 0, the whole thread is deleted.
         """
         if user == db.anon:
             raise BBJUserError("Anons cannot delete messages.")
@@ -293,6 +309,31 @@ class API(object):
         return db.message_delete(
             database, user["user_id"], args["thread_id"], args["post_id"])
 
+
+    @api_method
+    def set_post_raw(self, args, database, user, **kwargs):
+        """
+        Requires the boolean argument of `value`, string argument
+        `thread_id`, and integer argument `post_id`. `value`, when false,
+        means that the message will be passed through message formatters
+        before being sent to clients. When `value` is true, this means
+        it will never go through formatters, all of its whitespace is
+        sent to clients verbatim and expressions are not processed.
+
+        The same rules for editing messages (see `edit_query`) apply here
+        and the same error objects are returned for violations.
+
+        You may optionally set this value as well when using `edit_post`,
+        but if this is the only change you want to make to the message,
+        using this endpoint instead is preferable.
+        """
+        if user == db.anon:
+            raise BBJUserError("Anons cannot edit messages.")
+        validate(args, ["value", "thread_id", "post_id"])
+        return db.message_edit_commit(
+            database, user["user_id"],
+            args["thread_id"], args["post_id"],
+            None, args["value"], None)
 
 
     @api_method
@@ -343,17 +384,17 @@ class API(object):
     @api_method
     def set_thread_pin(self, args, database, user, **kwargs):
         """
-        Requires the arguments `thread_id` and `pinned`. Pinned
+        Requires the arguments `thread_id` and `value`. `value`
         must be a boolean of what the pinned status should be.
         This method requires that the caller is logged in and
         has admin status on their account.
 
-        Returns the same boolean you supply as `pinned`
+        Returns the same boolean you supply as `value`
         """
-        validate(args, ["thread_id", "pinned"])
+        validate(args, ["thread_id", "value"])
         if not user["is_admin"]:
             raise BBJUserError("Only admins can set thread pins")
-        return db.set_thread_pin(database, args["thread_id"], args["pinned"])
+        return db.set_thread_pin(database, args["thread_id"], args["value"])
 
 
     @api_method

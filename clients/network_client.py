@@ -550,6 +550,21 @@ class BBJ(object):
         return response["data"]
 
 
+    def set_post_raw(self, thread_id, post_id, value):
+        """
+        This is a subset of `edit_message` that retains the old
+        body and just sets its `send_raw` to your supplied `value`.
+        The `edited` parameter of the message on the server is not
+        modified.
+        """
+        response = self(
+            "set_post_raw",
+            thread_id=thread_id,
+            post_id=post_id,
+            value=bool(value))
+        return response["data"]
+
+
     def user_is_admin(self, user_name_or_id):
         """
         Return boolean True or False whether the given user identifier

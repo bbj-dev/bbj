@@ -500,6 +500,13 @@ class App(object):
             width=30, height=6)
 
 
+    def toggle_formatting(self, button, message):
+        self.remove_overlays()
+        raw = not message["send_raw"]
+        network.set_post_raw(message["thread_id"], message["post_id"], raw)
+        return self.refresh()
+
+
     def on_post(self, button, message):
         quotes = self.get_quotes(message)
         author = self.usermap[message["author"]]
@@ -520,7 +527,11 @@ class App(object):
                 msg = "Thread"
             else: msg = "Post"
 
+            raw = message["send_raw"]
             buttons.insert(0, urwid.Button("Delete %s" % msg, self.deletion_dialog, message))
+            buttons.insert(0, urwid.Button(
+                "Enable Formatting" if raw else "Disable Formatting",
+                self.toggle_formatting, message))
             buttons.insert(0, urwid.Button("Edit Post", self.edit_post, message))
 
         if not buttons:
@@ -550,6 +561,8 @@ class App(object):
         but can be passed `str` for strings.
         """
         quotes = []
+        if msg_object["send_raw"]:
+            return quotes
         for paragraph in msg_object["body"]:
             # yes python is lisp fuck you
             [quotes.append(cdr) for car, cdr in paragraph if car == "quote"]
@@ -1297,6 +1310,9 @@ class MessageBody(urwid.Text):
     An urwid.Text object that works with the BBJ formatting directives.
     """
     def __init__(self, message):
+        if message["send_raw"]:
+            return super(MessageBody, self).__init__(message["body"])
+
         text_objects = message["body"]
         result = []
         last_directive = None
