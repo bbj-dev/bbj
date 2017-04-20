@@ -1514,9 +1514,13 @@ class ExternalEditor(urwid.Terminal):
         if body and not re.search("^>>[0-9]+$", body):
             self.params.update({"body": body})
             network.request(self.endpoint, **self.params)
-            return app.refresh()
+            app.refresh()
+            if app.mode == "thread":
+                app.goto_post(app.thread["reply_count"])
+            else:
+                app.box.keypress(app.loop.screen_size, "t")
         else:
-            return app.temp_footer_message("EMPTY POST DISCARDED")
+            app.temp_footer_message("EMPTY POST DISCARDED")
 
 
     def keypress(self, size, key):
