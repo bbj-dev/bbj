@@ -1521,7 +1521,7 @@ class ExternalEditor(urwid.Terminal):
 
     def keypress(self, size, key):
         if key in ["down", "up", "left", "right"]:
-            # HACK HACK HACK HACK: something somewhere is capturing some keys within
+            # HACK: something somewhere is capturing some keys within
             # the parent keypress method until some other keys are pressed. So when
             # this widget was spawned, it would ignore arrow keys, C-n/C-p, pager keys,
             # but when some _OTHER_ keys were pressed, this lock was released. Weird shit.
@@ -1534,10 +1534,11 @@ class ExternalEditor(urwid.Terminal):
             return os.write(self.master, key)
 
         elif key.lower() == "ctrl l":
-            # always do this, and also pass it to the terminal
             wipe_screen()
+            # always do this, and also pass it to the terminal
 
-        elif key not in ["f1", "f2", "f3"]:
+        keyl = key.lower()
+        if keyl not in ["f1", "f2", "f3", "ctrl z"]:
             return super(ExternalEditor, self).keypress(size, key)
 
         elif key == "f1":
@@ -1550,6 +1551,9 @@ class ExternalEditor(urwid.Terminal):
 
         elif key == "f3":
             app.formatting_help()
+
+        elif keyl == "ctrl z":
+            os.killpg(os.getpgid(os.getpid()), 19)
 
 
     def __del__(self):
