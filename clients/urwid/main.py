@@ -1242,7 +1242,7 @@ class App(object):
 
         if not self.prefs["integrate_external_editor"]:
             body = self.overthrow_ext_edit(init_body)
-            if not body:
+            if not body or re.search("^>>[0-9]+$", body):
                 return self.temp_footer_message("EMPTY POST DISCARDED")
             params = {"body": body}
 
@@ -1262,7 +1262,16 @@ class App(object):
                 params.update({"title": title})
 
             network.request(endpoint, **params)
-            return self.refresh()
+            self.refresh()
+            if edit:
+                self.goto_post(edit["post_id"])
+
+            elif self.mode == "thread":
+                self.goto_post(self.thread["reply_count"])
+
+            else:
+                self.box.keypress(self.loop.screen_size, "t")
+            return
 
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
@@ -1515,8 +1524,12 @@ class ExternalEditor(urwid.Terminal):
             self.params.update({"body": body})
             network.request(self.endpoint, **self.params)
             app.refresh()
-            if app.mode == "thread":
+            if self.endpoint == "edit_post":
+                app.goto_post(self.params["post_id"])
+
+            elif app.mode == "thread":
                 app.goto_post(app.thread["reply_count"])
+
             else:
                 app.box.keypress(app.loop.screen_size, "t")
         else:
@@ -1569,7 +1582,7 @@ class ExternalEditor(urwid.Terminal):
         if self.term_modes.lfnl and key == "\x0d":
             key += "\x0a"
 
-        os.write(self.master, key.encode('utf8'))
+        os.write(self.master, key.encode("utf8"))
 
 
     def __del__(self):
