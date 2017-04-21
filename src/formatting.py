@@ -180,7 +180,7 @@ def apply_formatting(msg_obj, formatter):
     documentation for each formatter.
     """
     for x, obj in enumerate(msg_obj):
-        if not msg_obj[x]["send_raw"]:
+        if not msg_obj[x].get("send_raw"):
             msg_obj[x]["body"] = formatter(obj["body"])
     return msg_obj
 
