@@ -486,6 +486,7 @@ class BBJ(object):
             "post_id": post_id,
             "created": time(),
             "edited": False,
+            "send_raw": False,
             "thread_id": "gibberish"
         }
 
