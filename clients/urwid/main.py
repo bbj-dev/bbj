@@ -1524,40 +1524,52 @@ class ExternalEditor(urwid.Terminal):
 
 
     def keypress(self, size, key):
-        if key in ["down", "up", "left", "right"]:
-            # HACK: something somewhere is capturing some keys within
-            # the parent keypress method until some other keys are pressed. So when
-            # this widget was spawned, it would ignore arrow keys, C-n/C-p, pager keys,
-            # but when some _OTHER_ keys were pressed, this lock was released. Weird shit.
-            # instead of figuring out why lets just //TAKE_THE_REIGNS// #YOLO
-            if self.term_modes.keys_decckm and key in urwid.vterm.KEY_TRANSLATIONS_DECCKM:
-                key = urwid.vterm.KEY_TRANSLATIONS_DECCKM.get(key)
-            else:
-                key = urwid.vterm.KEY_TRANSLATIONS.get(key, key)
-            key = key.encode('ascii')
-            return os.write(self.master, key)
+        """
+        The majority of the things the parent keypress method will do is
+        either erroneous or disruptive to my own usage. I've plucked out
+        the necessary bits and, most importantly, have changed from
+        ASCII encoding to utf8 when writing to the child process.
+        """
+        if self.terminated:
+            return
 
-        elif key.lower() == "ctrl l":
-            wipe_screen()
-            # always do this, and also pass it to the terminal
-
+        self.term.scroll_buffer(reset=True)
         keyl = key.lower()
-        if keyl not in ["f1", "f2", "f3", "ctrl z"]:
-            return super(ExternalEditor, self).keypress(size, key)
+
+        if keyl == "ctrl l":
+            # always do this, and also pass it to the terminal
+            wipe_screen()
 
         elif key == "f1":
             self.terminate()
             app.close_editor()
-            app.refresh()
+            return app.refresh()
 
         elif key == "f2":
-            app.switch_editor()
+            return app.switch_editor()
 
         elif key == "f3":
-            app.formatting_help()
+            return app.formatting_help()
 
         elif keyl == "ctrl z":
-            os.killpg(os.getpgid(os.getpid()), 19)
+            return os.killpg(os.getpgid(os.getpid()), 19)
+
+        if key.startswith("ctrl "):
+            if key[-1].islower():
+                key = chr(ord(key[-1]) - ord('a') + 1)
+            else:
+                key = chr(ord(key[-1]) - ord('A') + 1)
+        else:
+            if self.term_modes.keys_decckm and key in urwid.vterm.KEY_TRANSLATIONS_DECCKM:
+                key = urwid.vterm.KEY_TRANSLATIONS_DECCKM.get(key)
+            else:
+                key = urwid.vterm.KEY_TRANSLATIONS.get(key, key)
+
+        # ENTER transmits both a carriage return and linefeed in LF/NL mode.
+        if self.term_modes.lfnl and key == "\x0d":
+            key += "\x0a"
+
+        os.write(self.master, key.encode('utf8'))
 
 
     def __del__(self):
