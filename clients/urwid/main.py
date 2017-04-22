@@ -1407,7 +1407,7 @@ class Prompt(urwid.Edit):
         if not super(Prompt, self).keypress(size, key):
             return
 
-        elif key[0:4] not in ["meta", "ctrl"]:
+        elif key[0:4] not in ("meta", "ctrl"):
             return key
 
         column = self.get_cursor_coords((app.loop.screen_size[0],))[0]
@@ -1453,7 +1453,7 @@ class FootPrompt(Prompt):
             app.set_default_footer()
             self.callback(self.get_edit_text(), *self.args)
 
-        elif key.lower() in ["esc", "ctrl g", "ctrl c"]:
+        elif key.lower() in ("esc", "ctrl g", "ctrl c"):
             app.loop.widget.focus_position = "body"
             app.set_default_footer()
 
@@ -1614,24 +1614,24 @@ class OptionsMenu(urwid.LineBox):
         elif not super(OptionsMenu, self).keypress(size, key):
             return
 
-        elif key in ["shift down", "J", "N"]:
+        elif key in ("shift down", "J", "N"):
             for x in range(app.prefs["shift_multiplier"]):
                 self.keypress(size, "down")
 
-        elif key in ["shift up", "K", "P"]:
+        elif key in ("shift up", "K", "P"):
             for x in range(app.prefs["shift_multiplier"]):
                 self.keypress(size, "up")
 
-        elif key in ["ctrl n", "j", "n"]:
+        elif key in ("ctrl n", "j", "n"):
             return self.keypress(size, "down")
 
-        elif key in ["ctrl p", "k", "p"]:
+        elif key in ("ctrl p", "k", "p"):
             return self.keypress(size, "up")
 
-        elif keyl in ["left", "h", "q"]:
+        elif keyl in ("left", "h", "q"):
             app.loop.widget = app.loop.widget[0]
 
-        elif keyl in ["right", "l"]:
+        elif keyl in ("right", "l"):
             return self.keypress(size, "enter")
 
         elif keyl == "ctrl l":
@@ -1648,24 +1648,24 @@ class ActionBox(urwid.ListBox):
         overlay = app.overlay_p()
         keyl = key.lower()
 
-        if key in ["j", "n", "ctrl n"]:
+        if key in ("j", "n", "ctrl n"):
             self._keypress_down(size)
 
-        elif key in ["k", "p", "ctrl p"]:
+        elif key in ("k", "p", "ctrl p"):
             self._keypress_up(size)
 
-        elif key in ["shift down", "J", "N"]:
+        elif key in ("shift down", "J", "N"):
             for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_down(size)
 
-        elif key in ["shift up", "K", "P"]:
+        elif key in ("shift up", "K", "P"):
             for x in range(app.prefs["shift_multiplier"]):
                 self._keypress_up(size)
 
-        elif keyl in ["l", "right"]:
+        elif keyl in ("l", "right"):
             self.keypress(size, "enter")
 
-        elif keyl in ["esc", "h", "left", "q"]:
+        elif keyl in ("esc", "h", "left", "q"):
             app.back(keyl == "q")
 
         elif keyl == "b":
@@ -1705,7 +1705,7 @@ class ActionBox(urwid.ListBox):
         elif keyl in "c+" and not overlay:
             app.compose()
 
-        elif keyl in ["r", "f5"] and not overlay:
+        elif keyl in ("r", "f5") and not overlay:
             app.refresh()
 
         elif key == "~":
