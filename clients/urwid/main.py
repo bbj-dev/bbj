@@ -1484,13 +1484,37 @@ class JumpPrompt(Prompt, urwid.IntEdit):
         return False
 
 
+    def incr(self, direction):
+        value = self.value()
+        if direction == "down" and value > 0:
+            value = str(value - 1)
+            self.set_edit_text(value)
+
+        elif direction == "up" and value < self.max_length:
+            value = str(value + 1)
+            self.set_edit_text(value)
+
+        else:
+            return
+
+        self.set_edit_pos(len(value))
+
+
+
     def keypress(self, size, key):
+        keyl = key.lower()
         if key == "enter":
             app.remove_overlays()
             self.callback(self.value(), *self.args)
 
-        elif key.lower() in ["q", "esc", "ctrl g", "ctrl c"]:
+        elif keyl in ("q", "esc", "ctrl g", "ctrl c"):
             app.remove_overlays()
+
+        elif keyl in ("down", "ctrl n", "n", "j"):
+            self.incr("down")
+
+        elif keyl in ("up", "ctrl p", "p", "k"):
+            self.incr("up")
 
         else: # dont use super because we want to allow zeros in this box
             urwid.Edit.keypress(self, (size[0],), key)
