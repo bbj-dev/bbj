@@ -226,6 +226,7 @@ colormap = [
 escape_map = {
     key: urwid.vterm.ESC + sequence
       for sequence, key in urwid.escape.input_sequences
+      if len(key) > 1
 }
 
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
