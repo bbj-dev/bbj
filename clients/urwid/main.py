@@ -223,6 +223,11 @@ colormap = [
     ("60", "light magenta", "default")
 ]
 
+escape_map = {
+    key: urwid.vterm.ESC + sequence
+      for sequence, key in urwid.escape.input_sequences
+}
+
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
 
@@ -1567,18 +1572,22 @@ class ExternalEditor(urwid.Terminal):
         elif keyl == "ctrl z":
             return os.killpg(os.getpgid(os.getpid()), 19)
 
-        if key.startswith("ctrl "):
+        single_char = len(key) == 6
+        if key.startswith("ctrl ") and single_char:
             if key[-1].islower():
-                key = chr(ord(key[-1]) - ord('a') + 1)
+                key = chr(ord(key[-1]) - ord("a") + 1)
             else:
-                key = chr(ord(key[-1]) - ord('A') + 1)
-        else:
-            if self.term_modes.keys_decckm and key in urwid.vterm.KEY_TRANSLATIONS_DECCKM:
-                key = urwid.vterm.KEY_TRANSLATIONS_DECCKM.get(key)
-            else:
-                key = urwid.vterm.KEY_TRANSLATIONS.get(key, key)
+                key = chr(ord(key[-1]) - ord("A") + 1)
 
-        # ENTER transmits both a carriage return and linefeed in LF/NL mode.
+        elif key.startswith("meta ") and single_char:
+            key = urwid.vterm.ESC + key[-1]
+
+        elif key in urwid.vterm.KEY_TRANSLATIONS:
+            key = urwid.vterm.KEY_TRANSLATIONS[key]
+
+        elif key in escape_map:
+            key = escape_map[key]
+
         if self.term_modes.lfnl and key == "\x0d":
             key += "\x0a"
 
@@ -1713,16 +1722,6 @@ class ActionBox(urwid.ListBox):
 
             elif keyl == "ctrl r":
                 app.reply(None, message)
-
-            # elif keyl == '"':
-            #     quotes = app.get_quotes(message)
-            #     if quotes:
-            #         app.quote_view_menu(None, quotes)
-            #     else:
-            #         app.temp_footer_message("This message has no quotes.")
-
-
-
 
 
 def frilly_exit():
