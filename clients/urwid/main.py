@@ -1224,7 +1224,7 @@ class App(object):
         descriptor, path = tempfile.mkstemp()
         with open(path, "w") as _:
             _.write(init_body)
-        run("%s %s" % (self.prefs["editor"], path), shell=True)
+        run("export LANG=en_US.UTF-8; %s %s" % (self.prefs["editor"], path), shell=True)
         with open(path) as _:
             body = _.read()
         os.remove(path)
