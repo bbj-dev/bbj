@@ -1711,10 +1711,10 @@ class ActionBox(urwid.ListBox):
         elif key == "f2" and not overlay:
             app.switch_editor()
 
-        elif key == ">" and not overlay:
+        elif key in ">." and not overlay:
             app.header_jump_next()
 
-        elif key == "<" and not overlay:
+        elif key in "<," and not overlay:
             app.header_jump_previous()
 
         elif key == "x" and not overlay:
