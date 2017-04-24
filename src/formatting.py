@@ -81,7 +81,6 @@ underline = re.compile(r"(?<!\\)_{2}(.+?)(?<!\\)_{2}")
 escapes = re.compile(r"\\([*_]{2})")
 
 
-
 def apply_directives(text):
     # is there a better way to do this? smh....
     text = quotes.sub(lambda m: "[quote: %s]" % m.group(1), text)

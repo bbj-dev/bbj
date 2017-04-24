@@ -938,9 +938,13 @@ class App(object):
 
     def formatting_help(self, *_):
         """
-        Pops a help window with formatting directives.
+        Pops a help window for formatting directives.
         """
-        message = network.fake_message("\n\n".join(format_help))
+        # we can "recycle" the server's formatting abilities to
+        # use the same syntax for the help text itself
+        message = network.fake_message(
+            "\n\n".join(format_help), format="sequential")
+
         widget = OptionsMenu(
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
