@@ -97,7 +97,7 @@ format_help = [
     "[red: Colors, Bold, Underline & Expressions]",
 
     "You can use [rainbow: rainbow], [red: red], [yellow: yellow], [green: green], "
-    "[blue: blue], [cyan: cyan], [magenta: and magenta], **bold**, and __underline__ "
+    "[blue: blue], [cyan: cyan], [magenta: and magenta], [dim: dim], **bold**, and __underline__ "
     "inside of your posts. \**bold works like this\**, \__and underlines like this\__. "
     "You can escape these expressions \\\**like this\\\**. They can span up to the full width "
     "of the same line. They are best used on shorter phrases. "
@@ -118,7 +118,7 @@ format_help = [
     "not a directive. [red this will pass too] because the colon is missing.",
 
     "The following directives may be used in this form: red, yellow, green, blue, cyan, "
-    "magenta, bold, underline, and rainbow. Nesting expressions into eachother will "
+    "magenta, bold, underline, dim, and rainbow. Nesting expressions into eachother will "
     "override the parent directives until the innermost expression closes. Thus, nesting "
     "is valid but doesn't produce layered results on the command line client.",
 
@@ -950,12 +950,13 @@ class App(object):
             **frame_theme()
         )
 
+        v = 25 if self.window_split else 50
         app.loop.widget = urwid.Overlay(
             widget, app.loop.widget,
             align=("relative", 50),
-            valign=("relative", 50),
+            valign=("relative", v),
             width=app.prefs["max_text_width"],
-            height=("relative", 60)
+            height=("relative", v)
         )
 
 
