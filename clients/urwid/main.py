@@ -83,24 +83,27 @@ format_help = [
 
     "[red: Whitespace]",
 
+    "Single line breaks in the body join into eachother to form sentences, "
+    "putting a space where the break was. This works like html. When you want "
+    "to split it off into a paragraph, **use two or more line breaks.**",
+
     "When you're composing, it is desirable to introduce linebreaks into the "
     "body to keep it from overflowing the screen. However, you __dont__ want "
     "that same spacing to bleed over to other people's screens, because clients "
-    "will wrap the text themselves.",
+    "will wrap the text themselves according to user preferences or implementation "
+    "details. Thats why it works like this.",
 
-    "Single line breaks in the body join into eachother to form sentences, "
-    "putting a space where the break was. This works like html. When you want "
-    "to split it off into a paragraph, **use two line breaks.**",
 
     "[red: Colors, Bold, Underline & Expressions]",
 
     "You can use [rainbow: rainbow], [red: red], [yellow: yellow], [green: green], "
     "[blue: blue], [cyan: cyan], [magenta: and magenta], **bold**, and __underline__ "
-    "inside of your posts. **bold\nworks like this**, __and\nunderlines like this__. "
-    "The symbolic, markdown form of these directives does NOT allow escaping, and "
-    "can only apply to up to 20 characters on the same line. They are best used on short "
-    "phrases. However, you can use a different syntax for it, which is also required to use "
-    "colors: these expressions \[bold: look like this] and are much more reliable. "
+    "inside of your posts. \**bold works like this\**, \__and underlines like this\__. "
+    "You can escape these expressions \\\**like this\\\**. They can span up to the full width "
+    "of the same line. They are best used on shorter phrases. "
+    "However, you can use a different syntax for it, which is also required to use "
+    "colors: these expressions \[bold: look like this] and have less restrictions.",
+
     "The colon and the space following it are important. When you use these "
     "expressions, the __first__ space is not part of the content, but any characters, "
     "including spaces, that follow it are included in the body. The formatting will "
@@ -116,8 +119,8 @@ format_help = [
 
     "The following directives may be used in this form: red, yellow, green, blue, cyan, "
     "magenta, bold, underline, and rainbow. Nesting expressions into eachother will "
-    "override the parent directives until it closes. Thus, nesting is valid but doesn't produce "
-    "layered results.",
+    "override the parent directives until the innermost expression closes. Thus, nesting "
+    "is valid but doesn't produce layered results on the command line client.",
 
     "[red: Quotes & Greentext]",
 
@@ -126,7 +129,9 @@ format_help = [
     "this violates the sentence structure outlined in the **Whitespace** section above, "
     "so you may introduce >greentext without splicing into seperate paragraphs. The '>' "
     "must be the first character on the line with no whitespace before it.\n>it looks like this\n"
-    "and the paragraph doesnt have to break on either side.",
+    "and the paragraph doesnt have to break on either side. The formatter is smart enough to "
+    "differentiate between >>greentext with multiple arrows and numeric quotes (outlined below) "
+    "given that the text doesn't start with any numbers.",
 
     "When using numeric quotes, they are highlighted and the author's name will show "
     "next to them in the thread. You can press enter when focused on a message to view "
@@ -949,7 +954,7 @@ class App(object):
             widget, app.loop.widget,
             align=("relative", 50),
             valign=("relative", 50),
-            width=("relative", 98),
+            width=app.prefs["max_text_width"],
             height=("relative", 60)
         )
 
@@ -1337,6 +1342,9 @@ class MessageBody(urwid.Text):
                 if directive in colornames:
                     color = str(colornames.index(directive))
                     result.append((color, body))
+
+                elif directive == "dim":
+                    result.append((directive, body))
 
                 elif directive in ["underline", "bold"]:
                     result.append((directive, body))

@@ -65,25 +65,28 @@ they are only removed when they occur before a valid expression.
 import re
 
 colors = [
-#0,   1        2        3        4       5        6
-    "red", "yellow", "green", "blue", "cyan", "magenta"
+#0,   1        2        3        4       5        6       dim is not used in color api
+    "red", "yellow", "green", "blue", "cyan", "magenta", "dim"
 ]
 
 markup = [
     "bold", "underline", "linequote", "quote", "rainbow"
 ]
 
-# PS: regex parsing is no longer used for these, preserving anyways
-# tokens being [red: this will be red] and [bold: this will be bold]
-# tokens = re.compile(r"\[(%s): (.+?)]" % "|".join(colors + markup), flags=re.DOTALL)
-# linequotes being chan-style greentext,
-# >like this
-# linequotes = re.compile("^(>.+)$", flags=re.MULTILINE)
 
 # quotes being references to other post_ids, like >>34 or >>0 for OP
 quotes = re.compile(">>([0-9]+)")
-bold = re.compile(r"\*{2}(.{1,20})\*{2}")
-underline = re.compile(r"__(.{1,20})__")
+bold = re.compile(r"(?<!\\)\*{2}(.+?)(?<!\\)\*{2}")
+underline = re.compile(r"(?<!\\)_{2}(.+?)(?<!\\)_{2}")
+escapes = re.compile(r"\\([*_]{2})")
+
+
+def apply_directives(text):
+    # is there a better way to do this? smh....
+    text = quotes.sub(lambda m: "[quote: %s]" % m.group(1), text)
+    text = bold.sub(lambda m: "[bold: %s]" % m.group(1), text)
+    text = underline.sub(lambda m: "[underline: %s]" % m.group(1), text)
+    return escapes.sub(lambda m: m.group(1), text)
 
 
 def parse_segments(text, sanitize_linequotes=True):
@@ -99,19 +102,16 @@ def parse_segments(text, sanitize_linequotes=True):
         for segment in [s.strip() for s in paragraph.split("\n")]:
             if not segment:
                 continue
-            segment = quotes.sub(lambda m: "[quote: %s]" % m.group(1), segment)
-            segment = bold.sub(lambda m: "[bold: %s]" % m.group(1), segment)
-            segment = underline.sub(lambda m: "[underline: %s]" % m.group(1), segment)
-            if segment.startswith(">"):
+            _fp = segment.find(" ")
+            first_word =  segment[:_fp] if _fp != -1 else segment
+            if segment.startswith(">") and not quotes.search(first_word):
                 if sanitize_linequotes:
                     inner = segment.replace("]", "\\]")
                 else:
-                    inner = segment
-                segment = "[linequote: %s]" % inner
-                # pg = pg[0:-1]
-                pg += segment
+                    inner = apply_directives(segment)
+                pg += "[linequote: %s]" % inner
             else:
-                pg += segment + " "
+                pg += apply_directives(segment) + " "
         result.append(pg.strip())
     return result
 
