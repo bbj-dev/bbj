@@ -594,17 +594,23 @@ class App(object):
         ]
 
         infoline = "%d replies; active %s" % (
-            thread["reply_count"], self.timestring(thread["last_mod"], "delta"))
+            thread["reply_count"],
+            self.timestring(thread["last_mod"], "delta"))
 
+        last_author = self.usermap[thread["last_author"]]
         pile = [
             urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
             urwid.Text(dateline),
-            urwid.AttrMap(urwid.Text(infoline), "dim"),
+            urwid.Text(("dim", infoline)),
+            urwid.Text([
+                ("dim", "last post by "),
+                (str(last_author["color"]), "~" + last_author["user_name"])
+            ]),
             urwid.AttrMap(urwid.Divider("-"), "dim")
         ]
 
         if self.prefs["index_spacing"]:
-            pile.insert(3, urwid.Divider())
+            pile.insert(4, urwid.Divider())
 
         pile = urwid.Pile(pile)
         pile.thread = thread

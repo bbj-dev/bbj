@@ -87,22 +87,23 @@ def api_method(function):
     return wrapper
 
 
-def create_usermap(connection, obj):
+def create_usermap(connection, obj, index=False):
     """
     Creates a mapping of all the user_ids that occur in OBJ to
     their full user objects (names, profile info, etc). Can
     be a thread_index or a messages object from one.
     """
-
+    user_set = {item["author"] for item in obj}
+    if index:
+        [user_set.add(item["last_author"]) for item in obj]
     return {
         user_id: db.user_resolve(
             connection,
             user_id,
             externalize=True,
             return_false=False)
-        for user_id in {item["author"] for item in obj}
+        for user_id in user_set
     }
-
 
 
 def validate(json, args):
@@ -206,7 +207,7 @@ class API(object):
         Requires no arguments.
         """
         threads = db.thread_index(database)
-        cherrypy.thread_data.usermap = create_usermap(database, threads)
+        cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
 
 

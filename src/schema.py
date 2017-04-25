@@ -128,7 +128,8 @@ def thread(
         last_mod,     # floating point unix timestamp (of last post or post edit)
         created,      # floating point unix timestamp (when thread was made)
         reply_count,  # integer (incremental, starting with 0)
-        pinned):      # boolean
+        pinned,       # boolean
+        last_author): # uuid string
 
     return {
         "thread_id":   thread_id,
@@ -137,7 +138,8 @@ def thread(
         "last_mod":    last_mod,
         "created":     created,
         "reply_count": reply_count,
-        "pinned":      bool(pinned)
+        "pinned":      bool(pinned),
+        "last_author": last_author
     }
 
 

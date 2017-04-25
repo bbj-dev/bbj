@@ -106,11 +106,12 @@ def thread_create(connection, author_id, body, title, send_raw=False):
     thread_id = uuid1().hex
     scheme = schema.thread(
         thread_id, author_id, title,
-        now, now, -1, False) # see below for why i set -1 instead of 0
+        now, now, -1, # see below for why i set -1 instead of 0
+        False, author_id)
 
     connection.execute("""
         INSERT INTO threads
-        VALUES (?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?)
     """, schema_values("thread", scheme))
     connection.commit()
     # the thread is initially commited with reply_count -1 so that i can
@@ -147,9 +148,10 @@ def thread_reply(connection, author_id, thread_id, body, send_raw=False, time_ov
     connection.execute("""
         UPDATE threads SET
         reply_count = ?,
+        last_author = ?,
         last_mod = ?
         WHERE thread_id = ?
-    """, (count, now, thread_id))
+    """, (count, author_id, now, thread_id))
 
     connection.commit()
     return scheme

@@ -22,7 +22,8 @@ def schema_values(scheme, obj):
     elif scheme == "thread":
         return ordered_keys(obj,
             "thread_id", "author", "title",
-            "last_mod", "created", "reply_count", "pinned")
+            "last_mod", "created", "reply_count",
+            "pinned", "last_author")
 
     elif scheme == "message":
         return ordered_keys(obj,
