@@ -97,21 +97,43 @@ def parse_segments(text, sanitize_linequotes=True):
     [bracketed] representations.
     """
     result = list()
+    hard_quote = False
     for paragraph in [p.strip() for p in re.split("\n{2,}", text)]:
         pg = str()
-        for segment in [s.strip() for s in paragraph.split("\n")]:
+        for segment in [s for s in paragraph.split("\n")]:
             if not segment:
+                if hard_quote:
+                    pg += "\n"
                 continue
+
+            elif segment == "```":
+                # because of this lazy way of handling it,
+                # its not actually necessary to close a
+                # hard quote segment. i guess thats a positive
+                # just because i dont have to throw syntax
+                # errors at the users for it. feels dirty
+                # but its easier for all of us.
+                hard_quote = not hard_quote
+                continue
+
+            elif hard_quote:
+                pg += segment + "\n"
+                continue
+
             _fp = segment.find(" ")
-            first_word =  segment[:_fp] if _fp != -1 else segment
+            first_word = segment[:_fp] if _fp != -1 else segment
             if segment.startswith(">") and not quotes.search(first_word):
                 if sanitize_linequotes:
                     inner = segment.replace("]", "\\]")
+
                 else:
                     inner = apply_directives(segment)
-                pg += "[linequote: %s]" % inner
+
+                pg += "[linequote: %s]" % inner.strip()
+
             else:
-                pg += apply_directives(segment) + " "
+                pg += apply_directives(segment.strip()) + " "
+
         result.append(pg.strip())
     return result
 
@@ -137,18 +159,19 @@ def sequential_expressions(string):
     result = list()
     for paragraph in parse_segments(string):
         stack = [[None, str()]]
-        skip_iters = []
+        skip_iters = 0
         nest = [None]
         escaped = False
         for index, char in enumerate(paragraph):
             if skip_iters:
-                skip_iters.pop()
+                skip_iters -= 1
                 continue
 
             if not escaped and char == "[":
                 directive = paragraph[index+1:paragraph.find(": ", index+1)]
                 open_p = directive in directives
-            else: open_p = False
+            else:
+                open_p = False
             clsd_p = not escaped and nest[-1] != None and char == "]"
 
             # dont splice other directives into linequotes: that is far
@@ -157,7 +180,7 @@ def sequential_expressions(string):
             if open_p and nest[-1] != "linequote":
                 stack.append([directive, str()])
                 nest.append(directive)
-                [skip_iters.append(x) for x in range(len(directive)+2)]
+                skip_iters += len(directive) + 2
 
             elif clsd_p:
                 nest.pop()
@@ -165,9 +188,13 @@ def sequential_expressions(string):
 
             else:
                 escaped = char == "\\"
-                if not (escaped and paragraph[index+1] in "[]"):
+                try:
+                    n = paragraph[index + 1]
+                except IndexError:
+                    n = " "
+                if not (escaped and n in "[]"):
                     stack[-1][1] += char
-        # filter out unused stacks, eg ["red", ""]
+        # filter out unused bodies, eg ["red", ""]
         result.append([(directive, body) for directive, body in stack if body])
     return result
 
