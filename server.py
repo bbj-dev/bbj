@@ -106,6 +106,20 @@ def create_usermap(connection, obj, index=False):
     }
 
 
+def do_formatting(format_spec, messages):
+    if not format_spec:
+        return None
+
+    elif format_spec == "sequential":
+        method = formatting.sequential_expressions
+
+    else:
+        raise BBJParameterError("invalid formatter specification")
+
+    formatting.apply_formatting(messages, method)
+    return True
+
+
 def validate(json, args):
     """
     Ensure the json object contains all the keys needed to satisfy
@@ -236,10 +250,20 @@ class API(object):
         first. The order in the threads object is undefined and you should
         instead use their `last_mod` attribute if you intend to list them
         out visually.
+
+        You may optionally provide a `format` argument: this is treated
+        the same way as the `thread_load` endpoint and you should refer
+        to its documentation for more info.
         """
         validate(args, ["time"])
-        return db.message_feed(database, args["time"])
+        feed = db.message_feed(database, args["time"])
 
+        _map = create_usermap(database, feed["messages"])
+        _map.update(create_usermap(database, feed["threads"].values(), True))
+        cherrypy.thread_data.usermap.update(_map)
+
+        do_formatting(args.get("format"), feed["messages"])
+        return feed
 
 
     @api_method
@@ -287,9 +311,7 @@ class API(object):
         thread = db.thread_get(database, args["thread_id"])
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
-        if args.get("format") == "sequential":
-            formatting.apply_formatting(thread["messages"],
-                formatting.sequential_expressions)
+        do_formatting(args.get("format"), thread["messages"])
         return thread
 
 
@@ -405,11 +427,7 @@ class API(object):
         """
         validate(args, ["format", "body"])
         message = [{"body": args["body"]}]
-        if args["format"] == "sequential":
-            formatter = formatting.sequential_expressions
-        else:
-            raise BBJParameterError("invalid format directive.")
-        formatting.apply_formatting(message, formatter)
+        do_formatting(args["format"], message)
         return message[0]["body"]
 
 

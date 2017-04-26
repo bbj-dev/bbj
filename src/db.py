@@ -73,9 +73,8 @@ def message_feed(connection, time):
 
     return {
         "threads": threads,
-        "messages": sorted(messages, key=lambda m: m["created"])
+        "messages": sorted(messages, key=lambda m: m["created"], reverse=True)
     }
-
 
 
 ### THREADS ###

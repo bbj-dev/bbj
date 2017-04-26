@@ -586,3 +586,43 @@ class BBJ(object):
         assert self.get_me()["is_admin"]
         response = self("set_thread_pin", thread_id=pinned, pinned=new_status)
         return response["data"]
+
+
+    def message_feed(self, time, format=None):
+        """
+        Returns a special object representing all activity on the board since
+        the argument `time`, a unix/epoch timestamp.
+
+        {
+            "threads": {
+                "thread_id": {
+                    ...thread object
+                },
+                ...more thread_id/object pairs
+            },
+            "messages": [...standard message object array sorted by date],
+            "usermap": {
+                ...standard user_id mapping object
+            }
+        }
+
+        The message objects in "messages" are the same objects returned
+        in threads normally. They each have a thread_id parameter, and
+        you can access metadata for these threads by the "threads" object
+        which is also provided. All user_ids can be resolved into full user
+        objects from the usermap object.
+
+        The "messages" array is already sorted by submission time, newest
+        first. The order in the threads object is undefined and you should
+        instead use their `last_mod` attribute if you intend to list them
+        out visually.
+
+        the optional argument `format` can be given and bahaves the same
+        as `thread_load`.
+        """
+        response = self("message_feed", time=time, format=format)
+        return {
+            "usermap": response["usermap"],
+            "threads": response["data"]["threads"],
+            "messages": response["data"]["messages"]
+        }
