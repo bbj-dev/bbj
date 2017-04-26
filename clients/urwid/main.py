@@ -181,6 +181,7 @@ editors = ["nano", "vim", "emacs", "vim -u NONE", "emacs -Q", "micro", "ed", "jo
 default_prefs = {
     # using default= is not completely reliable, sadly...
     "editor": os.getenv("EDITOR") or "nano",
+    "mouse_integration": False,
     "jump_count": 1,
     "shift_multiplier": 5,
     "integrate_external_editor": True,
@@ -261,7 +262,7 @@ class App(object):
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
             palette=colormap,
-            handle_mouse=False)
+            handle_mouse=self.prefs["mouse_integration"])
 
 
     def set_header(self, text, *format_specs):
@@ -981,6 +982,13 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def toggle_mouse(self, button, value):
+        self.prefs["mouse_integration"] = value
+        self.loop.handle_mouse = value
+        self.loop.screen.set_mouse_tracking(value)
+        bbjrc("update", **self.prefs)
+
+
     def toggle_spacing(self, button, value):
         self.prefs["index_spacing"] = value
         bbjrc("update", **self.prefs)
@@ -1161,6 +1169,11 @@ class App(object):
                         "Increase index padding",
                         state=self.prefs["index_spacing"],
                         on_state_change=self.toggle_spacing
+                    ),
+                    urwid.CheckBox(
+                        "Handle mouse (disrupts URL clicking)",
+                        state=self.prefs["mouse_integration"],
+                        on_state_change=self.toggle_mouse
                     ),
                     urwid.Divider(),
                     *time_stuff,
@@ -1766,6 +1779,19 @@ class ActionBox(urwid.ListBox):
 
             elif keyl == "ctrl r":
                 app.reply(None, message)
+
+
+    def mouse_event(self, size, event, button, x, y, focus):
+        if super(ActionBox, self).mouse_event(size, event, button, x, y, focus):
+            return
+        if button == 4:
+            for x in range(app.prefs["shift_multiplier"]):
+                self._keypress_up(size)
+
+        elif button == 5:
+            for x in range(app.prefs["shift_multiplier"]):
+                self._keypress_down(size)
+
 
 
 def frilly_exit():
