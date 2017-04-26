@@ -212,6 +212,37 @@ class API(object):
 
 
     @api_method
+    def message_feed(self, args, database, user, **kwargs):
+        """
+        Returns a special object representing all activity on the board since
+        the argument `time`, a unix/epoch timestamp.
+
+        {
+            "threads": {
+                "thread_id": {
+                    ...thread object
+                },
+                ...more thread_id/object pairs
+            },
+            "messages": [...standard message object array sorted by date]
+        }
+
+        The message objects in "messages" are the same objects returned
+        in threads normally. They each have a thread_id parameter, and
+        you can access metadata for these threads by the "threads" object
+        which is also provided.
+
+        The "messages" array is already sorted by submission time, newest
+        first. The order in the threads object is undefined and you should
+        instead use their `last_mod` attribute if you intend to list them
+        out visually.
+        """
+        validate(args, ["time"])
+        return db.message_feed(database, args["time"])
+
+
+
+    @api_method
     def thread_create(self, args, database, user, **kwargs):
         """
         Creates a new thread and returns it. Requires the non-empty
@@ -433,12 +464,6 @@ class API(object):
             response["bool"] = False
             response["description"] = e.description
         return response
-
-
-    def test(self, **kwargs):
-        print(cherrypy.request.body.read())
-        return "{\"wow\": \"jolly good show!\"}"
-    test.exposed = True
 
 
 def api_http_error(status, message, traceback, version):

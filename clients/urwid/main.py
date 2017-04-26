@@ -1532,7 +1532,6 @@ class JumpPrompt(Prompt, urwid.IntEdit):
         self.set_edit_pos(len(value))
 
 
-
     def keypress(self, size, key):
         keyl = key.lower()
         if key == "enter":

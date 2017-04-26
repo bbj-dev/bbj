@@ -30,6 +30,54 @@ import os
 
 anon = None
 
+
+def message_feed(connection, time):
+    """
+    Returns a special object representing all activity on the board since
+    the argument `time`, a unix/epoch timestamp.
+
+    {
+        "threads": {
+            "thread_id": {
+                ...thread object
+            },
+            ...more thread_id/object pairs
+        },
+        "messages": [...standard message object array sorted by date]
+    }
+
+    The message objects in "messages" are the same objects returned
+    in threads normally. They each have a thread_id parameter, and
+    you can access metadata for these threads by the "threads" object
+    which is also provided.
+
+    The "messages" array is already sorted by submission time, newest
+    first. The order in the threads object is undefined and you should
+    instead use their `last_mod` attribute if you intend to list them
+    out visually.
+    """
+    threads = {
+        obj[0]: schema.thread(*obj) for obj in
+            connection.execute(
+                "SELECT * FROM threads WHERE last_mod > ?", (time,))
+    }
+
+    messages = list()
+    for thread in threads.values():
+        messages += [
+            schema.message(*obj) for obj in
+                connection.execute("""
+                SELECT * FROM messages WHERE thread_id = ?
+                    AND created > ? """, (thread["thread_id"], time))
+        ]
+
+    return {
+        "threads": threads,
+        "messages": sorted(messages, key=lambda m: m["created"])
+    }
+
+
+
 ### THREADS ###
 
 def thread_get(connection, thread_id, messages=True):
