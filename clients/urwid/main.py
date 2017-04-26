@@ -1181,7 +1181,7 @@ class App(object):
                     urwid.Text(("button", "Max message width:")),
                     urwid.AttrMap(width_edit, "opt_prompt"),
                     urwid.Divider(),
-                    urwid.Text(("button", "Scroll multiplier when holding shift:")),
+                    urwid.Text(("button", "Scroll multiplier when holding shift or scrolling with the mouse:")),
                     urwid.AttrMap(shift_edit, "opt_prompt"),
                     urwid.Divider(),
                     urwid.Text(("button", "Text editor:")),
@@ -1692,6 +1692,16 @@ class OptionsMenu(urwid.LineBox):
 
         elif keyl == "ctrl l":
             wipe_screen()
+
+
+    def mouse_event(self, size, event, button, x, y, focus):
+        if super(OptionsMenu, self).mouse_event(size, event, button, x, y, focus):
+            return
+        if button == 4:
+            self.keypress(size, "up")
+
+        elif button == 5:
+            self.keypress(size, "down")
 
 
 class ActionBox(urwid.ListBox):
