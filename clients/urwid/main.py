@@ -961,13 +961,13 @@ class App(object):
             **frame_theme()
         )
 
-        v = 25 if self.window_split else 50
+        v = 5 if self.window_split else 50
         app.loop.widget = urwid.Overlay(
             widget, app.loop.widget,
             align=("relative", 50),
             valign=("relative", v),
             width=app.prefs["max_text_width"],
-            height=("relative", v)
+            height=("relative", 45)
         )
 
 
