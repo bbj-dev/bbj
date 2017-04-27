@@ -34,6 +34,7 @@ import json
 import os
 import re
 
+# XxX_N0_4rgP4rs3_XxX ###yoloswag
 try:
     port_spec = argv.index("--port")
     port = argv[port_spec+1]
@@ -43,7 +44,15 @@ except IndexError: # flag given but no value
     exit("thats not how this works, silly! --port 7099")
 
 try:
-    network = BBJ(host="127.0.0.1", port=port)
+    host_spec = argv.index("--host")
+    host = argv[host_spec+1]
+except ValueError: # --host not specified
+    host = "127.0.0.1"
+except IndexError: # flag given but no value
+    exit("thats not how this works, silly! --host 127.0.0.1")
+
+try:
+    network = BBJ(host, port)
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))

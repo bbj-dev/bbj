@@ -520,5 +520,16 @@ if __name__ == "__main__":
     except IndexError: # flag given but no value
         exit("thats not how this works, silly! --port 7099")
 
-    cherrypy.config.update({'server.socket_port': int(port)})
+    try:
+        host_spec = argv.index("--host")
+        host = argv[host_spec+1]
+    except ValueError: # --host not specified
+        host = "127.0.0.1"
+    except IndexError: # flag given but no value
+        exit("thats not how this works, silly! --host 127.0.0.1")
+
+    cherrypy.config.update({
+        "server.socket_port": int(port),
+        "server.socket_host": host
+    })
     run()
