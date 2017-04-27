@@ -73,7 +73,8 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 """
 
 format_help = [
-    "Quick reminder: \[rainbow: expressions work like this]\n\n"
+    "Quick reminder: \[rainbow: expressions work like this]. You may scroll "
+    "this message, or press Q or escape to close it.\n\n"
 
     "BBJ supports **bolding**, __underlining__, and [rainbow: coloring] text "
     "using markdown-style symbols as well as tag-like expressions. Markdown "
@@ -961,13 +962,14 @@ class App(object):
             **frame_theme()
         )
 
-        v = 5 if self.window_split else 50
+        va = 5 if self.window_split else 50
+        vh = 45 if self.window_split else 75
         app.loop.widget = urwid.Overlay(
             widget, app.loop.widget,
             align=("relative", 50),
-            valign=("relative", v),
+            valign=("relative", va),
             width=app.prefs["max_text_width"],
-            height=("relative", 45)
+            height=("relative", vh)
         )
 
 
