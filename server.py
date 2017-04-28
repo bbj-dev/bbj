@@ -59,7 +59,7 @@ def api_method(function):
                 if not user:
                     raise BBJUserError("User %s is not registered" % username)
 
-                elif auth != user["auth_hash"]:
+                elif auth.lower() != user["auth_hash"].lower():
                     raise BBJException(5, "Invalid authorization key for user.")
 
             # api_methods may choose to bind a usermap into the thread_data
@@ -233,7 +233,7 @@ class API(object):
         """
         validate(args, ["target_user", "target_hash"])
         user = db.user_resolve(database, args["target_user"], return_false=False)
-        return args["target_hash"] == user["auth_hash"]
+        return args["target_hash"].lower() == user["auth_hash"].lower()
 
 
     @api_method

@@ -83,7 +83,7 @@ def user_internal(
     return {
         "user_id":   user_id,
         "user_name": user_name,
-        "auth_hash": auth_hash,
+        "auth_hash": auth_hash.lower(),
         "quip":      quip,
         "bio":       bio,
         "color":     color,

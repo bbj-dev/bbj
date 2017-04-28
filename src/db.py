@@ -338,7 +338,7 @@ def user_register(connection, user_name, auth_hash):
         raise BBJUserError("Username already registered")
 
     scheme = schema.user_internal(
-        uuid1().hex, user_name, auth_hash,
+        uuid1().hex, user_name, auth_hash.lower(),
         "", "", 0, False, time())
 
     connection.execute("""
@@ -391,6 +391,8 @@ def user_update(connection, user_object, parameters):
         # bool(0) == False hur hur hurrrrrr ::drools::
         if value == 0 or value:
             validate([(key, value)])
+            if key == "auth_hash":
+                value = value.lower()
             user_object[key] = value
 
     values = ordered_keys(user_object,
