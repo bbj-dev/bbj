@@ -9,6 +9,7 @@ import sqlite3
 import json
 
 dbname = "data.sqlite"
+debug = False
 
 def api_method(function):
     """
@@ -43,6 +44,9 @@ def api_method(function):
 
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
+
+            if debug:
+                print("Body: {}\n\n-----------\n{}".format(body, (username, auth)))
 
             if (username and not auth) or (auth and not username):
                 raise BBJParameterError("User or Auth was given without the other.")
@@ -180,6 +184,24 @@ class API(object):
         including your authorization hash.
         """
         return user
+
+
+    @api_method
+    def user_map(self, args, database, user, **kwargs):
+        """
+        Returns an array with all registered user_ids, with the usermap
+        object populated by their full objects.
+        """
+        users = {user[0] for user in database.execute("SELECT user_id FROM users")}
+        cherrypy.thread_data.usermap = {
+            user: db.user_resolve(
+                database,
+                user,
+                externalize=True,
+                return_false=False)
+            for user in users
+        }
+        return list(users)
 
 
     @api_method
@@ -527,6 +549,12 @@ if __name__ == "__main__":
         host = "127.0.0.1"
     except IndexError: # flag given but no value
         exit("thats not how this works, silly! --host 127.0.0.1")
+
+    try:
+        host_spec = argv.index("--debug")
+        debug = True
+    except ValueError:
+        pass
 
     cherrypy.config.update({
         "server.socket_port": int(port),
