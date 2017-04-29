@@ -1769,10 +1769,10 @@ class ActionBox(urwid.ListBox):
         elif key in "<," and not overlay:
             app.header_jump_previous()
 
-        elif key == "x" and not overlay:
+        elif key in ("x", "meta >", "meta .") and not overlay:
             app.incr_jump()
 
-        elif key == "X" and not overlay:
+        elif key in ("X", "meta <", "meta ,") and not overlay:
             app.decr_jump()
 
         elif keyl in "1234567890g" and not overlay:
