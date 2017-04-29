@@ -138,10 +138,8 @@ def parse_segments(text, sanitize_linequotes=True):
                 pg += "[linequote: %s]" % inner.strip()
 
             else:
-                compiled = apply_directives(line.rstrip())
-                split_p = line[0] in punctuation
-                sep = "\n" if split_p else " "
-                pg += (sep + compiled) if split_p else (compiled + sep)
+                sep = "\n" if line[0] in punctuation else " "
+                pg += apply_directives(line.rstrip()) + sep
 
         result.append(pg.rstrip())
     return result
