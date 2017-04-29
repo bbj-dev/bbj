@@ -62,6 +62,7 @@ Just like the brackets themselves, backslashes may occur freely within bodies,
 they are only removed when they occur before a valid expression.
 """
 
+from string import punctuation
 import re
 
 colors = [
@@ -89,6 +90,13 @@ def apply_directives(text):
     return escapes.sub(lambda m: m.group(1), text)
 
 
+def linequote_p(line):
+    if not line.startswith(">"):
+        return False
+    _fp = line.find(" ")
+    return not quotes.search(line[:_fp] if _fp != -1 else line)
+
+
 def parse_segments(text, sanitize_linequotes=True):
     """
     Parse linequotes, quotes, and paragraphs into their appropriate
@@ -98,43 +106,42 @@ def parse_segments(text, sanitize_linequotes=True):
     """
     result = list()
     hard_quote = False
-    for paragraph in [p.strip() for p in re.split("\n{2,}", text)]:
+    for paragraph in re.split("\n{2,}", text):
         pg = str()
-        for segment in [s for s in paragraph.split("\n")]:
-            if not segment:
-                if hard_quote:
-                    pg += "\n"
-                continue
-
-            elif segment == "```":
+        for line in paragraph.split("\n"):
+            if line == "```":
                 # because of this lazy way of handling it,
                 # its not actually necessary to close a
                 # hard quote segment. i guess thats a positive
                 # just because i dont have to throw syntax
                 # errors at the users for it. feels dirty
                 # but its easier for all of us.
+                if hard_quote:
+                    pg += "\n"
                 hard_quote = not hard_quote
                 continue
 
             elif hard_quote:
-                pg += segment + "\n"
+                pg += "\n" + line
                 continue
 
-            _fp = segment.find(" ")
-            first_word = segment[:_fp] if _fp != -1 else segment
-            if segment.startswith(">") and not quotes.search(first_word):
+            elif not line:
+                continue
+
+            if linequote_p(line):
                 if sanitize_linequotes:
-                    inner = segment.replace("]", "\\]")
+                    inner = line.replace("]", "\\]")
 
                 else:
-                    inner = apply_directives(segment)
+                    inner = apply_directives(line)
 
                 pg += "[linequote: %s]" % inner.strip()
 
             else:
-                pg += apply_directives(segment.strip()) + " "
+                sep = "\n" if line[0] in punctuation else " "
+                pg += apply_directives(line.rstrip()) + sep
 
-        result.append(pg.strip())
+        result.append(pg.rstrip())
     return result
 
 
