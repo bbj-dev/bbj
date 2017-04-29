@@ -338,7 +338,7 @@ def user_register(connection, user_name, auth_hash):
         raise BBJUserError("Username already registered")
 
     scheme = schema.user_internal(
-        uuid1().hex, user_name, auth_hash.lower(),
+        uuid1().hex, user_name, auth_hash,
         "", "", 0, False, time())
 
     connection.execute("""
