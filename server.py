@@ -46,7 +46,7 @@ def api_method(function):
             auth = cherrypy.request.headers.get("Auth")
 
             if debug:
-                print("Body: {}\n\n-----------\n{}".format(body, (username, auth)))
+                print("\n\n\nBody: {}\n\ne----------".format(body))
 
             if (username and not auth) or (auth and not username):
                 raise BBJParameterError("User or Auth was given without the other.")
