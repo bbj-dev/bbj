@@ -79,7 +79,7 @@ def message_feed(connection, time):
 
 ### THREADS ###
 
-def thread_get(connection, thread_id, messages=True):
+def thread_get(connection, thread_id, messages=True, op_only=False):
     """
     Fetch the thread_id from the database. Formatting is be handled
     elsewhere.
@@ -96,17 +96,18 @@ def thread_get(connection, thread_id, messages=True):
         raise BBJParameterError("Thread does not exist.")
     thread = schema.thread(*thread)
 
-    if messages:
-        c.execute("""
-        SELECT * FROM messages WHERE thread_id = ?
-          ORDER BY post_id""", (thread_id,))
+    if messages or op_only:
+        query = "SELECT * FROM messages WHERE thread_id = ? %s"
+        c.execute(query % (
+            "AND post_id = 0" if op_only else "ORDER BY post_id"
+        ), (thread_id,))
         # create a list where each post_id matches its list[index]
         thread["messages"] = [schema.message(*values) for values in c.fetchall()]
 
     return thread
 
 
-def thread_index(connection):
+def thread_index(connection, include_op=False):
     """
     Return a list with each thread, ordered by the date they
     were last modifed (which could be when it was submitted
@@ -119,7 +120,7 @@ def thread_index(connection):
           ORDER BY last_mod DESC""")
 
     threads = [
-        thread_get(connection, obj[0], messages=False)
+        thread_get(connection, obj[0], False, include_op)
             for obj in c.fetchall()
     ]
     return threads

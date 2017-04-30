@@ -424,7 +424,7 @@ class BBJ(object):
         return response["data"]
 
 
-    def thread_index(self):
+    def thread_index(self, include_op=False):
         """
         Returns a tuple where [0] is a list of all threads ordered by
         most recently interacted, and [1] is a usermap object.
@@ -435,11 +435,11 @@ class BBJ(object):
               author_id = thread["author"]
               print(usermap[author_id]["user_name"])
         """
-        response = self("thread_index")
+        response = self("thread_index", include_op=include_op)
         return response["data"], response["usermap"]
 
 
-    def thread_load(self, thread_id, format=None):
+    def thread_load(self, thread_id, format=None, op_only=False):
         """
         Returns a tuple where [0] is a thread object and [1] is a usermap object.
 
@@ -450,7 +450,8 @@ class BBJ(object):
               print(usermap[author_id]["user_name"])
               print(message["body"])
         """
-        response = self("thread_load", format=format, thread_id=thread_id)
+        response = self("thread_load",
+            format=format, thread_id=thread_id, op_only=op_only)
         return response["data"], response["usermap"]
 
 

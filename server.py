@@ -241,8 +241,13 @@ class API(object):
         """
         Return an array with all the threads, ordered by most recent activity.
         Requires no arguments.
+
+        Optionally, you may supply the argument `include_op`, which, when non-nil,
+        will include a "messages" key with the object, whose sole content is the
+        original message (post_id 0).
         """
-        threads = db.thread_index(database)
+        op = isinstance(args, dict) and args.get("include_op")
+        threads = db.thread_index(database, include_op=op)
         cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
 
@@ -328,9 +333,13 @@ class API(object):
         Requires the argument `thread_id`. `format` may also be
         specified as a formatter to run the messages through.
         Currently only "sequential" is supported.
+
+        You may also supply the parameter `op_only`. When it's value
+        is non-nil, the messages array will only include post_id 0 (the first)
         """
         validate(args, ["thread_id"])
-        thread = db.thread_get(database, args["thread_id"])
+        thread = db.thread_get(
+            database, args["thread_id"], op_only=args.get("op_only"))
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
         do_formatting(args.get("format"), thread["messages"])
