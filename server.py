@@ -9,7 +9,24 @@ import sqlite3
 import json
 
 dbname = "data.sqlite"
-debug = False
+
+# any values here may be overrided in the config.json. Any values not listed
+# here will have no effect on the server.
+app_config = {
+    "port": 7099,
+    "host": "127.0.0.1",
+    "instance_name": "BBJ",
+    "allow_anon": True,
+    "debug": False
+}
+
+try:
+    with open("config.json") as _conf:
+        app_config.update(json.load(_conf))
+except FileNotFoundError:
+    with open("config.json", "w") as _conf:
+        json.dump(app_config, _conf)
+
 
 def api_method(function):
     """
@@ -25,9 +42,11 @@ def api_method(function):
     caught as well and returned to the client as code 0.
     """
     function.exposed = True
+
     @wraps(function)
     def wrapper(self, *args, **kwargs):
         response = None
+        debug = app_config["debug"]
         try:
             connection = sqlite3.connect(dbname)
             # read in the body from the request to a string...
@@ -49,7 +68,8 @@ def api_method(function):
                 print("\n\n\nBody: {}\n\ne----------".format(body))
 
             if (username and not auth) or (auth and not username):
-                raise BBJParameterError("User or Auth was given without the other.")
+                raise BBJParameterError(
+                    "User or Auth was given without the other.")
 
             elif not username and not auth:
                 user = db.anon
@@ -60,7 +80,8 @@ def api_method(function):
                     raise BBJUserError("User %s is not registered" % username)
 
                 elif auth.lower() != user["auth_hash"].lower():
-                    raise BBJException(5, "Invalid authorization key for user.")
+                    raise BBJException(
+                        5, "Invalid authorization key for user.")
 
             # api_methods may choose to bind a usermap into the thread_data
             # which will send it off with the response
@@ -76,9 +97,9 @@ def api_method(function):
 
         except Exception as e:
             error_id = uuid1().hex
-            response = schema.error(1,
-                "Internal server error: code {} {}"
-                    .format(error_id, repr(e)))
+            response = schema.error(
+                1, "Internal server error: code {} {}".format(
+                    error_id, repr(e)))
             with open("logs/exceptions/" + error_id, "a") as log:
                 traceback.print_tb(e.__traceback__, file=log)
                 log.write(repr(e))
@@ -142,6 +163,16 @@ def validate(json, args):
                 .format(arg, ", ".join(args)))
 
 
+def no_anon_hook(user, message=None, user_error=True):
+    if user is db.anon:
+        exception = BBJUserError if user_error else BBJParameterError
+        if message:
+            raise exception(message)
+        elif not app_config["allow_anon"]:
+            raise exception(
+                "Anonymous participation has been disabled on this instance.")
+
+
 class API(object):
     """
     This object contains all the API endpoints for bbj.
@@ -149,6 +180,7 @@ class API(object):
     yet, so this is currently the only module being
     served.
     """
+
     @api_method
     def user_register(self, args, database, user, **kwargs):
         """
@@ -160,7 +192,6 @@ class API(object):
         return db.user_register(
             database, args["user_name"], args["auth_hash"])
 
-
     @api_method
     def user_update(self, args, database, user, **kwargs):
         """
@@ -171,11 +202,9 @@ class API(object):
 
         The newly updated user object is returned on success.
         """
-        if user == db.anon:
-            raise BBJParameterError("Anons cannot modify their account.")
-        validate(args, []) # just make sure its not empty
+        no_anon_hook(user, "Anons cannot modify their account.")
+        validate(args, [])  # just make sure its not empty
         return db.user_update(database, user, args)
-
 
     @api_method
     def get_me(self, args, database, user, **kwargs):
@@ -185,14 +214,15 @@ class API(object):
         """
         return user
 
-
     @api_method
     def user_map(self, args, database, user, **kwargs):
         """
         Returns an array with all registered user_ids, with the usermap
         object populated by their full objects.
         """
-        users = {user[0] for user in database.execute("SELECT user_id FROM users")}
+        users = {
+            user[0] for user in database.execute("SELECT user_id FROM users")
+        }
         cherrypy.thread_data.usermap = {
             user: db.user_resolve(
                 database,
@@ -202,7 +232,6 @@ class API(object):
             for user in users
         }
         return list(users)
-
 
     @api_method
     def user_get(self, args, database, user, **kwargs):
@@ -214,7 +243,6 @@ class API(object):
         return db.user_resolve(
             database, args["user"], return_false=False, externalize=True)
 
-
     @api_method
     def user_is_registered(self, args, database, user, **kwargs):
         """
@@ -224,7 +252,6 @@ class API(object):
         validate(args, ["target_user"])
         return bool(db.user_resolve(database, args["target_user"]))
 
-
     @api_method
     def check_auth(self, args, database, user, **kwargs):
         """
@@ -232,9 +259,9 @@ class API(object):
         returns boolean true or false whether the hash is valid.
         """
         validate(args, ["target_user", "target_hash"])
-        user = db.user_resolve(database, args["target_user"], return_false=False)
+        user = db.user_resolve(
+            database, args["target_user"], return_false=False)
         return args["target_hash"].lower() == user["auth_hash"].lower()
-
 
     @api_method
     def thread_index(self, args, database, user, **kwargs):
@@ -242,15 +269,14 @@ class API(object):
         Return an array with all the threads, ordered by most recent activity.
         Requires no arguments.
 
-        Optionally, you may supply the argument `include_op`, which, when non-nil,
-        will include a "messages" key with the object, whose sole content is the
-        original message (post_id 0).
+        Optionally, you may supply the argument `include_op`, which, when
+        non-nil, will include a "messages" key with the object, whose sole
+        content is the original message (post_id 0).
         """
         op = isinstance(args, dict) and args.get("include_op")
         threads = db.thread_index(database, include_op=op)
         cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
-
 
     @api_method
     def message_feed(self, args, database, user, **kwargs):
@@ -292,7 +318,6 @@ class API(object):
         do_formatting(args.get("format"), feed["messages"])
         return feed
 
-
     @api_method
     def thread_create(self, args, database, user, **kwargs):
         """
@@ -302,6 +327,7 @@ class API(object):
         If the argument `send_raw` is specified and has a non-nil
         value, the OP message will never recieve special formatting.
         """
+        no_anon_hook(user)
         validate(args, ["body", "title"])
         thread = db.thread_create(
             database, user["user_id"], args["body"],
@@ -309,7 +335,6 @@ class API(object):
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
         return thread
-
 
     @api_method
     def thread_reply(self, args, database, user, **kwargs):
@@ -320,11 +345,11 @@ class API(object):
         If the argument `send_raw` is specified and has a non-nil
         value, the message will never recieve special formatting.
         """
+        no_anon_hook(user)
         validate(args, ["thread_id", "body"])
         return db.thread_reply(
             database, user["user_id"], args["thread_id"],
             args["body"], args.get("send_raw"))
-
 
     @api_method
     def thread_load(self, args, database, user, **kwargs):
@@ -344,7 +369,6 @@ class API(object):
             create_usermap(database, thread["messages"])
         do_formatting(args.get("format"), thread["messages"])
         return thread
-
 
     @api_method
     def edit_post(self, args, database, user, **kwargs):
@@ -366,13 +390,11 @@ class API(object):
 
         Returns the new message object.
         """
-        if user == db.anon:
-            raise BBJUserError("Anons cannot edit messages.")
+        no_anon_hook(user, "Anons cannot edit messages.")
         validate(args, ["body", "thread_id", "post_id"])
         return db.message_edit_commit(
             database, user["user_id"], args["thread_id"],
             args["post_id"], args["body"], args.get("send_raw"))
-
 
     @api_method
     def delete_post(self, args, database, user, **kwargs):
@@ -388,12 +410,10 @@ class API(object):
 
         If the post_id is 0, the whole thread is deleted.
         """
-        if user == db.anon:
-            raise BBJUserError("Anons cannot delete messages.")
+        no_anon_hook(user, "Anons cannot delete messages.")
         validate(args, ["thread_id", "post_id"])
         return db.message_delete(
             database, user["user_id"], args["thread_id"], args["post_id"])
-
 
     @api_method
     def set_post_raw(self, args, database, user, **kwargs):
@@ -412,14 +432,12 @@ class API(object):
         but if this is the only change you want to make to the message,
         using this endpoint instead is preferable.
         """
-        if user == db.anon:
-            raise BBJUserError("Anons cannot edit messages.")
+        no_anon_hook(user, "Anons cannot edit messages.")
         validate(args, ["value", "thread_id", "post_id"])
         return db.message_edit_commit(
             database, user["user_id"],
             args["thread_id"], args["post_id"],
             None, args["value"], None)
-
 
     @api_method
     def is_admin(self, args, database, user, **kwargs):
@@ -428,9 +446,9 @@ class API(object):
         of whether that user is an admin.
         """
         validate(args, ["target_user"])
-        user = db.user_resolve(database, args["target_user"], return_false=False)
+        user = db.user_resolve(
+            database, args["target_user"], return_false=False)
         return user["is_admin"]
-
 
     @api_method
     def edit_query(self, args, database, user, **kwargs):
@@ -442,12 +460,10 @@ class API(object):
         Returns the original message object without any formatting
         on success. Returns a descriptive code 4 otherwise.
         """
-        if user == db.anon:
-            raise BBJUserError("Anons cannot edit messages.")
+        no_anon_hook(user, "Anons cannot edit messages.")
         validate(args, ["thread_id", "post_id"])
         return db.message_edit_query(
             database, user["user_id"], args["thread_id"], args["post_id"])
-
 
     @api_method
     def format_message(self, args, database, user, **kwargs):
@@ -460,7 +476,6 @@ class API(object):
         message = [{"body": args["body"]}]
         do_formatting(args["format"], message)
         return message[0]["body"]
-
 
     @api_method
     def set_thread_pin(self, args, database, user, **kwargs):
@@ -476,7 +491,6 @@ class API(object):
         if not user["is_admin"]:
             raise BBJUserError("Only admins can set thread pins")
         return db.set_thread_pin(database, args["thread_id"], args["value"])
-
 
     @api_method
     def db_validate(self, args, database, user, **kwargs):
@@ -516,10 +530,11 @@ class API(object):
 
 
 def api_http_error(status, message, traceback, version):
-    return json.dumps(schema.error(2, "HTTP error {}: {}".format(status, message)))
+    return json.dumps(schema.error(
+        2, "HTTP error {}: {}".format(status, message)))
 
 
-CONFIG = {
+API_CONFIG = {
     "/": {
         "error_page.default": api_http_error
     }
@@ -534,37 +549,29 @@ def run():
         db.anon = db.user_resolve(_c, "anonymous")
         if not db.anon:
             db.anon = db.user_register(
-                _c, "anonymous", # this is the hash for "anon"
+                _c, "anonymous",  # this is the hash for "anon"
                 "5430eeed859cad61d925097ec4f53246"
                 "1ccf1ab6b9802b09a313be1478a4d614")
     finally:
         _c.close()
-    cherrypy.quickstart(API(), "/api", CONFIG)
+    cherrypy.quickstart(API(), "/api", API_CONFIG)
+
+
+def get_arg(key, default, get_value=True):
+    try:
+        spec = argv.index("--" + key)
+        value = argv[spec + 1] if get_value else True
+    except ValueError:  # --key not specified
+        value = default
+    except IndexError:  # flag given but no value
+        exit("invalid format for --" + key)
+    return value
 
 
 if __name__ == "__main__":
-    try:
-        port_spec = argv.index("--port")
-        port = argv[port_spec+1]
-    except ValueError: # --port not specified
-        port = 7099
-    except IndexError: # flag given but no value
-        exit("thats not how this works, silly! --port 7099")
-
-    try:
-        host_spec = argv.index("--host")
-        host = argv[host_spec+1]
-    except ValueError: # --host not specified
-        host = "127.0.0.1"
-    except IndexError: # flag given but no value
-        exit("thats not how this works, silly! --host 127.0.0.1")
-
-    try:
-        host_spec = argv.index("--debug")
-        debug = True
-    except ValueError:
-        pass
-
+    port = get_arg("port", app_config["port"])
+    host = get_arg("host", app_config["host"])
+    debug = get_arg("debug", app_config["debug"], False)
     cherrypy.config.update({
         "server.socket_port": int(port),
         "server.socket_host": host

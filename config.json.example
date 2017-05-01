@@ -1,0 +1,7 @@
+{
+    "port": 7099,
+    "host": "127.0.0.1",
+    "instance_name": "BBJ",
+    "allow_anon": True,
+    "debug": False
+}
