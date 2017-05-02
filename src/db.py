@@ -171,7 +171,7 @@ def thread_create(connection, author_id, body, title, send_raw=False):
     return thread_get(connection, thread_id)
 
 
-def thread_reply(connection, author_id, thread_id, body, send_raw=False, time_override=None):
+def thread_reply(connection, author_id, thread_id, body, send_raw=True, time_override=None):
     """
     Submit a new reply for thread_id. Return the new reply object.
 

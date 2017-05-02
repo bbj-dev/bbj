@@ -359,7 +359,7 @@ class API(object):
         validate(args, ["body", "title"])
         thread = db.thread_create(
             database, user["user_id"], args["body"],
-            args["title"], args.get("send_raw"))
+            args["title"], args.get("send_raw", True))
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
         return thread
@@ -378,7 +378,7 @@ class API(object):
         validate(args, ["thread_id", "body"])
         return db.thread_reply(
             database, user["user_id"], args["thread_id"],
-            args["body"], args.get("send_raw"))
+            args["body"], args.get("send_raw", True))
     thread_reply.doctype = "Threads & Messages"
 
     @api_method
