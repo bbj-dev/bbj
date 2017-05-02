@@ -1,17 +1,19 @@
-# Welcome to MkDocs
+# Bulletin Butter & Jelly
+## A simple community textboard
+### BBJ is trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard.
 
-For full documentation visit [mkdocs.org](http://mkdocs.org).
+See also: the [GitHub repository](https://github.com/desvox/bbj).
 
-## Commands
+BBJ is heavily inspired by image boards like 4chan, but it offers a simple
+account system to allow users to identify themselves and set profile
+attributes like a more traditional forum. Registration is optional and there
+are only minimal restrictions on anonymous participation.
 
-* `mkdocs new [dir-name]` - Create a new project.
-* `mkdocs serve` - Start the live-reloading docs server.
-* `mkdocs build` - Build the documentation site.
-* `mkdocs help` - Print this help message.
+![screenshot](https://tilde.town/~desvox/bbj/screenshot.png)
 
-## Project layout
+Being a command-line-oriented text board, BBJ has no avatars or file sharing
+capabilties, so its easier to administrate and can't be used to distribute illegal
+content like imageboards. It has very few dependancies and is easy to set up.
 
-    mkdocs.yml    # The configuration file.
-    docs/
-        index.md  # The documentation homepage.
-        ...       # Other markdown pages, images and other files.
+The API is simple and doesn't use require complex authorization schemes or session management.
+It is fully documented on this site.

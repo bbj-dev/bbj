@@ -20,6 +20,7 @@ app_config = {
     "debug": False
 }
 
+
 try:
     with open("config.json") as _conf:
         app_config.update(json.load(_conf))
@@ -191,6 +192,11 @@ class API(object):
         validate(args, ["user_name", "auth_hash"])
         return db.user_register(
             database, args["user_name"], args["auth_hash"])
+    user_register.doctype = "Users"
+    user_register.args = [
+        ("user_name", "string: the desired display name"),
+        ("auth_hash", "string: a sha256 hash of a password")
+    ]
 
     @api_method
     def user_update(self, args, database, user, **kwargs):
@@ -205,6 +211,15 @@ class API(object):
         no_anon_hook(user, "Anons cannot modify their account.")
         validate(args, [])  # just make sure its not empty
         return db.user_update(database, user, args)
+    user_update.doctype = "Users"
+    user_update.args = [
+        ("Any of the following may be submitted:", ""),
+        ("user_name", "string: a desired display name"),
+        ("auth_hash", "string: sha256 hash for a new password"),
+        ("quip", "string: a short string that can be used as a signature"),
+        ("bio", "string: a user biography for their profile"),
+        ("color", "integer: 0-6, a display color for the user")
+    ]
 
     @api_method
     def get_me(self, args, database, user, **kwargs):
@@ -213,6 +228,8 @@ class API(object):
         including your authorization hash.
         """
         return user
+    get_me.doctype = "Users"
+    get_me.args = [("", "")]
 
     @api_method
     def user_map(self, args, database, user, **kwargs):
@@ -232,16 +249,22 @@ class API(object):
             for user in users
         }
         return list(users)
+    user_map.doctype = "Tools"
+    user_map.args = [("", "")]
 
     @api_method
     def user_get(self, args, database, user, **kwargs):
         """
-        Retreive an external user object for the given `user`.
+        Retreive an external user object for the given `target_user`.
         Can be a user_id or user_name.
         """
-        validate(args, ["user"])
+        validate(args, ["target_user"])
         return db.user_resolve(
-            database, args["user"], return_false=False, externalize=True)
+            database, args["target_user"], return_false=False, externalize=True)
+    user_get.doctype = "Users"
+    user_get.args = [
+        ("user", "string: either a user_name or a user_id")
+    ]
 
     @api_method
     def user_is_registered(self, args, database, user, **kwargs):
@@ -251,6 +274,8 @@ class API(object):
         """
         validate(args, ["target_user"])
         return bool(db.user_resolve(database, args["target_user"]))
+    user_is_registered.doctype = "Users"
+    # user_is_registered.args =
 
     @api_method
     def check_auth(self, args, database, user, **kwargs):
@@ -262,6 +287,7 @@ class API(object):
         user = db.user_resolve(
             database, args["target_user"], return_false=False)
         return args["target_hash"].lower() == user["auth_hash"].lower()
+    check_auth.doctype = "Authorization"
 
     @api_method
     def thread_index(self, args, database, user, **kwargs):
@@ -277,6 +303,7 @@ class API(object):
         threads = db.thread_index(database, include_op=op)
         cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
+    thread_index.doctype = "Threads & Messages"
 
     @api_method
     def message_feed(self, args, database, user, **kwargs):
@@ -317,6 +344,7 @@ class API(object):
 
         do_formatting(args.get("format"), feed["messages"])
         return feed
+    message_feed.doctype = "Threads & Messages"
 
     @api_method
     def thread_create(self, args, database, user, **kwargs):
@@ -335,6 +363,7 @@ class API(object):
         cherrypy.thread_data.usermap = \
             create_usermap(database, thread["messages"])
         return thread
+    thread_create.doctype = "Threads & Messages"
 
     @api_method
     def thread_reply(self, args, database, user, **kwargs):
@@ -350,6 +379,7 @@ class API(object):
         return db.thread_reply(
             database, user["user_id"], args["thread_id"],
             args["body"], args.get("send_raw"))
+    thread_reply.doctype = "Threads & Messages"
 
     @api_method
     def thread_load(self, args, database, user, **kwargs):
@@ -369,6 +399,7 @@ class API(object):
             create_usermap(database, thread["messages"])
         do_formatting(args.get("format"), thread["messages"])
         return thread
+    thread_load.doctype = "Threads & Messages"
 
     @api_method
     def edit_post(self, args, database, user, **kwargs):
@@ -395,6 +426,7 @@ class API(object):
         return db.message_edit_commit(
             database, user["user_id"], args["thread_id"],
             args["post_id"], args["body"], args.get("send_raw"))
+    edit_post.doctype = "Threads & Messages"
 
     @api_method
     def delete_post(self, args, database, user, **kwargs):
@@ -414,6 +446,7 @@ class API(object):
         validate(args, ["thread_id", "post_id"])
         return db.message_delete(
             database, user["user_id"], args["thread_id"], args["post_id"])
+    delete_post.doctype = "Threads & Messages"
 
     @api_method
     def set_post_raw(self, args, database, user, **kwargs):
@@ -438,6 +471,7 @@ class API(object):
             database, user["user_id"],
             args["thread_id"], args["post_id"],
             None, args["value"], None)
+    set_post_raw.doctype = "Threads & Messages"
 
     @api_method
     def is_admin(self, args, database, user, **kwargs):
@@ -449,6 +483,7 @@ class API(object):
         user = db.user_resolve(
             database, args["target_user"], return_false=False)
         return user["is_admin"]
+    is_admin.doctype = "Users"
 
     @api_method
     def edit_query(self, args, database, user, **kwargs):
@@ -464,6 +499,7 @@ class API(object):
         validate(args, ["thread_id", "post_id"])
         return db.message_edit_query(
             database, user["user_id"], args["thread_id"], args["post_id"])
+    edit_query.doctype = "Threads & Messages"
 
     @api_method
     def format_message(self, args, database, user, **kwargs):
@@ -476,6 +512,7 @@ class API(object):
         message = [{"body": args["body"]}]
         do_formatting(args["format"], message)
         return message[0]["body"]
+    format_message.doctype = "Tools"
 
     @api_method
     def set_thread_pin(self, args, database, user, **kwargs):
@@ -491,6 +528,7 @@ class API(object):
         if not user["is_admin"]:
             raise BBJUserError("Only admins can set thread pins")
         return db.set_thread_pin(database, args["thread_id"], args["value"])
+    set_thread_pin.doctype = "Threads & Messages"
 
     @api_method
     def db_validate(self, args, database, user, **kwargs):
@@ -527,6 +565,7 @@ class API(object):
             response["bool"] = False
             response["description"] = e.description
         return response
+    db_validate.doctype = "Tools"
 
 
 def api_http_error(status, message, traceback, version):
