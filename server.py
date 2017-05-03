@@ -299,8 +299,7 @@ class API(object):
         non-nil, will include a "messages" key with the object, whose sole
         content is the original message (post_id 0).
         """
-        op = isinstance(args, dict) and args.get("include_op")
-        threads = db.thread_index(database, include_op=op)
+        threads = db.thread_index(database, include_op=args.get("include_op"))
         cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
     thread_index.doctype = "Threads & Messages"
