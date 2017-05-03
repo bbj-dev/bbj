@@ -52,21 +52,21 @@ def api_method(function):
             connection = sqlite3.connect(dbname)
             # read in the body from the request to a string...
             if cherrypy.request.method == "POST":
-                body = str(cherrypy.request.body.read(), "utf8")
-            else:
-                body = ""
-            # the body may be empty, not all methods require input
-            if body:
-                body = json.loads(body)
-                if isinstance(body, dict):
+                read_in = str(cherrypy.request.body.read(), "utf8")
+                if not read_in:
+                    # the body may be empty, not all methods require input
+                    body = {}
+                else:
+                    body = json.loads(read_in)
+                    if not isinstance(body, dict):
+                        raise BBJParameterError("Non-JSONObject input")
                     # lowercase all of its top-level keys
                     body = {key.lower(): value for key, value in body.items()}
+            else:
+                body = {}
 
             username = cherrypy.request.headers.get("User")
             auth = cherrypy.request.headers.get("Auth")
-
-            if debug:
-                print("\n\n\nBody: {}\n\ne----------".format(body))
 
             if (username and not auth) or (auth and not username):
                 raise BBJParameterError(
