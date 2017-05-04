@@ -105,42 +105,18 @@ def parse_segments(text, sanitize_linequotes=True):
     [bracketed] representations.
     """
     result = list()
-    hard_quote = False
     for paragraph in re.split("\n{2,}", text):
         pg = str()
         for line in paragraph.split("\n"):
-            if line == "```":
-                # because of this lazy way of handling it,
-                # its not actually necessary to close a
-                # hard quote segment. i guess thats a positive
-                # just because i dont have to throw syntax
-                # errors at the users for it. feels dirty
-                # but its easier for all of us.
-                if hard_quote:
-                    pg += "\n"
-                hard_quote = not hard_quote
-                continue
-
-            elif hard_quote:
-                pg += "\n" + line
-                continue
-
-            elif not line:
-                continue
-
             if linequote_p(line):
                 if sanitize_linequotes:
                     inner = line.replace("]", "\\]")
-
                 else:
                     inner = apply_directives(line)
-
-                pg += "[linequote: %s]" % inner.strip()
-
+                pg += "[linequote: %s]" % inner
             else:
-                sep = "\n" if line[0] in punctuation else " "
-                pg += apply_directives(line.rstrip()) + sep
-
+                pg += apply_directives(line)
+            pg += "\n"
         result.append(pg.rstrip())
     return result
 
