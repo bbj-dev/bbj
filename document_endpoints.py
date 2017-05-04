@@ -118,7 +118,14 @@ for doctype in sorted(types.keys()):
     body += "# %s\n\n" % doctype
     funcs = sorted(types[doctype], key=lambda _: _.__name__)
     for f in funcs:
-        body += "## %s\n\n%s\n\n" % (f.__name__, pydoc.getdoc(f))
+        body += "## %s\n\n" % f.__name__
+        body += "### Args:\n"
+        for key, value in f.arglist:
+            if key:
+                body += "**%s**: %s\n\n" % (key, value)
+            else:
+                body += "__No arguments__"
+        body += "\n\n" + pydoc.getdoc(f) + "\n\n"
     body += "\n\n--------\n\n"
 
 with open("documentation/docs/api_overview.md", "w") as output:
