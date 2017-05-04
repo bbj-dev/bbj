@@ -86,14 +86,16 @@ to map these responses to native exception types or signals in your language of
 choice. See [the full error page](errors.md) for details.
 
 
+<br><br>
 # Authorization
-
+------
 ## check_auth
 
-### Args:
-**target_user**: string: either a user_name or a user_id
+**Arguments:**
 
-**target_hash**: string: sha256 hash for the password to check
+ * __target_user__: string: either a user_name or a user_id
+
+ * __target_hash__: string: sha256 hash for the password to check
 
 
 
@@ -101,17 +103,17 @@ Takes the arguments `target_user` and `target_hash`, and
 returns boolean true or false whether the hash is valid.
 
 
-
---------
-
+<br>
+<br><br>
 # Threads & Messages
-
+------
 ## delete_post
 
-### Args:
-**thread_id**: string: the id of the thread this message was posted in.
+**Arguments:**
 
-**post_id**: integer: the id of the target message.
+ * __thread_id__: string: the id of the thread this message was posted in.
+
+ * __post_id__: integer: the id of the target message.
 
 
 
@@ -126,16 +128,19 @@ success.
 
 If the post_id is 0, the whole thread is deleted.
 
+
+<br>
 ## edit_post
 
-### Args:
-**thread_id**: string: the thread the message was posted in.
+**Arguments:**
 
-**post_id**: integer: the target post_id to edit.
+ * __thread_id__: string: the thread the message was posted in.
 
-**body**: string: the new message body.
+ * __post_id__: integer: the target post_id to edit.
 
-**OPTIONAL: send_raw**: boolean: set the formatting mode for the target message.
+ * __body__: string: the new message body.
+
+ * __OPTIONAL: send_raw__: boolean: set the formatting mode for the target message.
 
 
 
@@ -156,12 +161,15 @@ endpoint `set_post_raw` instead.
 
 Returns the new message object.
 
+
+<br>
 ## edit_query
 
-### Args:
-**thread_id**: string: the id of the thread the message was posted in.
+**Arguments:**
 
-**post_id**: integer: the id of the target message.
+ * __thread_id__: string: the id of the thread the message was posted in.
+
+ * __post_id__: integer: the id of the target message.
 
 
 
@@ -172,10 +180,13 @@ message. Requires the arguments `thread_id` and `post_id`
 Returns the original message object without any formatting
 on success. Returns a descriptive code 4 otherwise.
 
+
+<br>
 ## message_feed
 
-### Args:
-**time**: int/float: epoch/unix time of the earliest point of interest
+**Arguments:**
+
+ * __time__: int/float: epoch/unix time of the earliest point of interest
 
 
 
@@ -206,14 +217,17 @@ You may optionally provide a `format` argument: this is treated
 the same way as the `thread_load` endpoint and you should refer
 to its documentation for more info.
 
+
+<br>
 ## set_post_raw
 
-### Args:
-**thread_id**: string: the id of the thread the message was posted in.
+**Arguments:**
 
-**post_id**: integer: the id of the target message.
+ * __thread_id__: string: the id of the thread the message was posted in.
 
-**value**: boolean: the new `send_raw` value to apply to the message.
+ * __post_id__: integer: the id of the target message.
+
+ * __value__: boolean: the new `send_raw` value to apply to the message.
 
 
 
@@ -231,12 +245,15 @@ You may optionally set this value as well when using `edit_post`,
 but if this is the only change you want to make to the message,
 using this endpoint instead is preferable.
 
+
+<br>
 ## set_thread_pin
 
-### Args:
-**thread_id**: string: the id of the thread to modify.
+**Arguments:**
 
-**value**: boolean: `true` to pin thread, `false` otherwise.
+ * __thread_id__: string: the id of the thread to modify.
+
+ * __value__: boolean: `true` to pin thread, `false` otherwise.
 
 
 
@@ -247,14 +264,17 @@ has admin status on their account.
 
 Returns the same boolean you supply as `value`
 
+
+<br>
 ## thread_create
 
-### Args:
-**body**: string: The body of the first message
+**Arguments:**
 
-**title**: string: The title name for this thread
+ * __body__: string: The body of the first message
 
-**OPTIONAL: send_raw**: boolean: formatting mode for the first message.
+ * __title__: string: The title name for this thread
+
+ * __OPTIONAL: send_raw__: boolean: formatting mode for the first message.
 
 
 
@@ -264,10 +284,13 @@ string arguments `body` and `title`.
 If the argument `send_raw` is specified and has a non-nil
 value, the OP message will never recieve special formatting.
 
+
+<br>
 ## thread_index
 
-### Args:
-**OPTIONAL: include_op**: boolean: Include a `messages` object with the original post
+**Arguments:**
+
+ * __OPTIONAL: include_op__: boolean: Include a `messages` object with the original post
 
 
 
@@ -278,14 +301,17 @@ Optionally, you may supply the argument `include_op`, which, when
 non-nil, will include a "messages" key with the object, whose sole
 content is the original message (post_id 0).
 
+
+<br>
 ## thread_load
 
-### Args:
-**thread_id**: string: the thread to load.
+**Arguments:**
 
-**OPTIONAL: op_only**: boolean: include only the original message in `messages`
+ * __thread_id__: string: the thread to load.
 
-**OPTIONAL: format**: string: the formatting type of the returned messages.
+ * __OPTIONAL: op_only__: boolean: include only the original message in `messages`
+
+ * __OPTIONAL: format__: string: the formatting type of the returned messages.
 
 
 
@@ -297,14 +323,17 @@ Currently only "sequential" is supported.
 You may also supply the parameter `op_only`. When it's value
 is non-nil, the messages array will only include post_id 0 (the first)
 
+
+<br>
 ## thread_reply
 
-### Args:
-**thread_id**: string: the id for the thread this message should post to.
+**Arguments:**
 
-**body**: string: the message's body of text.
+ * __thread_id__: string: the id for the thread this message should post to.
 
-**OPTIONAL: send_raw**: boolean: formatting mode for the posted message.
+ * __body__: string: the message's body of text.
+
+ * __OPTIONAL: send_raw__: boolean: formatting mode for the posted message.
 
 
 
@@ -315,19 +344,19 @@ If the argument `send_raw` is specified and has a non-nil
 value, the message will never recieve special formatting.
 
 
-
---------
-
+<br>
+<br><br>
 # Tools
-
+------
 ## db_validate
 
-### Args:
-**key**: string: the identifier for the ruleset to check.
+**Arguments:**
 
-**value**: VARIES: the object for which `key` will check for.
+ * __key__: string: the identifier for the ruleset to check.
 
-**OPTIONAL: error**: boolean: when `true`, will return an API error response instead of a special object.
+ * __value__: VARIES: the object for which `key` will check for.
+
+ * __OPTIONAL: error__: boolean: when `true`, will return an API error response instead of a special object.
 
 
 
@@ -351,12 +380,15 @@ If bool == false, description is a string describing the
 problem. If bool == true, description is null and the
 provided value is safe to use.
 
+
+<br>
 ## format_message
 
-### Args:
-**body**: string: the message body to apply formatting to.
+**Arguments:**
 
-**format**: string: the specifier for the desired formatting engine
+ * __body__: string: the message body to apply formatting to.
+
+ * __format__: string: the specifier for the desired formatting engine
 
 
 
@@ -364,96 +396,113 @@ Requires the arguments `body` and `format`. Applies
 `format` to `body` and returns the new object. See
 `thread_load` for supported specifications for `format`.
 
+
+<br>
 ## user_map
 
-### Args:
-__No arguments__
+_requires no arguments_
 
 Returns an array with all registered user_ids, with the usermap
 object populated by their full objects.
 
 
-
---------
-
+<br>
+<br><br>
 # Users
-
+------
 ## get_me
 
-### Args:
-__No arguments__
+_requires no arguments_
 
 Requires no arguments. Returns your internal user object,
 including your authorization hash.
 
+
+<br>
 ## is_admin
 
-### Args:
-**target_user**: string: user_id or user_name to check against.
+**Arguments:**
+
+ * __target_user__: string: user_id or user_name to check against.
 
 
 
 Requires the argument `target_user`. Returns a boolean
 of whether that user is an admin.
 
+
+<br>
 ## user_get
 
-### Args:
-**target_user**: string: either a user_name or a user_id
+**Arguments:**
+
+ * __target_user__: string: either a user_name or a user_id
 
 
 
 Retreive an external user object for the given `target_user`.
 Can be a user_id or user_name.
 
+
+<br>
 ## user_is_registered
 
-### Args:
-**target_user**: string: either a user_name or a user_id
+**Arguments:**
+
+ * __target_user__: string: either a user_name or a user_id
 
 
 
 Takes the argument `target_user` and returns true or false
 whether they are in the system or not.
 
+
+<br>
 ## user_register
 
-### Args:
-**user_name**: string: the desired display name
+**Arguments:**
 
-**auth_hash**: string: a sha256 hash of a password
+ * __user_name__: string: the desired display name
+
+ * __auth_hash__: string: a sha256 hash of a password
 
 
 
-Register a new user into the system and return the new object.
-Requires the string arguments `user_name` and `auth_hash`.
-Do not send User/Auth headers with this method.
+Register a new user into the system and return the new user object
+on success. The returned object includes the same `user_name` and
+`auth_hash` that you supply, in addition to all the default user
+parameters. Returns code 4 errors for any failures.
 
+
+<br>
 ## user_update
 
-### Args:
-**Any of the following may be submitted:**: 
+**Arguments:**
 
-**user_name**: string: a desired display name
+ * __Any of the following may be submitted__: 
 
-**auth_hash**: string: sha256 hash for a new password
+ * __user_name__: string: a desired display name
 
-**quip**: string: a short string that can be used as a signature
+ * __auth_hash__: string: sha256 hash for a new password
 
-**bio**: string: a user biography for their profile
+ * __quip__: string: a short string that can be used as a signature
 
-**color**: integer: 0-6, a display color for the user
+ * __bio__: string: a user biography for their profile
 
-
-
-Receives new parameters and assigns them to the user_object
-in the database. The following new parameters can be supplied:
-`user_name`, `auth_hash`, `quip`, `bio`, and `color`. Any number
-of them may be supplied.
-
-The newly updated user object is returned on success.
+ * __color__: integer: 0-6, a display color for the user
 
 
 
---------
+Receives new parameters and assigns them to the user object.
+This method requires that you send a valid User/Auth header
+pair with your request, and the changes are made to that
+account.
 
+Take care to keep your client's User/Auth header pair up to date
+after using this method.
+
+The newly updated user object is returned on success,
+including the `auth_hash`.
+
+
+<br>

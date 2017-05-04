@@ -176,18 +176,22 @@ def no_anon_hook(user, message=None, user_error=True):
 
 class API(object):
     """
-    This object contains all the API endpoints for bbj.
-    The html serving part of the server is not written
-    yet, so this is currently the only module being
-    served.
+    This object contains all the API endpoints for bbj. The html serving
+    part of the server is not written yet, so this is currently the only
+    module being served.
+
+    The docstrings below are specifically formatted for the mkdocs static
+    site generator. The ugly `doctype` and `arglist` attributes assigned
+    after each method definition are for use in the `mkendpoints.py` script.
     """
 
     @api_method
     def user_register(self, args, database, user, **kwargs):
         """
-        Register a new user into the system and return the new object.
-        Requires the string arguments `user_name` and `auth_hash`.
-        Do not send User/Auth headers with this method.
+        Register a new user into the system and return the new user object
+        on success. The returned object includes the same `user_name` and
+        `auth_hash` that you supply, in addition to all the default user
+        parameters. Returns code 4 errors for any failures.
         """
         validate(args, ["user_name", "auth_hash"])
         return db.user_register(
@@ -201,19 +205,23 @@ class API(object):
     @api_method
     def user_update(self, args, database, user, **kwargs):
         """
-        Receives new parameters and assigns them to the user_object
-        in the database. The following new parameters can be supplied:
-        `user_name`, `auth_hash`, `quip`, `bio`, and `color`. Any number
-        of them may be supplied.
+        Receives new parameters and assigns them to the user object.
+        This method requires that you send a valid User/Auth header
+        pair with your request, and the changes are made to that
+        account.
 
-        The newly updated user object is returned on success.
+        Take care to keep your client's User/Auth header pair up to date
+        after using this method.
+
+        The newly updated user object is returned on success,
+        including the `auth_hash`.
         """
         no_anon_hook(user, "Anons cannot modify their account.")
         validate(args, [])  # just make sure its not empty
         return db.user_update(database, user, args)
     user_update.doctype = "Users"
     user_update.arglist = (
-        ("Any of the following may be submitted:", ""),
+        ("Any of the following may be submitted", ""),
         ("user_name", "string: a desired display name"),
         ("auth_hash", "string: sha256 hash for a new password"),
         ("quip", "string: a short string that can be used as a signature"),

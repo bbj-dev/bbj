@@ -91,16 +91,18 @@
         <div class="container">
                 <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
     <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#handling-error-responses">Handling Error Responses</a></li>
     </ul>
 </div></div>
                 <div class="col-md-9" role="main">
 
-<p>Errors in BBJ are separated into 6 different codes to help
-ease handling a little bit. Errors are all or nothing, there
-are no "warnings". If a response has a non-false error field,
-then data will always be null. An error response from the api
-looks like this...</p>
-<pre><code>{
+<h2 id="handling-error-responses">Handling Error Responses</h2>
+<p>Errors in BBJ are separated into 6 different codes, to allow easy mapping to
+native exception and signaling systems available in the client's programming
+language. Errors are all or nothing, there are no "warnings". If a response has
+a non-false error field, then data will always be null. An error response from
+the api looks like this...</p>
+<pre><code class="javascript">{
   &quot;error&quot;: {
       &quot;code&quot;: // an integer from 0 to 5,
       &quot;description&quot;: // a string describing the error in detail.
@@ -110,16 +112,28 @@ looks like this...</p>
 }
 </code></pre>
 
-<p>The codes split errors into a few categories. Some are oriented
+<p>The codes split errors into categories. Some are oriented
 to client developers while others should be shown directly to
 users.</p>
 <ul>
-<li>0: Malformed but non-empty json input. An empty json input where it is required is handled by code 3. This is just decoding errors. The exception text is returned as description.</li>
-<li>1: Internal server error. A short representation of the internal exception as well as the code the server logged it as is returned in the description. Your clients cannot recover from this class of error, and its probably not your fault if you encounter it. If you ever get one, file a bug report.</li>
-<li>2: Server HTTP error: This is similar to the above but captures errors for the HTTP server rather than BBJs own codebase. The description contains the HTTP error code and server description. This notably covers 404s and thus invalid endpoint names.</li>
-<li>3: Parameter error: client sent erroneous input for its method. This could mean missing arguments, type errors, etc. It generalizes errors that should be fixed by the client developer and the returned descriptions are geared to them rather than end users.</li>
-<li>4: User error: These errors regard actions that the user has taken that are invalid, but not really errors in a traditional sense. The description field should be shown to users verbatim, in a clear and noticeable fashion. They are formatted as concise English sentences and end with appropriate punctuation marks.</li>
-<li>5: Authorization error: This code represents an erroneous User/Auth header pair. This should trigger the user to provide correct credentials or fall back to anon mode.</li>
+<li>
+<p><strong>Code 0</strong>: Malformed but non-empty json input. An empty json input where it is required is handled by code 3. This is just decoding errors. The exception text is returned as description.</p>
+</li>
+<li>
+<p><strong>Code 1</strong>: Internal server error. A short representation of the internal exception as well as the code the server logged it as is returned in the description. Your clients cannot recover from this class of error, and its probably not your fault if you encounter it. If you ever get one, file a bug report.</p>
+</li>
+<li>
+<p><strong>Code 2</strong>: Server HTTP error: This is similar to the above but captures errors for the HTTP server rather than BBJs own codebase. The description contains the HTTP error code and server description. This notably covers 404s and thus invalid endpoint names. The HTTP error code is left intact, so you may choose to let your HTTP library or tool of choice handle these for you.</p>
+</li>
+<li>
+<p><strong>Code 3</strong>: Parameter error: client sent erroneous input for its method. This could mean missing arguments, type errors, etc. It generalizes errors that should be fixed by the client developer and the returned descriptions are geared to them rather than end users.</p>
+</li>
+<li>
+<p><strong>Code 4</strong>: User error: These errors regard actions that the user has taken that are invalid, but not really errors in a traditional sense. The description field should be shown to users verbatim, in a clear and noticeable fashion. They are formatted as concise English sentences and end with appropriate punctuation marks.</p>
+</li>
+<li>
+<p><strong>Code 5</strong>: Authorization error: This code represents an erroneous User/Auth header pair. This should trigger the user to provide correct credentials or fall back to anon mode.</p>
+</li>
 </ul></div>
         </div>
 

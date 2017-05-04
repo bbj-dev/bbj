@@ -1,6 +1,8 @@
+## Implementing good sanity checks in your client.
+
 The server has an endpoint called `db_validate`. What this does is take
-a `key` and a `value` and compares `value` to a set of rules specified by
-`key`. This is the same function used internally by the database to scan
+a `key` and a `value` argument, and compares `value` to a set of rules specified by
+`key`. This is the same function used internally by the database to check
 values before committing them to the database. By default it returns a
 descriptive object under `data`, but you can specify the key/value pair
 `"error": True` to get a standard error response back. A standard call
@@ -67,7 +69,6 @@ The following keys are currently available.
 The descriptions returned are friendly, descriptive, and should be shown
 directly to users
 
-## Implementing good sanity checks in your client
 
 By using this endpoint, you will never have to validate values in your
 own code before sending them to the server. This means you can do things
@@ -78,17 +79,16 @@ This is used in the elisp client when registering users and for the thread
 title prompt which is shown before opening a composure window. The reason
 for rejection is displayed clearly to the user and input window is restored.
 
-```
+```lisp
 (defun bbj-sane-value (prompt key)
   "Opens an input loop with the user, where the response is
 passed to the server to check it for validity before the
 user is allowed to continue. Will recurse until the input
 is valid, then it is returned."
   (let* ((value (read-from-minibuffer prompt))
-         (response (bbj-request! 'db_validate
-                     'value value 'key key)))
+         (response (bbj-request! 'db_validate 'value value 'key key)))
     (if (alist-get 'bool response)
-        value
+        value ;; return the user's input back to the caller
       (message (alist-get 'description response))
       (sit-for 2)
       (bbj-sane-value prompt key))))

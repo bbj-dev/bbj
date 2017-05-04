@@ -115,18 +115,19 @@ for function in endpoints:
     types[function.doctype].append(function)
 
 for doctype in sorted(types.keys()):
-    body += "# %s\n\n" % doctype
+    body += "<br><br>\n# %s\n------\n" % doctype
     funcs = sorted(types[doctype], key=lambda _: _.__name__)
     for f in funcs:
         body += "## %s\n\n" % f.__name__
-        body += "### Args:\n"
-        for key, value in f.arglist:
-            if key:
-                body += "**%s**: %s\n\n" % (key, value)
-            else:
-                body += "__No arguments__"
+        if f.arglist[0][0]:
+            body += "**Arguments:**\n\n"
+            for key, value in f.arglist:
+                body += " * __%s__: %s\n\n" % (key, value)
+        else:
+            body += "_requires no arguments_"
+
         body += "\n\n" + pydoc.getdoc(f) + "\n\n"
-    body += "\n\n--------\n\n"
+        body += "\n<br>\n"
 
 with open("documentation/docs/api_overview.md", "w") as output:
     output.write(body)
