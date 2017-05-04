@@ -89,6 +89,7 @@ choice. See [the full error page](errors.md) for details.
 <br><br>
 # Authorization
 ------
+See also [the Authorization page](authorization.md).
 ## check_auth
 
 **Arguments:**

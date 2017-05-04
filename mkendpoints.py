@@ -102,6 +102,13 @@ choice. See [the full error page](errors.md) for details.
 
 """
 
+extra = {
+    "Authorization": "See also [the Authorization page](authorization.md).",
+    "Users": "",
+    "Threads & Messages": "",
+    "Tools": ""
+}
+
 endpoints = [
     ref for name, ref in API.__dict__.items()
     if hasattr(ref, "exposed")
@@ -116,6 +123,9 @@ for function in endpoints:
 
 for doctype in sorted(types.keys()):
     body += "<br><br>\n# %s\n------\n" % doctype
+    desc = extra[doctype]
+    if desc:
+        body += desc + "\n"
     funcs = sorted(types[doctype], key=lambda _: _.__name__)
     for f in funcs:
         body += "## %s\n\n" % f.__name__
