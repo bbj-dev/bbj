@@ -4,6 +4,6 @@
 # Nothing magical here.
 
 python3 ./mkendpoints.py
-cd ./documentation
+cd ./docs
 mkdocs build
 cd ..

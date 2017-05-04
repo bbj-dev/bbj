@@ -1,7 +1,7 @@
 """
 This is a small script that creates the endpoint doc page. It should be
 evoked from the command line each time changes are made. It writes
-to ./documentation/docs/api_overview.md
+to ./docs/docs/api_overview.md
 
 The code used in this script is the absolute minimum required to
 get the job done; it can be considered a crude hack at best. I am
@@ -129,5 +129,5 @@ for doctype in sorted(types.keys()):
         body += "\n\n" + pydoc.getdoc(f) + "\n\n"
         body += "\n<br>\n"
 
-with open("documentation/docs/api_overview.md", "w") as output:
+with open("docs/docs/api_overview.md", "w") as output:
     output.write(body)
