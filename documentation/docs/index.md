@@ -9,7 +9,7 @@ account system to allow users to identify themselves and set profile
 attributes like a more traditional forum. Registration is optional and there
 are only minimal restrictions on anonymous participation.
 
-![screenshot](https://tilde.town/~desvox/bbj/screenshot.png)
+![screenshot](img/screenshot.png)
 
 Being a command-line-oriented text board, BBJ has no avatars or file sharing
 capabilties, so its easier to administrate and can't be used to distribute illegal
