@@ -233,7 +233,7 @@ class API(object):
     def get_me(self, args, database, user, **kwargs):
         """
         Requires no arguments. Returns your internal user object,
-        including your authorization hash.
+        including your `auth_hash`.
         """
         return user
     get_me.doctype = "Users"
@@ -243,7 +243,10 @@ class API(object):
     def user_map(self, args, database, user, **kwargs):
         """
         Returns an array with all registered user_ids, with the usermap
-        object populated by their full objects.
+        object populated by their full objects. This method is _NEVER_
+        neccesary when using other endpoints, as the usermap returned
+        on those requests already contains all the information you will
+        need. This endpoint is useful for statistic purposes only.
         """
         users = {
             user[0] for user in database.execute("SELECT user_id FROM users")
@@ -263,8 +266,7 @@ class API(object):
     @api_method
     def user_get(self, args, database, user, **kwargs):
         """
-        Retreive an external user object for the given `target_user`.
-        Can be a user_id or user_name.
+        Returns a user object for the given target.
         """
         validate(args, ["target_user"])
         return db.user_resolve(
@@ -277,8 +279,8 @@ class API(object):
     @api_method
     def user_is_registered(self, args, database, user, **kwargs):
         """
-        Takes the argument `target_user` and returns true or false
-        whether they are in the system or not.
+        Returns boolean `true` or `false` of whether the given target is
+        registered on the server.
         """
         validate(args, ["target_user"])
         return bool(db.user_resolve(database, args["target_user"]))
@@ -290,8 +292,8 @@ class API(object):
     @api_method
     def check_auth(self, args, database, user, **kwargs):
         """
-        Takes the arguments `target_user` and `target_hash`, and
-        returns boolean true or false whether the hash is valid.
+        Returns boolean `true` or `false` of whether the hash given
+        is correct for the given user.
         """
         validate(args, ["target_user", "target_hash"])
         user = db.user_resolve(
@@ -306,51 +308,50 @@ class API(object):
     @api_method
     def thread_index(self, args, database, user, **kwargs):
         """
-        Return an array with all the threads, ordered by most recent activity.
-        Requires no arguments.
-
-        Optionally, you may supply the argument `include_op`, which, when
-        non-nil, will include a "messages" key with the object, whose sole
-        content is the original message (post_id 0).
+        Return an array with all the server's threads. They are already sorted for
+        you; most recently modified threads are at the beginning of the array.
+        Unless you supply `include_op`, these threads have no `messages` parameter.
+        If you do, the `messages` parameter is an array with a single message object
+        for the original post.
         """
         threads = db.thread_index(database, include_op=args.get("include_op"))
         cherrypy.thread_data.usermap = create_usermap(database, threads, True)
         return threads
     thread_index.doctype = "Threads & Messages"
     thread_index.arglist = (
-        ("OPTIONAL: include_op", "boolean: Include a `messages` object with the original post"),
+        ("OPTIONAL: include_op", "boolean: Include a `messages` object containing the original post"),
     )
 
     @api_method
     def message_feed(self, args, database, user, **kwargs):
         """
-        Returns a special object representing all activity on the board since
-        the argument `time`, a unix/epoch timestamp.
+        Returns a special object representing all activity on the board since `time`.
 
+        ```javascript
         {
             "threads": {
                 "thread_id": {
-                    ...thread object
+                    // ...thread object
                 },
-                ...more thread_id/object pairs
+                // ...more thread_id/object pairs
             },
-            "messages": [...standard message object array sorted by date]
+            "messages": [
+                ...standard message object array sorted by date
+            ]
         }
+        ```
 
-        The message objects in "messages" are the same objects returned
+        The message objects in `messages` are the same objects returned
         in threads normally. They each have a thread_id parameter, and
-        you can access metadata for these threads by the "threads" object
+        you can access metadata for these threads by the `threads` object
         which is also provided.
 
-        The "messages" array is already sorted by submission time, newest
+        The `messages` array is already sorted by submission time, newest
         first. The order in the threads object is undefined and you should
         instead use their `last_mod` attribute if you intend to list them
         out visually.
-
-        You may optionally provide a `format` argument: this is treated
-        the same way as the `thread_load` endpoint and you should refer
-        to its documentation for more info.
         """
+        # XXX: Update with new formatting documentation for arg `format`
         validate(args, ["time"])
         feed = db.message_feed(database, args["time"])
 
@@ -363,6 +364,7 @@ class API(object):
     message_feed.doctype = "Threads & Messages"
     message_feed.arglist = (
         ("time", "int/float: epoch/unix time of the earliest point of interest"),
+        ("OPTIONAL: format", "string: the specifier for the desired formatting engine")
     )
 
     @api_method

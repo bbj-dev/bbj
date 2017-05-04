@@ -203,8 +203,8 @@ choice. See <a href="../errors/">the full error page</a> for details.</p>
 <p><strong>target_hash</strong>: string: sha256 hash for the password to check</p>
 </li>
 </ul>
-<p>Takes the arguments <code>target_user</code> and <code>target_hash</code>, and
-returns boolean true or false whether the hash is valid.</p>
+<p>Returns boolean <code>true</code> or <code>false</code> of whether the hash given
+is correct for the given user.</p>
 <p><br>
 <br><br></p>
 <h1 id="threads-messages">Threads &amp; Messages</h1>
@@ -277,30 +277,35 @@ on success. Returns a descriptive code 4 otherwise.</p>
 <h2 id="message_feed">message_feed</h2>
 <p><strong>Arguments:</strong></p>
 <ul>
-<li><strong>time</strong>: int/float: epoch/unix time of the earliest point of interest</li>
+<li>
+<p><strong>time</strong>: int/float: epoch/unix time of the earliest point of interest</p>
+</li>
+<li>
+<p><strong>OPTIONAL: format</strong>: string: the specifier for the desired formatting engine</p>
+</li>
 </ul>
-<p>Returns a special object representing all activity on the board since
-the argument <code>time</code>, a unix/epoch timestamp.</p>
-<p>{
-    "threads": {
-        "thread_id": {
-            ...thread object
+<p>Returns a special object representing all activity on the board since <code>time</code>.</p>
+<pre><code class="javascript">{
+    &quot;threads&quot;: {
+        &quot;thread_id&quot;: {
+            // ...thread object
         },
-        ...more thread_id/object pairs
+        // ...more thread_id/object pairs
     },
-    "messages": [...standard message object array sorted by date]
-}</p>
-<p>The message objects in "messages" are the same objects returned
+    &quot;messages&quot;: [
+        ...standard message object array sorted by date
+    ]
+}
+</code></pre>
+
+<p>The message objects in <code>messages</code> are the same objects returned
 in threads normally. They each have a thread_id parameter, and
-you can access metadata for these threads by the "threads" object
+you can access metadata for these threads by the <code>threads</code> object
 which is also provided.</p>
-<p>The "messages" array is already sorted by submission time, newest
+<p>The <code>messages</code> array is already sorted by submission time, newest
 first. The order in the threads object is undefined and you should
 instead use their <code>last_mod</code> attribute if you intend to list them
 out visually.</p>
-<p>You may optionally provide a <code>format</code> argument: this is treated
-the same way as the <code>thread_load</code> endpoint and you should refer
-to its documentation for more info.</p>
 <p><br></p>
 <h2 id="set_post_raw">set_post_raw</h2>
 <p><strong>Arguments:</strong></p>
@@ -364,13 +369,13 @@ value, the OP message will never recieve special formatting.</p>
 <h2 id="thread_index">thread_index</h2>
 <p><strong>Arguments:</strong></p>
 <ul>
-<li><strong>OPTIONAL: include_op</strong>: boolean: Include a <code>messages</code> object with the original post</li>
+<li><strong>OPTIONAL: include_op</strong>: boolean: Include a <code>messages</code> object containing the original post</li>
 </ul>
-<p>Return an array with all the threads, ordered by most recent activity.
-Requires no arguments.</p>
-<p>Optionally, you may supply the argument <code>include_op</code>, which, when
-non-nil, will include a "messages" key with the object, whose sole
-content is the original message (post_id 0).</p>
+<p>Return an array with all the server's threads. They are already sorted for
+you; most recently modified threads are at the beginning of the array.
+Unless you supply <code>include_op</code>, these threads have no <code>messages</code> parameter.
+If you do, the <code>messages</code> parameter is an array with a single message object
+for the original post.</p>
 <p><br></p>
 <h2 id="thread_load">thread_load</h2>
 <p><strong>Arguments:</strong></p>
@@ -459,7 +464,10 @@ provided value is safe to use.</p>
 <h2 id="user_map">user_map</h2>
 <p><em>requires no arguments</em></p>
 <p>Returns an array with all registered user_ids, with the usermap
-object populated by their full objects.</p>
+object populated by their full objects. This method is <em>NEVER</em>
+neccesary when using other endpoints, as the usermap returned
+on those requests already contains all the information you will
+need. This endpoint is useful for statistic purposes only.</p>
 <p><br>
 <br><br></p>
 <h1 id="users">Users</h1>
@@ -467,7 +475,7 @@ object populated by their full objects.</p>
 <h2 id="get_me">get_me</h2>
 <p><em>requires no arguments</em></p>
 <p>Requires no arguments. Returns your internal user object,
-including your authorization hash.</p>
+including your <code>auth_hash</code>.</p>
 <p><br></p>
 <h2 id="is_admin">is_admin</h2>
 <p><strong>Arguments:</strong></p>
@@ -482,16 +490,15 @@ of whether that user is an admin.</p>
 <ul>
 <li><strong>target_user</strong>: string: either a user_name or a user_id</li>
 </ul>
-<p>Retreive an external user object for the given <code>target_user</code>.
-Can be a user_id or user_name.</p>
+<p>Returns a user object for the given target.</p>
 <p><br></p>
 <h2 id="user_is_registered">user_is_registered</h2>
 <p><strong>Arguments:</strong></p>
 <ul>
 <li><strong>target_user</strong>: string: either a user_name or a user_id</li>
 </ul>
-<p>Takes the argument <code>target_user</code> and returns true or false
-whether they are in the system or not.</p>
+<p>Returns boolean <code>true</code> or <code>false</code> of whether the given target is
+registered on the server.</p>
 <p><br></p>
 <h2 id="user_register">user_register</h2>
 <p><strong>Arguments:</strong></p>
