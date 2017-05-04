@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Input Validation - BBJ</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="../css/highlight.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="..">BBJ</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">API <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li >
+    <a href="../api_overview/">Overview & Endpoints</a>
+</li>
+                            
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                            
+<li class="active">
+    <a href="./">Input Validation</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
+                    </a>
+                </li>
+                    <li >
+                        <a rel="next" href="../errors/">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li class="disabled">
+                        <a rel="prev" >
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#implementing-good-sanity-checks-in-your-client">Implementing good sanity checks in your client</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<p>The server has an endpoint called <code>db_validate</code>. What this does is take
+a <code>key</code> and a <code>value</code> and compares <code>value</code> to a set of rules specified by
+<code>key</code>. This is the same function used internally by the database to scan
+values before committing them to the database. By default it returns a
+descriptive object under <code>data</code>, but you can specify the key/value pair
+<code>"error": True</code> to get a standard error response back. A standard call
+to <code>db_validate</code> will look like this.</p>
+<pre><code>{
+    &quot;key&quot;: &quot;title&quot;,
+    &quot;value&quot;: &quot;this title\nis bad \nbecause it contains \nnewlines&quot;
+}
+</code></pre>
+
+<p>and the server will respond like this when the input should be corrected.</p>
+<pre><code>{
+    &quot;data&quot;: {
+        &quot;bool&quot;: False,
+        &quot;description&quot;: &quot;Titles cannot contain whitespace characters besides spaces.&quot;
+    },
+    &quot;error&quot;: False,
+    &quot;usermap&quot;: {}
+}
+</code></pre>
+
+<p>if everything is okay, the data object will look like this instead.</p>
+<pre><code>    &quot;data&quot;: {
+        &quot;bool&quot;: True,
+        &quot;description&quot;: null
+    },
+</code></pre>
+
+<p>Alternatively, you can supply <code>"error": True</code> in the request.</p>
+<pre><code>{
+    &quot;error&quot;: True,
+    &quot;key&quot;: &quot;title&quot;,
+    &quot;value&quot;: &quot;this title\nis bad \nbecause it contains \nnewlines&quot;
+}
+// and you get...
+{
+    &quot;data&quot;: null,
+    &quot;usermap&quot;: {},
+    &quot;error&quot;: {
+        &quot;code&quot;: 4,
+        &quot;description&quot;: &quot;Titles cannot contain whitespace characters besides spaces.&quot;
+    }
+}
+</code></pre>
+
+<p>The following keys are currently available.</p>
+<ul>
+<li>"user_name"</li>
+<li>"auth_hash"</li>
+<li>"quip"</li>
+<li>"bio"</li>
+<li>"title"</li>
+<li>"body"</li>
+<li>"color"</li>
+</ul>
+<p>The descriptions returned are friendly, descriptive, and should be shown
+directly to users</p>
+<h2 id="implementing-good-sanity-checks-in-your-client">Implementing good sanity checks in your client</h2>
+<p>By using this endpoint, you will never have to validate values in your
+own code before sending them to the server. This means you can do things
+like implement an interactive prompt which will not allow the user to
+submit it unless the value is correct.</p>
+<p>This is used in the elisp client when registering users and for the thread
+title prompt which is shown before opening a composure window. The reason
+for rejection is displayed clearly to the user and input window is restored.</p>
+<pre><code>(defun bbj-sane-value (prompt key)
+  &quot;Opens an input loop with the user, where the response is
+passed to the server to check it for validity before the
+user is allowed to continue. Will recurse until the input
+is valid, then it is returned.&quot;
+  (let* ((value (read-from-minibuffer prompt))
+         (response (bbj-request! 'db_validate
+                     'value value 'key key)))
+    (if (alist-get 'bool response)
+        value
+      (message (alist-get 'description response))
+      (sit-for 2)
+      (bbj-sane-value prompt key))))
+</code></pre></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
+        <script src="../js/base.js"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

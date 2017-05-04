@@ -1,1 +1,7 @@
-site_name: BBJ API Documentation
+site_name: BBJ
+pages:
+  - Home: index.md
+  - API:
+      - 'Overview & Endpoints': api_overview.md
+      - 'Errors': errors.md
+      - 'Input Validation': validation.md

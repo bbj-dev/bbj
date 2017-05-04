@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>Overview & Endpoints - BBJ</title>
+        <link href="../css/bootstrap-custom.min.css" rel="stylesheet">
+        <link href="../css/font-awesome-4.5.0.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="../css/highlight.css">
+        <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+        <!--[if lt IE 9]>
+            <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+            <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+        <![endif]-->
+	
+	<script src="../js/jquery-1.10.2.min.js"></script>
+        <script src="../js/bootstrap-3.0.3.min.js"></script>
+        <script src="../js/highlight.pack.js"></script> 
+    </head>
+
+    <body>
+
+        <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+    <div class="container">
+
+        <!-- Collapsed navigation -->
+        <div class="navbar-header">
+            <!-- Expander button -->
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="..">BBJ</a>
+        </div>
+
+        <!-- Expanded navigation -->
+        <div class="navbar-collapse collapse">
+                <!-- Main navigation -->
+                <ul class="nav navbar-nav">
+                    <li >
+                        <a href="..">Home</a>
+                    </li>
+                    <li class="dropdown active">
+                        <a href="#" class="dropdown-toggle" data-toggle="dropdown">API <b class="caret"></b></a>
+                        <ul class="dropdown-menu">
+                            
+<li class="active">
+    <a href="./">Overview & Endpoints</a>
+</li>
+                            
+<li >
+    <a href="../errors/">Errors</a>
+</li>
+                            
+<li >
+    <a href="../validation/">Input Validation</a>
+</li>
+                        </ul>
+                    </li>
+                </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+                <li>
+                    <a href="#" data-toggle="modal" data-target="#mkdocs_search_modal">
+                        <i class="fa fa-search"></i> Search
+                    </a>
+                </li>
+                    <li >
+                        <a rel="next" href="..">
+                            <i class="fa fa-arrow-left"></i> Previous
+                        </a>
+                    </li>
+                    <li >
+                        <a rel="prev" href="../errors/">
+                            Next <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+        <div class="container">
+                <div class="col-md-3"><div class="bs-sidebar hidden-print affix well" role="complementary">
+    <ul class="nav bs-sidenav">
+        <li class="main active"><a href="#how-to-bbj">How to BBJ?</a></li>
+            <li><a href="#input">Input</a></li>
+            <li><a href="#output">Output</a></li>
+        <li class="main "><a href="#authorization">Authorization</a></li>
+            <li><a href="#check_auth">check_auth</a></li>
+        <li class="main "><a href="#threads-messages">Threads &amp; Messages</a></li>
+            <li><a href="#delete_post">delete_post</a></li>
+            <li><a href="#edit_post">edit_post</a></li>
+            <li><a href="#edit_query">edit_query</a></li>
+            <li><a href="#message_feed">message_feed</a></li>
+            <li><a href="#set_post_raw">set_post_raw</a></li>
+            <li><a href="#set_thread_pin">set_thread_pin</a></li>
+            <li><a href="#thread_create">thread_create</a></li>
+            <li><a href="#thread_index">thread_index</a></li>
+            <li><a href="#thread_load">thread_load</a></li>
+            <li><a href="#thread_reply">thread_reply</a></li>
+        <li class="main "><a href="#tools">Tools</a></li>
+            <li><a href="#db_validate">db_validate</a></li>
+            <li><a href="#format_message">format_message</a></li>
+            <li><a href="#user_map">user_map</a></li>
+        <li class="main "><a href="#users">Users</a></li>
+            <li><a href="#get_me">get_me</a></li>
+            <li><a href="#is_admin">is_admin</a></li>
+            <li><a href="#user_get">user_get</a></li>
+            <li><a href="#user_is_registered">user_is_registered</a></li>
+            <li><a href="#user_register">user_register</a></li>
+            <li><a href="#user_update">user_update</a></li>
+    </ul>
+</div></div>
+                <div class="col-md-9" role="main">
+
+<h1 id="how-to-bbj">How to BBJ?</h1>
+<h2 id="input">Input</h2>
+<p>BBJ is interacted with entirely through POST requests, whose bodies are
+json objects.</p>
+<p>The endpoints, all listed below, can be contacted at the path /api/ relative
+to the root of where BBJ is hosted. If bbj is hosted on a server on port 80
+at the root:</p>
+<p><code>http://server.com/api/endpoint_here</code></p>
+<p>The body of your request contains all of it's argument fields, instead of
+using URL parameters. As a demonstration, to call <code>thread_create</code>,
+it requires two arguments: <code>title</code>, and <code>body</code>. We put those argument
+names at the root of the json object, and their values are the info
+passed into the API for that spot. Your input will look like this:</p>
+<pre><code class="json">{
+    &quot;title&quot;: &quot;Hello world!!&quot;,
+    &quot;body&quot;: &quot;Hi! I am exploring this cool board thing!!&quot;
+}
+</code></pre>
+
+<p>And you will POST this body to <code>http://server.com:PORT/api/thread_create</code>.</p>
+<p>A few endpoints do not require any arguments. These can still be POSTed to,
+but the body may be completely empty or an empty json object. You can even
+GET these if you so choose.</p>
+<p>For all endpoints, argument keys that are not consumed by the endpoint are
+ignored. Posting an object with a key/value pair of <code>"sandwich": True</code> will
+not clog up any pipes :) In the same vein, endpoints who dont take arguments
+don't care if you supply them anyway.</p>
+<h2 id="output">Output</h2>
+<p>BBJ returns data in a consistently formatted json object. The base object
+has three keys: <code>data</code>, <code>usermap</code>, and <code>error</code>. Visualizied:</p>
+<pre><code class="javascript">{
+  &quot;error&quot;:   false, // boolean false or error object
+  &quot;data&quot;:    null,  // null or the requested data from endpoint.
+  &quot;usermap&quot;: {}     // potentially empty object, maps user_ids to user objects
+}
+
+// If &quot;error&quot; is true, it looks like this:
+
+{
+  &quot;error&quot;: {
+      &quot;code&quot;: // an integer from 0 to 5,
+      &quot;description&quot;: // a string describing the error in detail.
+  }
+  &quot;data&quot;: null   // ALWAYS null if error is not false
+  &quot;usermap&quot;: {}  // ALWAYS empty if error is not false
+}
+</code></pre>
+
+<h3 id="data">data</h3>
+<p><code>data</code> is what the endpoint actually returns. The type of contents vary
+by endpoint and are documented below. If an endpoint says it returns a
+boolean, it will look like <code>"data": True</code>. If it says it returns an array,
+it will look like <code>"data": ["stuff", "goes", "here"]</code></p>
+<h3 id="usermap">usermap</h3>
+<p>The usermap is a json object mapping user_ids within <code>data</code> to full user
+objects. BBJ handles users entirely by an ID system, meaning any references
+to them inside of response data will not include vital information like their
+username, or their profile information. Instead, we fetch those values from
+this usermap object. All of it's root keys are user_id's and their values
+are user objects. It should be noted that the anonymous user has it's own
+ID and profile object as well.</p>
+<h3 id="error">error</h3>
+<p><code>error</code> is typically <code>false</code>. If it is <strong>not</strong> false, then the request failed
+and the json object that <code>error</code> contains should be inspected. (see the above
+visualation) Errors follow a strict code system, making it easy for your client
+to map these responses to native exception types or signals in your language of
+choice. See <a href="../errors/">the full error page</a> for details.</p>
+<h1 id="authorization">Authorization</h1>
+<h2 id="check_auth">check_auth</h2>
+<h3 id="args">Args:</h3>
+<p><strong>target_user</strong>: string: either a user_name or a user_id</p>
+<p><strong>target_hash</strong>: string: sha256 hash for the password to check</p>
+<p>Takes the arguments <code>target_user</code> and <code>target_hash</code>, and
+returns boolean true or false whether the hash is valid.</p>
+<hr />
+<h1 id="threads-messages">Threads &amp; Messages</h1>
+<h2 id="delete_post">delete_post</h2>
+<h3 id="args_1">Args:</h3>
+<p><strong>thread_id</strong>: string: the id of the thread this message was posted in.</p>
+<p><strong>post_id</strong>: integer: the id of the target message.</p>
+<p>Requires the arguments <code>thread_id</code> and <code>post_id</code>.</p>
+<p>Delete a message from a thread. The same rules apply
+here as <code>edit_post</code> and <code>edit_query</code>: the logged in user
+must either be the one who posted the message within 24hrs,
+or have admin rights. The same error descriptions and code
+are returned on falilure. Boolean true is returned on
+success.</p>
+<p>If the post_id is 0, the whole thread is deleted.</p>
+<h2 id="edit_post">edit_post</h2>
+<h3 id="args_2">Args:</h3>
+<p><strong>thread_id</strong>: string: the thread the message was posted in.</p>
+<p><strong>post_id</strong>: integer: the target post_id to edit.</p>
+<p><strong>body</strong>: string: the new message body.</p>
+<p><strong>OPTIONAL: send_raw</strong>: boolean: set the formatting mode for the target message.</p>
+<p>Replace a post with a new body. Requires the arguments
+<code>thread_id</code>, <code>post_id</code>, and <code>body</code>. This method verifies
+that the user can edit a post before commiting the change,
+otherwise an error object is returned whose description
+should be shown to the user.</p>
+<p>To perform sanity checks and retrieve the unformatted body
+of a post without actually attempting to replace it, use
+<code>edit_query</code> first.</p>
+<p>Optionally you may also include the argument <code>send_raw</code> to
+set the message's formatting flag. However, if this is the
+only change you would like to make, you should use the
+endpoint <code>set_post_raw</code> instead.</p>
+<p>Returns the new message object.</p>
+<h2 id="edit_query">edit_query</h2>
+<h3 id="args_3">Args:</h3>
+<p><strong>thread_id</strong>: string: the id of the thread the message was posted in.</p>
+<p><strong>post_id</strong>: integer: the id of the target message.</p>
+<p>Queries the database to ensure the user can edit a given
+message. Requires the arguments <code>thread_id</code> and <code>post_id</code>
+(does not require a new body)</p>
+<p>Returns the original message object without any formatting
+on success. Returns a descriptive code 4 otherwise.</p>
+<h2 id="message_feed">message_feed</h2>
+<h3 id="args_4">Args:</h3>
+<p><strong>time</strong>: int/float: epoch/unix time of the earliest point of interest</p>
+<p>Returns a special object representing all activity on the board since
+the argument <code>time</code>, a unix/epoch timestamp.</p>
+<p>{
+    "threads": {
+        "thread_id": {
+            ...thread object
+        },
+        ...more thread_id/object pairs
+    },
+    "messages": [...standard message object array sorted by date]
+}</p>
+<p>The message objects in "messages" are the same objects returned
+in threads normally. They each have a thread_id parameter, and
+you can access metadata for these threads by the "threads" object
+which is also provided.</p>
+<p>The "messages" array is already sorted by submission time, newest
+first. The order in the threads object is undefined and you should
+instead use their <code>last_mod</code> attribute if you intend to list them
+out visually.</p>
+<p>You may optionally provide a <code>format</code> argument: this is treated
+the same way as the <code>thread_load</code> endpoint and you should refer
+to its documentation for more info.</p>
+<h2 id="set_post_raw">set_post_raw</h2>
+<h3 id="args_5">Args:</h3>
+<p><strong>thread_id</strong>: string: the id of the thread the message was posted in.</p>
+<p><strong>post_id</strong>: integer: the id of the target message.</p>
+<p><strong>value</strong>: boolean: the new <code>send_raw</code> value to apply to the message.</p>
+<p>Requires the boolean argument of <code>value</code>, string argument
+<code>thread_id</code>, and integer argument <code>post_id</code>. <code>value</code>, when false,
+means that the message will be passed through message formatters
+before being sent to clients. When <code>value</code> is true, this means
+it will never go through formatters, all of its whitespace is
+sent to clients verbatim and expressions are not processed.</p>
+<p>The same rules for editing messages (see <code>edit_query</code>) apply here
+and the same error objects are returned for violations.</p>
+<p>You may optionally set this value as well when using <code>edit_post</code>,
+but if this is the only change you want to make to the message,
+using this endpoint instead is preferable.</p>
+<h2 id="set_thread_pin">set_thread_pin</h2>
+<h3 id="args_6">Args:</h3>
+<p><strong>thread_id</strong>: string: the id of the thread to modify.</p>
+<p><strong>value</strong>: boolean: <code>true</code> to pin thread, <code>false</code> otherwise.</p>
+<p>Requires the arguments <code>thread_id</code> and <code>value</code>. <code>value</code>
+must be a boolean of what the pinned status should be.
+This method requires that the caller is logged in and
+has admin status on their account.</p>
+<p>Returns the same boolean you supply as <code>value</code></p>
+<h2 id="thread_create">thread_create</h2>
+<h3 id="args_7">Args:</h3>
+<p><strong>body</strong>: string: The body of the first message</p>
+<p><strong>title</strong>: string: The title name for this thread</p>
+<p><strong>OPTIONAL: send_raw</strong>: boolean: formatting mode for the first message.</p>
+<p>Creates a new thread and returns it. Requires the non-empty
+string arguments <code>body</code> and <code>title</code>.</p>
+<p>If the argument <code>send_raw</code> is specified and has a non-nil
+value, the OP message will never recieve special formatting.</p>
+<h2 id="thread_index">thread_index</h2>
+<h3 id="args_8">Args:</h3>
+<p><strong>OPTIONAL: include_op</strong>: boolean: Include a <code>messages</code> object with the original post</p>
+<p>Return an array with all the threads, ordered by most recent activity.
+Requires no arguments.</p>
+<p>Optionally, you may supply the argument <code>include_op</code>, which, when
+non-nil, will include a "messages" key with the object, whose sole
+content is the original message (post_id 0).</p>
+<h2 id="thread_load">thread_load</h2>
+<h3 id="args_9">Args:</h3>
+<p><strong>thread_id</strong>: string: the thread to load.</p>
+<p><strong>OPTIONAL: op_only</strong>: boolean: include only the original message in <code>messages</code></p>
+<p><strong>OPTIONAL: format</strong>: string: the formatting type of the returned messages.</p>
+<p>Returns the thread object with all of its messages loaded.
+Requires the argument <code>thread_id</code>. <code>format</code> may also be
+specified as a formatter to run the messages through.
+Currently only "sequential" is supported.</p>
+<p>You may also supply the parameter <code>op_only</code>. When it's value
+is non-nil, the messages array will only include post_id 0 (the first)</p>
+<h2 id="thread_reply">thread_reply</h2>
+<h3 id="args_10">Args:</h3>
+<p><strong>thread_id</strong>: string: the id for the thread this message should post to.</p>
+<p><strong>body</strong>: string: the message's body of text.</p>
+<p><strong>OPTIONAL: send_raw</strong>: boolean: formatting mode for the posted message.</p>
+<p>Creates a new reply for the given thread and returns it.
+Requires the string arguments <code>thread_id</code> and <code>body</code></p>
+<p>If the argument <code>send_raw</code> is specified and has a non-nil
+value, the message will never recieve special formatting.</p>
+<hr />
+<h1 id="tools">Tools</h1>
+<h2 id="db_validate">db_validate</h2>
+<h3 id="args_11">Args:</h3>
+<p><strong>key</strong>: string: the identifier for the ruleset to check.</p>
+<p><strong>value</strong>: VARIES: the object for which <code>key</code> will check for.</p>
+<p><strong>OPTIONAL: error</strong>: boolean: when <code>true</code>, will return an API error response instead of a special object.</p>
+<p>Requires the arguments <code>key</code> and <code>value</code>. Returns an object
+with information about the database sanity criteria for
+key. This can be used to validate user input in the client
+before trying to send it to the server.</p>
+<p>If the argument <code>error</code> is supplied with a non-nil value,
+the server will return a standard error object on failure
+instead of the special object described below.</p>
+<p>The returned object has two keys:</p>
+<p>{
+  "bool": true/false,
+  "description": null/"why this value is bad"
+}</p>
+<p>If bool == false, description is a string describing the
+problem. If bool == true, description is null and the
+provided value is safe to use.</p>
+<h2 id="format_message">format_message</h2>
+<h3 id="args_12">Args:</h3>
+<p><strong>body</strong>: string: the message body to apply formatting to.</p>
+<p><strong>format</strong>: string: the specifier for the desired formatting engine</p>
+<p>Requires the arguments <code>body</code> and <code>format</code>. Applies
+<code>format</code> to <code>body</code> and returns the new object. See
+<code>thread_load</code> for supported specifications for <code>format</code>.</p>
+<h2 id="user_map">user_map</h2>
+<h3 id="args_13">Args:</h3>
+<p><strong>No arguments</strong></p>
+<p>Returns an array with all registered user_ids, with the usermap
+object populated by their full objects.</p>
+<hr />
+<h1 id="users">Users</h1>
+<h2 id="get_me">get_me</h2>
+<h3 id="args_14">Args:</h3>
+<p><strong>No arguments</strong></p>
+<p>Requires no arguments. Returns your internal user object,
+including your authorization hash.</p>
+<h2 id="is_admin">is_admin</h2>
+<h3 id="args_15">Args:</h3>
+<p><strong>target_user</strong>: string: user_id or user_name to check against.</p>
+<p>Requires the argument <code>target_user</code>. Returns a boolean
+of whether that user is an admin.</p>
+<h2 id="user_get">user_get</h2>
+<h3 id="args_16">Args:</h3>
+<p><strong>target_user</strong>: string: either a user_name or a user_id</p>
+<p>Retreive an external user object for the given <code>target_user</code>.
+Can be a user_id or user_name.</p>
+<h2 id="user_is_registered">user_is_registered</h2>
+<h3 id="args_17">Args:</h3>
+<p><strong>target_user</strong>: string: either a user_name or a user_id</p>
+<p>Takes the argument <code>target_user</code> and returns true or false
+whether they are in the system or not.</p>
+<h2 id="user_register">user_register</h2>
+<h3 id="args_18">Args:</h3>
+<p><strong>user_name</strong>: string: the desired display name</p>
+<p><strong>auth_hash</strong>: string: a sha256 hash of a password</p>
+<p>Register a new user into the system and return the new object.
+Requires the string arguments <code>user_name</code> and <code>auth_hash</code>.
+Do not send User/Auth headers with this method.</p>
+<h2 id="user_update">user_update</h2>
+<h3 id="args_19">Args:</h3>
+<p><strong>Any of the following may be submitted:</strong>: </p>
+<p><strong>user_name</strong>: string: a desired display name</p>
+<p><strong>auth_hash</strong>: string: sha256 hash for a new password</p>
+<p><strong>quip</strong>: string: a short string that can be used as a signature</p>
+<p><strong>bio</strong>: string: a user biography for their profile</p>
+<p><strong>color</strong>: integer: 0-6, a display color for the user</p>
+<p>Receives new parameters and assigns them to the user_object
+in the database. The following new parameters can be supplied:
+<code>user_name</code>, <code>auth_hash</code>, <code>quip</code>, <code>bio</code>, and <code>color</code>. Any number
+of them may be supplied.</p>
+<p>The newly updated user object is returned on success.</p>
+<hr /></div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="http://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script>var base_url = '..';</script>
+        <script data-main="../mkdocs/js/search.js" src="../mkdocs/js/require.js"></script>
+        <script src="../js/base.js"></script><div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="Search Modal" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title" id="exampleModalLabel">Search</h4>
+            </div>
+            <div class="modal-body">
+                <p>
+                    From here you can search these documents. Enter
+                    your search terms below.
+                </p>
+                <form role="form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" placeholder="Search..." id="mkdocs-search-query">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

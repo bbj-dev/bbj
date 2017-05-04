@@ -1,0 +1,294 @@
+{
+    "docs": [
+        {
+            "location": "/",
+            "text": "Bulletin Butter & Jelly\n\n\nA simple community textboard\n\n\nBBJ is trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard.\n\n\nSee also: the \nGitHub repository\n.\n\n\nBBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.\n\n\n\n\nBeing a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.\n\n\nThe API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site.",
+            "title": "Home"
+        },
+        {
+            "location": "/#bulletin-butter-jelly",
+            "text": "",
+            "title": "Bulletin Butter &amp; Jelly"
+        },
+        {
+            "location": "/#a-simple-community-textboard",
+            "text": "",
+            "title": "A simple community textboard"
+        },
+        {
+            "location": "/#bbj-is-trivial-collection-of-python-scripts-and-database-queries-that-miraculously-shit-out-a-fully-functional-client-server-textboard",
+            "text": "See also: the  GitHub repository .  BBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.   Being a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.  The API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site.",
+            "title": "BBJ is trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard."
+        },
+        {
+            "location": "/api_overview/",
+            "text": "How to BBJ?\n\n\nInput\n\n\nBBJ is interacted with entirely through POST requests, whose bodies are\njson objects.\n\n\nThe endpoints, all listed below, can be contacted at the path /api/ relative\nto the root of where BBJ is hosted. If bbj is hosted on a server on port 80\nat the root:\n\n\nhttp://server.com/api/endpoint_here\n\n\nThe body of your request contains all of it's argument fields, instead of\nusing URL parameters. As a demonstration, to call \nthread_create\n,\nit requires two arguments: \ntitle\n, and \nbody\n. We put those argument\nnames at the root of the json object, and their values are the info\npassed into the API for that spot. Your input will look like this:\n\n\n{\n    \"title\": \"Hello world!!\",\n    \"body\": \"Hi! I am exploring this cool board thing!!\"\n}\n\n\n\n\nAnd you will POST this body to \nhttp://server.com:PORT/api/thread_create\n.\n\n\nA few endpoints do not require any arguments. These can still be POSTed to,\nbut the body may be completely empty or an empty json object. You can even\nGET these if you so choose.\n\n\nFor all endpoints, argument keys that are not consumed by the endpoint are\nignored. Posting an object with a key/value pair of \n\"sandwich\": True\n will\nnot clog up any pipes :) In the same vein, endpoints who dont take arguments\ndon't care if you supply them anyway.\n\n\nOutput\n\n\nBBJ returns data in a consistently formatted json object. The base object\nhas three keys: \ndata\n, \nusermap\n, and \nerror\n. Visualizied:\n\n\n{\n  \"error\":   false, // boolean false or error object\n  \"data\":    null,  // null or the requested data from endpoint.\n  \"usermap\": {}     // potentially empty object, maps user_ids to user objects\n}\n\n// If \"error\" is true, it looks like this:\n\n{\n  \"error\": {\n      \"code\": // an integer from 0 to 5,\n      \"description\": // a string describing the error in detail.\n  }\n  \"data\": null   // ALWAYS null if error is not false\n  \"usermap\": {}  // ALWAYS empty if error is not false\n}\n\n\n\n\ndata\n\n\ndata\n is what the endpoint actually returns. The type of contents vary\nby endpoint and are documented below. If an endpoint says it returns a\nboolean, it will look like \n\"data\": True\n. If it says it returns an array,\nit will look like \n\"data\": [\"stuff\", \"goes\", \"here\"]\n\n\nusermap\n\n\nThe usermap is a json object mapping user_ids within \ndata\n to full user\nobjects. BBJ handles users entirely by an ID system, meaning any references\nto them inside of response data will not include vital information like their\nusername, or their profile information. Instead, we fetch those values from\nthis usermap object. All of it's root keys are user_id's and their values\nare user objects. It should be noted that the anonymous user has it's own\nID and profile object as well.\n\n\nerror\n\n\nerror\n is typically \nfalse\n. If it is \nnot\n false, then the request failed\nand the json object that \nerror\n contains should be inspected. (see the above\nvisualation) Errors follow a strict code system, making it easy for your client\nto map these responses to native exception types or signals in your language of\nchoice. See \nthe full error page\n for details.\n\n\nAuthorization\n\n\ncheck_auth\n\n\nArgs:\n\n\ntarget_user\n: string: either a user_name or a user_id\n\n\ntarget_hash\n: string: sha256 hash for the password to check\n\n\nTakes the arguments \ntarget_user\n and \ntarget_hash\n, and\nreturns boolean true or false whether the hash is valid.\n\n\n\n\nThreads & Messages\n\n\ndelete_post\n\n\nArgs:\n\n\nthread_id\n: string: the id of the thread this message was posted in.\n\n\npost_id\n: integer: the id of the target message.\n\n\nRequires the arguments \nthread_id\n and \npost_id\n.\n\n\nDelete a message from a thread. The same rules apply\nhere as \nedit_post\n and \nedit_query\n: the logged in user\nmust either be the one who posted the message within 24hrs,\nor have admin rights. The same error descriptions and code\nare returned on falilure. Boolean true is returned on\nsuccess.\n\n\nIf the post_id is 0, the whole thread is deleted.\n\n\nedit_post\n\n\nArgs:\n\n\nthread_id\n: string: the thread the message was posted in.\n\n\npost_id\n: integer: the target post_id to edit.\n\n\nbody\n: string: the new message body.\n\n\nOPTIONAL: send_raw\n: boolean: set the formatting mode for the target message.\n\n\nReplace a post with a new body. Requires the arguments\n\nthread_id\n, \npost_id\n, and \nbody\n. This method verifies\nthat the user can edit a post before commiting the change,\notherwise an error object is returned whose description\nshould be shown to the user.\n\n\nTo perform sanity checks and retrieve the unformatted body\nof a post without actually attempting to replace it, use\n\nedit_query\n first.\n\n\nOptionally you may also include the argument \nsend_raw\n to\nset the message's formatting flag. However, if this is the\nonly change you would like to make, you should use the\nendpoint \nset_post_raw\n instead.\n\n\nReturns the new message object.\n\n\nedit_query\n\n\nArgs:\n\n\nthread_id\n: string: the id of the thread the message was posted in.\n\n\npost_id\n: integer: the id of the target message.\n\n\nQueries the database to ensure the user can edit a given\nmessage. Requires the arguments \nthread_id\n and \npost_id\n\n(does not require a new body)\n\n\nReturns the original message object without any formatting\non success. Returns a descriptive code 4 otherwise.\n\n\nmessage_feed\n\n\nArgs:\n\n\ntime\n: int/float: epoch/unix time of the earliest point of interest\n\n\nReturns a special object representing all activity on the board since\nthe argument \ntime\n, a unix/epoch timestamp.\n\n\n{\n    \"threads\": {\n        \"thread_id\": {\n            ...thread object\n        },\n        ...more thread_id/object pairs\n    },\n    \"messages\": [...standard message object array sorted by date]\n}\n\n\nThe message objects in \"messages\" are the same objects returned\nin threads normally. They each have a thread_id parameter, and\nyou can access metadata for these threads by the \"threads\" object\nwhich is also provided.\n\n\nThe \"messages\" array is already sorted by submission time, newest\nfirst. The order in the threads object is undefined and you should\ninstead use their \nlast_mod\n attribute if you intend to list them\nout visually.\n\n\nYou may optionally provide a \nformat\n argument: this is treated\nthe same way as the \nthread_load\n endpoint and you should refer\nto its documentation for more info.\n\n\nset_post_raw\n\n\nArgs:\n\n\nthread_id\n: string: the id of the thread the message was posted in.\n\n\npost_id\n: integer: the id of the target message.\n\n\nvalue\n: boolean: the new \nsend_raw\n value to apply to the message.\n\n\nRequires the boolean argument of \nvalue\n, string argument\n\nthread_id\n, and integer argument \npost_id\n. \nvalue\n, when false,\nmeans that the message will be passed through message formatters\nbefore being sent to clients. When \nvalue\n is true, this means\nit will never go through formatters, all of its whitespace is\nsent to clients verbatim and expressions are not processed.\n\n\nThe same rules for editing messages (see \nedit_query\n) apply here\nand the same error objects are returned for violations.\n\n\nYou may optionally set this value as well when using \nedit_post\n,\nbut if this is the only change you want to make to the message,\nusing this endpoint instead is preferable.\n\n\nset_thread_pin\n\n\nArgs:\n\n\nthread_id\n: string: the id of the thread to modify.\n\n\nvalue\n: boolean: \ntrue\n to pin thread, \nfalse\n otherwise.\n\n\nRequires the arguments \nthread_id\n and \nvalue\n. \nvalue\n\nmust be a boolean of what the pinned status should be.\nThis method requires that the caller is logged in and\nhas admin status on their account.\n\n\nReturns the same boolean you supply as \nvalue\n\n\nthread_create\n\n\nArgs:\n\n\nbody\n: string: The body of the first message\n\n\ntitle\n: string: The title name for this thread\n\n\nOPTIONAL: send_raw\n: boolean: formatting mode for the first message.\n\n\nCreates a new thread and returns it. Requires the non-empty\nstring arguments \nbody\n and \ntitle\n.\n\n\nIf the argument \nsend_raw\n is specified and has a non-nil\nvalue, the OP message will never recieve special formatting.\n\n\nthread_index\n\n\nArgs:\n\n\nOPTIONAL: include_op\n: boolean: Include a \nmessages\n object with the original post\n\n\nReturn an array with all the threads, ordered by most recent activity.\nRequires no arguments.\n\n\nOptionally, you may supply the argument \ninclude_op\n, which, when\nnon-nil, will include a \"messages\" key with the object, whose sole\ncontent is the original message (post_id 0).\n\n\nthread_load\n\n\nArgs:\n\n\nthread_id\n: string: the thread to load.\n\n\nOPTIONAL: op_only\n: boolean: include only the original message in \nmessages\n\n\nOPTIONAL: format\n: string: the formatting type of the returned messages.\n\n\nReturns the thread object with all of its messages loaded.\nRequires the argument \nthread_id\n. \nformat\n may also be\nspecified as a formatter to run the messages through.\nCurrently only \"sequential\" is supported.\n\n\nYou may also supply the parameter \nop_only\n. When it's value\nis non-nil, the messages array will only include post_id 0 (the first)\n\n\nthread_reply\n\n\nArgs:\n\n\nthread_id\n: string: the id for the thread this message should post to.\n\n\nbody\n: string: the message's body of text.\n\n\nOPTIONAL: send_raw\n: boolean: formatting mode for the posted message.\n\n\nCreates a new reply for the given thread and returns it.\nRequires the string arguments \nthread_id\n and \nbody\n\n\nIf the argument \nsend_raw\n is specified and has a non-nil\nvalue, the message will never recieve special formatting.\n\n\n\n\nTools\n\n\ndb_validate\n\n\nArgs:\n\n\nkey\n: string: the identifier for the ruleset to check.\n\n\nvalue\n: VARIES: the object for which \nkey\n will check for.\n\n\nOPTIONAL: error\n: boolean: when \ntrue\n, will return an API error response instead of a special object.\n\n\nRequires the arguments \nkey\n and \nvalue\n. Returns an object\nwith information about the database sanity criteria for\nkey. This can be used to validate user input in the client\nbefore trying to send it to the server.\n\n\nIf the argument \nerror\n is supplied with a non-nil value,\nthe server will return a standard error object on failure\ninstead of the special object described below.\n\n\nThe returned object has two keys:\n\n\n{\n  \"bool\": true/false,\n  \"description\": null/\"why this value is bad\"\n}\n\n\nIf bool == false, description is a string describing the\nproblem. If bool == true, description is null and the\nprovided value is safe to use.\n\n\nformat_message\n\n\nArgs:\n\n\nbody\n: string: the message body to apply formatting to.\n\n\nformat\n: string: the specifier for the desired formatting engine\n\n\nRequires the arguments \nbody\n and \nformat\n. Applies\n\nformat\n to \nbody\n and returns the new object. See\n\nthread_load\n for supported specifications for \nformat\n.\n\n\nuser_map\n\n\nArgs:\n\n\nNo arguments\n\n\nReturns an array with all registered user_ids, with the usermap\nobject populated by their full objects.\n\n\n\n\nUsers\n\n\nget_me\n\n\nArgs:\n\n\nNo arguments\n\n\nRequires no arguments. Returns your internal user object,\nincluding your authorization hash.\n\n\nis_admin\n\n\nArgs:\n\n\ntarget_user\n: string: user_id or user_name to check against.\n\n\nRequires the argument \ntarget_user\n. Returns a boolean\nof whether that user is an admin.\n\n\nuser_get\n\n\nArgs:\n\n\ntarget_user\n: string: either a user_name or a user_id\n\n\nRetreive an external user object for the given \ntarget_user\n.\nCan be a user_id or user_name.\n\n\nuser_is_registered\n\n\nArgs:\n\n\ntarget_user\n: string: either a user_name or a user_id\n\n\nTakes the argument \ntarget_user\n and returns true or false\nwhether they are in the system or not.\n\n\nuser_register\n\n\nArgs:\n\n\nuser_name\n: string: the desired display name\n\n\nauth_hash\n: string: a sha256 hash of a password\n\n\nRegister a new user into the system and return the new object.\nRequires the string arguments \nuser_name\n and \nauth_hash\n.\nDo not send User/Auth headers with this method.\n\n\nuser_update\n\n\nArgs:\n\n\nAny of the following may be submitted:\n: \n\n\nuser_name\n: string: a desired display name\n\n\nauth_hash\n: string: sha256 hash for a new password\n\n\nquip\n: string: a short string that can be used as a signature\n\n\nbio\n: string: a user biography for their profile\n\n\ncolor\n: integer: 0-6, a display color for the user\n\n\nReceives new parameters and assigns them to the user_object\nin the database. The following new parameters can be supplied:\n\nuser_name\n, \nauth_hash\n, \nquip\n, \nbio\n, and \ncolor\n. Any number\nof them may be supplied.\n\n\nThe newly updated user object is returned on success.",
+            "title": "Overview & Endpoints"
+        },
+        {
+            "location": "/api_overview/#how-to-bbj",
+            "text": "",
+            "title": "How to BBJ?"
+        },
+        {
+            "location": "/api_overview/#input",
+            "text": "BBJ is interacted with entirely through POST requests, whose bodies are\njson objects.  The endpoints, all listed below, can be contacted at the path /api/ relative\nto the root of where BBJ is hosted. If bbj is hosted on a server on port 80\nat the root:  http://server.com/api/endpoint_here  The body of your request contains all of it's argument fields, instead of\nusing URL parameters. As a demonstration, to call  thread_create ,\nit requires two arguments:  title , and  body . We put those argument\nnames at the root of the json object, and their values are the info\npassed into the API for that spot. Your input will look like this:  {\n    \"title\": \"Hello world!!\",\n    \"body\": \"Hi! I am exploring this cool board thing!!\"\n}  And you will POST this body to  http://server.com:PORT/api/thread_create .  A few endpoints do not require any arguments. These can still be POSTed to,\nbut the body may be completely empty or an empty json object. You can even\nGET these if you so choose.  For all endpoints, argument keys that are not consumed by the endpoint are\nignored. Posting an object with a key/value pair of  \"sandwich\": True  will\nnot clog up any pipes :) In the same vein, endpoints who dont take arguments\ndon't care if you supply them anyway.",
+            "title": "Input"
+        },
+        {
+            "location": "/api_overview/#output",
+            "text": "BBJ returns data in a consistently formatted json object. The base object\nhas three keys:  data ,  usermap , and  error . Visualizied:  {\n  \"error\":   false, // boolean false or error object\n  \"data\":    null,  // null or the requested data from endpoint.\n  \"usermap\": {}     // potentially empty object, maps user_ids to user objects\n}\n\n// If \"error\" is true, it looks like this:\n\n{\n  \"error\": {\n      \"code\": // an integer from 0 to 5,\n      \"description\": // a string describing the error in detail.\n  }\n  \"data\": null   // ALWAYS null if error is not false\n  \"usermap\": {}  // ALWAYS empty if error is not false\n}",
+            "title": "Output"
+        },
+        {
+            "location": "/api_overview/#data",
+            "text": "data  is what the endpoint actually returns. The type of contents vary\nby endpoint and are documented below. If an endpoint says it returns a\nboolean, it will look like  \"data\": True . If it says it returns an array,\nit will look like  \"data\": [\"stuff\", \"goes\", \"here\"]",
+            "title": "data"
+        },
+        {
+            "location": "/api_overview/#usermap",
+            "text": "The usermap is a json object mapping user_ids within  data  to full user\nobjects. BBJ handles users entirely by an ID system, meaning any references\nto them inside of response data will not include vital information like their\nusername, or their profile information. Instead, we fetch those values from\nthis usermap object. All of it's root keys are user_id's and their values\nare user objects. It should be noted that the anonymous user has it's own\nID and profile object as well.",
+            "title": "usermap"
+        },
+        {
+            "location": "/api_overview/#error",
+            "text": "error  is typically  false . If it is  not  false, then the request failed\nand the json object that  error  contains should be inspected. (see the above\nvisualation) Errors follow a strict code system, making it easy for your client\nto map these responses to native exception types or signals in your language of\nchoice. See  the full error page  for details.",
+            "title": "error"
+        },
+        {
+            "location": "/api_overview/#authorization",
+            "text": "",
+            "title": "Authorization"
+        },
+        {
+            "location": "/api_overview/#check_auth",
+            "text": "",
+            "title": "check_auth"
+        },
+        {
+            "location": "/api_overview/#args",
+            "text": "target_user : string: either a user_name or a user_id  target_hash : string: sha256 hash for the password to check  Takes the arguments  target_user  and  target_hash , and\nreturns boolean true or false whether the hash is valid.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#threads-messages",
+            "text": "",
+            "title": "Threads &amp; Messages"
+        },
+        {
+            "location": "/api_overview/#delete_post",
+            "text": "",
+            "title": "delete_post"
+        },
+        {
+            "location": "/api_overview/#args_1",
+            "text": "thread_id : string: the id of the thread this message was posted in.  post_id : integer: the id of the target message.  Requires the arguments  thread_id  and  post_id .  Delete a message from a thread. The same rules apply\nhere as  edit_post  and  edit_query : the logged in user\nmust either be the one who posted the message within 24hrs,\nor have admin rights. The same error descriptions and code\nare returned on falilure. Boolean true is returned on\nsuccess.  If the post_id is 0, the whole thread is deleted.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#edit_post",
+            "text": "",
+            "title": "edit_post"
+        },
+        {
+            "location": "/api_overview/#args_2",
+            "text": "thread_id : string: the thread the message was posted in.  post_id : integer: the target post_id to edit.  body : string: the new message body.  OPTIONAL: send_raw : boolean: set the formatting mode for the target message.  Replace a post with a new body. Requires the arguments thread_id ,  post_id , and  body . This method verifies\nthat the user can edit a post before commiting the change,\notherwise an error object is returned whose description\nshould be shown to the user.  To perform sanity checks and retrieve the unformatted body\nof a post without actually attempting to replace it, use edit_query  first.  Optionally you may also include the argument  send_raw  to\nset the message's formatting flag. However, if this is the\nonly change you would like to make, you should use the\nendpoint  set_post_raw  instead.  Returns the new message object.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#edit_query",
+            "text": "",
+            "title": "edit_query"
+        },
+        {
+            "location": "/api_overview/#args_3",
+            "text": "thread_id : string: the id of the thread the message was posted in.  post_id : integer: the id of the target message.  Queries the database to ensure the user can edit a given\nmessage. Requires the arguments  thread_id  and  post_id \n(does not require a new body)  Returns the original message object without any formatting\non success. Returns a descriptive code 4 otherwise.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#message_feed",
+            "text": "",
+            "title": "message_feed"
+        },
+        {
+            "location": "/api_overview/#args_4",
+            "text": "time : int/float: epoch/unix time of the earliest point of interest  Returns a special object representing all activity on the board since\nthe argument  time , a unix/epoch timestamp.  {\n    \"threads\": {\n        \"thread_id\": {\n            ...thread object\n        },\n        ...more thread_id/object pairs\n    },\n    \"messages\": [...standard message object array sorted by date]\n}  The message objects in \"messages\" are the same objects returned\nin threads normally. They each have a thread_id parameter, and\nyou can access metadata for these threads by the \"threads\" object\nwhich is also provided.  The \"messages\" array is already sorted by submission time, newest\nfirst. The order in the threads object is undefined and you should\ninstead use their  last_mod  attribute if you intend to list them\nout visually.  You may optionally provide a  format  argument: this is treated\nthe same way as the  thread_load  endpoint and you should refer\nto its documentation for more info.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#set_post_raw",
+            "text": "",
+            "title": "set_post_raw"
+        },
+        {
+            "location": "/api_overview/#args_5",
+            "text": "thread_id : string: the id of the thread the message was posted in.  post_id : integer: the id of the target message.  value : boolean: the new  send_raw  value to apply to the message.  Requires the boolean argument of  value , string argument thread_id , and integer argument  post_id .  value , when false,\nmeans that the message will be passed through message formatters\nbefore being sent to clients. When  value  is true, this means\nit will never go through formatters, all of its whitespace is\nsent to clients verbatim and expressions are not processed.  The same rules for editing messages (see  edit_query ) apply here\nand the same error objects are returned for violations.  You may optionally set this value as well when using  edit_post ,\nbut if this is the only change you want to make to the message,\nusing this endpoint instead is preferable.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#set_thread_pin",
+            "text": "",
+            "title": "set_thread_pin"
+        },
+        {
+            "location": "/api_overview/#args_6",
+            "text": "thread_id : string: the id of the thread to modify.  value : boolean:  true  to pin thread,  false  otherwise.  Requires the arguments  thread_id  and  value .  value \nmust be a boolean of what the pinned status should be.\nThis method requires that the caller is logged in and\nhas admin status on their account.  Returns the same boolean you supply as  value",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#thread_create",
+            "text": "",
+            "title": "thread_create"
+        },
+        {
+            "location": "/api_overview/#args_7",
+            "text": "body : string: The body of the first message  title : string: The title name for this thread  OPTIONAL: send_raw : boolean: formatting mode for the first message.  Creates a new thread and returns it. Requires the non-empty\nstring arguments  body  and  title .  If the argument  send_raw  is specified and has a non-nil\nvalue, the OP message will never recieve special formatting.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#thread_index",
+            "text": "",
+            "title": "thread_index"
+        },
+        {
+            "location": "/api_overview/#args_8",
+            "text": "OPTIONAL: include_op : boolean: Include a  messages  object with the original post  Return an array with all the threads, ordered by most recent activity.\nRequires no arguments.  Optionally, you may supply the argument  include_op , which, when\nnon-nil, will include a \"messages\" key with the object, whose sole\ncontent is the original message (post_id 0).",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#thread_load",
+            "text": "",
+            "title": "thread_load"
+        },
+        {
+            "location": "/api_overview/#args_9",
+            "text": "thread_id : string: the thread to load.  OPTIONAL: op_only : boolean: include only the original message in  messages  OPTIONAL: format : string: the formatting type of the returned messages.  Returns the thread object with all of its messages loaded.\nRequires the argument  thread_id .  format  may also be\nspecified as a formatter to run the messages through.\nCurrently only \"sequential\" is supported.  You may also supply the parameter  op_only . When it's value\nis non-nil, the messages array will only include post_id 0 (the first)",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#thread_reply",
+            "text": "",
+            "title": "thread_reply"
+        },
+        {
+            "location": "/api_overview/#args_10",
+            "text": "thread_id : string: the id for the thread this message should post to.  body : string: the message's body of text.  OPTIONAL: send_raw : boolean: formatting mode for the posted message.  Creates a new reply for the given thread and returns it.\nRequires the string arguments  thread_id  and  body  If the argument  send_raw  is specified and has a non-nil\nvalue, the message will never recieve special formatting.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#tools",
+            "text": "",
+            "title": "Tools"
+        },
+        {
+            "location": "/api_overview/#db_validate",
+            "text": "",
+            "title": "db_validate"
+        },
+        {
+            "location": "/api_overview/#args_11",
+            "text": "key : string: the identifier for the ruleset to check.  value : VARIES: the object for which  key  will check for.  OPTIONAL: error : boolean: when  true , will return an API error response instead of a special object.  Requires the arguments  key  and  value . Returns an object\nwith information about the database sanity criteria for\nkey. This can be used to validate user input in the client\nbefore trying to send it to the server.  If the argument  error  is supplied with a non-nil value,\nthe server will return a standard error object on failure\ninstead of the special object described below.  The returned object has two keys:  {\n  \"bool\": true/false,\n  \"description\": null/\"why this value is bad\"\n}  If bool == false, description is a string describing the\nproblem. If bool == true, description is null and the\nprovided value is safe to use.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#format_message",
+            "text": "",
+            "title": "format_message"
+        },
+        {
+            "location": "/api_overview/#args_12",
+            "text": "body : string: the message body to apply formatting to.  format : string: the specifier for the desired formatting engine  Requires the arguments  body  and  format . Applies format  to  body  and returns the new object. See thread_load  for supported specifications for  format .",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#user_map",
+            "text": "",
+            "title": "user_map"
+        },
+        {
+            "location": "/api_overview/#args_13",
+            "text": "No arguments  Returns an array with all registered user_ids, with the usermap\nobject populated by their full objects.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#users",
+            "text": "",
+            "title": "Users"
+        },
+        {
+            "location": "/api_overview/#get_me",
+            "text": "",
+            "title": "get_me"
+        },
+        {
+            "location": "/api_overview/#args_14",
+            "text": "No arguments  Requires no arguments. Returns your internal user object,\nincluding your authorization hash.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#is_admin",
+            "text": "",
+            "title": "is_admin"
+        },
+        {
+            "location": "/api_overview/#args_15",
+            "text": "target_user : string: user_id or user_name to check against.  Requires the argument  target_user . Returns a boolean\nof whether that user is an admin.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#user_get",
+            "text": "",
+            "title": "user_get"
+        },
+        {
+            "location": "/api_overview/#args_16",
+            "text": "target_user : string: either a user_name or a user_id  Retreive an external user object for the given  target_user .\nCan be a user_id or user_name.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#user_is_registered",
+            "text": "",
+            "title": "user_is_registered"
+        },
+        {
+            "location": "/api_overview/#args_17",
+            "text": "target_user : string: either a user_name or a user_id  Takes the argument  target_user  and returns true or false\nwhether they are in the system or not.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#user_register",
+            "text": "",
+            "title": "user_register"
+        },
+        {
+            "location": "/api_overview/#args_18",
+            "text": "user_name : string: the desired display name  auth_hash : string: a sha256 hash of a password  Register a new user into the system and return the new object.\nRequires the string arguments  user_name  and  auth_hash .\nDo not send User/Auth headers with this method.",
+            "title": "Args:"
+        },
+        {
+            "location": "/api_overview/#user_update",
+            "text": "",
+            "title": "user_update"
+        },
+        {
+            "location": "/api_overview/#args_19",
+            "text": "Any of the following may be submitted: :   user_name : string: a desired display name  auth_hash : string: sha256 hash for a new password  quip : string: a short string that can be used as a signature  bio : string: a user biography for their profile  color : integer: 0-6, a display color for the user  Receives new parameters and assigns them to the user_object\nin the database. The following new parameters can be supplied: user_name ,  auth_hash ,  quip ,  bio , and  color . Any number\nof them may be supplied.  The newly updated user object is returned on success.",
+            "title": "Args:"
+        },
+        {
+            "location": "/errors/",
+            "text": "Errors in BBJ are separated into 6 different codes to help\nease handling a little bit. Errors are all or nothing, there\nare no \"warnings\". If a response has a non-false error field,\nthen data will always be null. An error response from the api\nlooks like this...\n\n\n{\n  \"error\": {\n      \"code\": // an integer from 0 to 5,\n      \"description\": // a string describing the error in detail.\n  }\n  \"data\": null   // ALWAYS null if error is not false\n  \"usermap\": {}  // ALWAYS empty if error is not false\n}\n\n\n\n\nThe codes split errors into a few categories. Some are oriented\nto client developers while others should be shown directly to\nusers.\n\n\n\n\n0: Malformed but non-empty json input. An empty json input where it is required is handled by code 3. This is just decoding errors. The exception text is returned as description.\n\n\n1: Internal server error. A short representation of the internal exception as well as the code the server logged it as is returned in the description. Your clients cannot recover from this class of error, and its probably not your fault if you encounter it. If you ever get one, file a bug report.\n\n\n2: Server HTTP error: This is similar to the above but captures errors for the HTTP server rather than BBJs own codebase. The description contains the HTTP error code and server description. This notably covers 404s and thus invalid endpoint names.\n\n\n3: Parameter error: client sent erroneous input for its method. This could mean missing arguments, type errors, etc. It generalizes errors that should be fixed by the client developer and the returned descriptions are geared to them rather than end users.\n\n\n4: User error: These errors regard actions that the user has taken that are invalid, but not really errors in a traditional sense. The description field should be shown to users verbatim, in a clear and noticeable fashion. They are formatted as concise English sentences and end with appropriate punctuation marks.\n\n\n5: Authorization error: This code represents an erroneous User/Auth header pair. This should trigger the user to provide correct credentials or fall back to anon mode.",
+            "title": "Errors"
+        },
+        {
+            "location": "/validation/",
+            "text": "The server has an endpoint called \ndb_validate\n. What this does is take\na \nkey\n and a \nvalue\n and compares \nvalue\n to a set of rules specified by\n\nkey\n. This is the same function used internally by the database to scan\nvalues before committing them to the database. By default it returns a\ndescriptive object under \ndata\n, but you can specify the key/value pair\n\n\"error\": True\n to get a standard error response back. A standard call\nto \ndb_validate\n will look like this.\n\n\n{\n    \"key\": \"title\",\n    \"value\": \"this title\\nis bad \\nbecause it contains \\nnewlines\"\n}\n\n\n\n\nand the server will respond like this when the input should be corrected.\n\n\n{\n    \"data\": {\n        \"bool\": False,\n        \"description\": \"Titles cannot contain whitespace characters besides spaces.\"\n    },\n    \"error\": False,\n    \"usermap\": {}\n}\n\n\n\n\nif everything is okay, the data object will look like this instead.\n\n\n    \"data\": {\n        \"bool\": True,\n        \"description\": null\n    },\n\n\n\n\nAlternatively, you can supply \n\"error\": True\n in the request.\n\n\n{\n    \"error\": True,\n    \"key\": \"title\",\n    \"value\": \"this title\\nis bad \\nbecause it contains \\nnewlines\"\n}\n// and you get...\n{\n    \"data\": null,\n    \"usermap\": {},\n    \"error\": {\n        \"code\": 4,\n        \"description\": \"Titles cannot contain whitespace characters besides spaces.\"\n    }\n}\n\n\n\n\nThe following keys are currently available.\n\n\n\n\n\"user_name\"\n\n\n\"auth_hash\"\n\n\n\"quip\"\n\n\n\"bio\"\n\n\n\"title\"\n\n\n\"body\"\n\n\n\"color\"\n\n\n\n\nThe descriptions returned are friendly, descriptive, and should be shown\ndirectly to users\n\n\nImplementing good sanity checks in your client\n\n\nBy using this endpoint, you will never have to validate values in your\nown code before sending them to the server. This means you can do things\nlike implement an interactive prompt which will not allow the user to\nsubmit it unless the value is correct.\n\n\nThis is used in the elisp client when registering users and for the thread\ntitle prompt which is shown before opening a composure window. The reason\nfor rejection is displayed clearly to the user and input window is restored.\n\n\n(defun bbj-sane-value (prompt key)\n  \"Opens an input loop with the user, where the response is\npassed to the server to check it for validity before the\nuser is allowed to continue. Will recurse until the input\nis valid, then it is returned.\"\n  (let* ((value (read-from-minibuffer prompt))\n         (response (bbj-request! 'db_validate\n                     'value value 'key key)))\n    (if (alist-get 'bool response)\n        value\n      (message (alist-get 'description response))\n      (sit-for 2)\n      (bbj-sane-value prompt key))))",
+            "title": "Input Validation"
+        },
+        {
+            "location": "/validation/#implementing-good-sanity-checks-in-your-client",
+            "text": "By using this endpoint, you will never have to validate values in your\nown code before sending them to the server. This means you can do things\nlike implement an interactive prompt which will not allow the user to\nsubmit it unless the value is correct.  This is used in the elisp client when registering users and for the thread\ntitle prompt which is shown before opening a composure window. The reason\nfor rejection is displayed clearly to the user and input window is restored.  (defun bbj-sane-value (prompt key)\n  \"Opens an input loop with the user, where the response is\npassed to the server to check it for validity before the\nuser is allowed to continue. Will recurse until the input\nis valid, then it is returned.\"\n  (let* ((value (read-from-minibuffer prompt))\n         (response (bbj-request! 'db_validate\n                     'value value 'key key)))\n    (if (alist-get 'bool response)\n        value\n      (message (alist-get 'description response))\n      (sit-for 2)\n      (bbj-sane-value prompt key))))",
+            "title": "Implementing good sanity checks in your client"
+        }
+    ]
+}
