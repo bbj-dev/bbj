@@ -35,24 +35,18 @@ import os
 import re
 
 # XxX_N0_4rgP4rs3_XxX ###yoloswag
-try:
-    port_spec = argv.index("--port")
-    port = argv[port_spec+1]
-except ValueError: # --port not specified
-    port = 7099
-except IndexError: # flag given but no value
-    exit("thats not how this works, silly! --port 7099")
+def get_arg(key, default=None, get_value=True):
+    try:
+        spec = argv.index("--" + key)
+        value = argv[spec + 1] if get_value else True
+    except ValueError: # --key not specified
+        value = default
+    except IndexError: # flag given but no value
+        exit("invalid format for --" + key)
+    return value
 
 try:
-    host_spec = argv.index("--host")
-    host = argv[host_spec+1]
-except ValueError: # --host not specified
-    host = "127.0.0.1"
-except IndexError: # flag given but no value
-    exit("thats not how this works, silly! --host 127.0.0.1")
-
-try:
-    network = BBJ(host, port)
+    network = BBJ(get_arg("host", "127.0.0.1"), get_arg("port", 7099))
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))
@@ -1947,7 +1941,7 @@ def log_in():
     chain. The user is run through this before starting the
     curses app.
     """
-    name = sane_value("user_name", "Username", return_empty=True)
+    name = get_arg("user") or sane_value("user_name", "Username", return_empty=True)
     if name == "":
         motherfucking_rainbows("~~W3 4R3 4n0nYm0u5~~")
     else:
