@@ -199,7 +199,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[C]ompose [^R]eply [R]efresh [RET]Menu [0-9]Goto [B/T]End [</>]Jump[X]%d"
+    "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d"
 }
 
 colormap = [
