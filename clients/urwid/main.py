@@ -2018,7 +2018,7 @@ def bbjrc(mode, **params):
     values.update(params)
     # we always write
     with open(rcpath, "w") as _out:
-        json.dump(values, _out)
+        json.dump(values, _out, indent=2)
 
     return values
 
