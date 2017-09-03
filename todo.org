@@ -1,0 +1,7 @@
+* TODO add notification system server-side and to the client
+  it should allow users on the tilde to subscribe to a mailing list for
+selected threads, and the api should allow for event listings per thread
+when given a certain time (kind of like `message_feed`)
+* TODO Author-only "announcement" threads
+* TODO HTML output from the formatter
+* TODO integrate thread pins to urwid client
