@@ -361,6 +361,8 @@ value, the message will never recieve special formatting.
 
 
 
+See also [the Input Validation page](validation.md).
+
 Requires the arguments `key` and `value`. Returns an object
 with information about the database sanity criteria for
 key. This can be used to validate user input in the client
