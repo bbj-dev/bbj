@@ -1,2 +1,4 @@
 /*.db
 /config.json
+*.sqlite
+*__pycache__*
