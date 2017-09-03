@@ -2,7 +2,7 @@
     "docs": [
         {
             "location": "/",
-            "text": "Bulletin Butter & Jelly\n\n\nA simple community textboard\n\n\nBBJ is trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard.\n\n\nSee also: the \nGitHub repository\n.\n\n\nBBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.\n\n\n\n\nBeing a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.\n\n\nThe API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site.",
+            "text": "Bulletin Butter & Jelly\n\n\nA simple community textboard\n\n\nBBJ is a trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard.\n\n\nSee also: the \nGitHub repository\n.\n\n\nBBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.\n\n\n\n\nBeing a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.\n\n\nThe API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site (though the verbage is still being revised for friendliness)",
             "title": "Home"
         },
         {
@@ -16,9 +16,9 @@
             "title": "A simple community textboard"
         },
         {
-            "location": "/#bbj-is-trivial-collection-of-python-scripts-and-database-queries-that-miraculously-shit-out-a-fully-functional-client-server-textboard",
-            "text": "See also: the  GitHub repository .  BBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.   Being a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.  The API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site.",
-            "title": "BBJ is trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard."
+            "location": "/#bbj-is-a-trivial-collection-of-python-scripts-and-database-queries-that-miraculously-shit-out-a-fully-functional-client-server-textboard",
+            "text": "See also: the  GitHub repository .  BBJ is heavily inspired by image boards like 4chan, but it offers a simple\naccount system to allow users to identify themselves and set profile\nattributes like a more traditional forum. Registration is optional and there\nare only minimal restrictions on anonymous participation.   Being a command-line-oriented text board, BBJ has no avatars or file sharing\ncapabilties, so its easier to administrate and can't be used to distribute illegal\ncontent like imageboards. It has very few dependancies and is easy to set up.  The API is simple and doesn't use require complex authorization schemes or session management.\nIt is fully documented on this site (though the verbage is still being revised for friendliness)",
+            "title": "BBJ is a trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard."
         },
         {
             "location": "/api_overview/",
