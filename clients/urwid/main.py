@@ -25,7 +25,7 @@ from string import punctuation
 from datetime import datetime
 from time import time, sleep
 from getpass import getpass
-from subprocess import run
+from subprocess import call
 from random import choice
 from sys import argv
 import tempfile
@@ -413,10 +413,7 @@ class App(object):
         Callback function to view a quote from the message object menu.
         """
         widget = OptionsMenu(
-            ActionBox(
-                urwid.SimpleFocusListWalker([
-                    *self.make_message_body(message)
-                ])),
+            ActionBox(urwid.SimpleFocusListWalker(self.make_message_body(message))),
             title=">>%d" % message["post_id"],
             **frame_theme()
         )
@@ -896,7 +893,7 @@ class App(object):
         """
         self.loop.widget = self.loop.widget[0]
         self.loop.stop()
-        run("clear", shell=True)
+        call("clear", shell=True)
         print(welcome)
         try: log_in()
         except (KeyboardInterrupt, InterruptedError): pass
@@ -957,10 +954,7 @@ class App(object):
             "\n\n".join(format_help), format="sequential")
 
         widget = OptionsMenu(
-            urwid.ListBox(
-                urwid.SimpleFocusListWalker([
-                    *app.make_message_body(message, True)
-                ])),
+            urwid.ListBox(urwid.SimpleFocusListWalker(app.make_message_body(message, True))),
             title="Formatting Help",
             **frame_theme()
         )
@@ -1001,7 +995,7 @@ class App(object):
 
     def change_username(self, *_):
         self.loop.stop()
-        run("clear", shell=True)
+        call("clear", shell=True)
         try:
             name = nameloop("Choose a new username", True)
             network.user_update(user_name=name)
@@ -1017,7 +1011,7 @@ class App(object):
 
     def change_password(self, *_):
         self.loop.stop()
-        run("clear", shell=True)
+        call("clear", shell=True)
         try:
             password = password_loop("Choose a new password. Can be empty", True)
             network.user_update(auth_hash=network._hash(password))
@@ -1091,13 +1085,6 @@ class App(object):
 
         if network.user_auth:
             account_message = "Logged in as %s." % network.user_name
-            user_colors = []
-            for index, color in enumerate(colornames):
-                urwid.RadioButton(
-                    user_colors, color.title(),
-                    network.user["color"] == index,
-                    self.set_color, index)
-
             account_stuff = [
                 urwid.Button("Relog", on_press=self.relog),
                 urwid.Button("Go anonymous", on_press=self.unlog),
@@ -1107,9 +1094,18 @@ class App(object):
                 urwid.Text(("button", "Your color:")),
                 urwid.Text(("default", "This color will show on your "
                             "post headers and when people quote you.")),
-                urwid.Divider(),
-                *user_colors
+                urwid.Divider()
             ]
+
+            user_colors = []
+            for index, color in enumerate(colornames):
+                urwid.RadioButton(
+                    user_colors, color.title(),
+                    network.user["color"] == index,
+                    self.set_color, index)
+
+            for item in user_colors:
+                account_stuff.append(item)
 
         else:
             account_message = "You're browsing anonymously, and cannot set account preferences."
@@ -1155,54 +1151,70 @@ class App(object):
             edit_mode, "Overthrow",
             state=not self.prefs["integrate_external_editor"])
 
+        content = []
+
+        for item in [urwid.Text(("opt_header", "Account"), 'center'),
+                     urwid.Text(account_message),
+                     urwid.Divider()]:
+            content.append(item)
+
+        for item in account_stuff:
+            content.append(item)
+
+        for item in [urwid.Divider("-"),
+                     urwid.Text(("opt_header", "App"), 'center'),
+                     urwid.Divider(),
+                     urwid.CheckBox(
+                         "Dump rainbows on exit",
+                         state=self.prefs["dramatic_exit"],
+                         on_state_change=self.toggle_exit
+                     ),
+                     urwid.CheckBox(
+                         "Increase index padding",
+                         state=self.prefs["index_spacing"],
+                         on_state_change=self.toggle_spacing
+                     ),
+                     urwid.CheckBox(
+                         "Handle mouse (disrupts URL clicking)",
+                         state=self.prefs["mouse_integration"],
+                         on_state_change=self.toggle_mouse
+                     ),
+                     urwid.Divider()]:
+            content.append(item)
+
+        for item in time_stuff:
+            content.append(item)
+
+        for item in [urwid.Divider(),
+                     urwid.Text(("button", "Max message width:")),
+                     urwid.AttrMap(width_edit, "opt_prompt"),
+                     urwid.Divider(),
+                     urwid.Text(("button", "Scroll multiplier when holding shift or scrolling with the mouse:")),
+                     urwid.AttrMap(shift_edit, "opt_prompt"),
+                     urwid.Divider(),
+                     urwid.Text(("button", "Text editor:")),
+                     urwid.Text("You can type in your own command or use one of these presets."),
+                     urwid.Divider(),
+                     urwid.AttrMap(editor_display, "opt_prompt")]:
+            content.append(item)
+
+        for item in editor_buttons:
+            content.append(item)
+
+        for item in [urwid.Divider(),
+                     urwid.Text(("button", "External text editor mode:")),
+                     urwid.Text("If you have problems using an external text editor, "
+                                "set this to Overthrow."),
+                     urwid.Divider()]:
+            content.append(item)
+
+        for item in edit_mode:
+            content.append(edit_mode)
+
+        content.append(urwid.Divider("-"))
+
         widget = OptionsMenu(
-            urwid.ListBox(
-                urwid.SimpleFocusListWalker([
-                    urwid.Text(("opt_header", "Account"), 'center'),
-                    urwid.Text(account_message),
-                    urwid.Divider(),
-                    *account_stuff,
-                    urwid.Divider("-"),
-                    urwid.Text(("opt_header", "App"), 'center'),
-                    urwid.Divider(),
-                    urwid.CheckBox(
-                        "Dump rainbows on exit",
-                        state=self.prefs["dramatic_exit"],
-                        on_state_change=self.toggle_exit
-                    ),
-                    urwid.CheckBox(
-                        "Increase index padding",
-                        state=self.prefs["index_spacing"],
-                        on_state_change=self.toggle_spacing
-                    ),
-                    urwid.CheckBox(
-                        "Handle mouse (disrupts URL clicking)",
-                        state=self.prefs["mouse_integration"],
-                        on_state_change=self.toggle_mouse
-                    ),
-                    urwid.Divider(),
-                    *time_stuff,
-                    urwid.Divider(),
-                    urwid.Text(("button", "Max message width:")),
-                    urwid.AttrMap(width_edit, "opt_prompt"),
-                    urwid.Divider(),
-                    urwid.Text(("button", "Scroll multiplier when holding shift or scrolling with the mouse:")),
-                    urwid.AttrMap(shift_edit, "opt_prompt"),
-                    urwid.Divider(),
-                    urwid.Text(("button", "Text editor:")),
-                    urwid.Text("You can type in your own command or use one of these presets."),
-                    urwid.Divider(),
-                    urwid.AttrMap(editor_display, "opt_prompt"),
-                    *editor_buttons,
-                    urwid.Divider(),
-                    urwid.Text(("button", "External text editor mode:")),
-                    urwid.Text("If you have problems using an external text editor, "
-                               "set this to Overthrow."),
-                    urwid.Divider(),
-                    *edit_mode,
-                    urwid.Divider("-"),
-                ])
-            ),
+            urwid.ListBox(urwid.SimpleFocusListWalker(content)),
             title="Options",
             **frame_theme())
 
@@ -1258,7 +1270,7 @@ class App(object):
         descriptor, path = tempfile.mkstemp()
         with open(path, "w") as _:
             _.write(init_body)
-        run("export LANG=en_US.UTF-8; %s %s" % (self.prefs["editor"], path), shell=True)
+        call("export LANG=en_US.UTF-8; %s %s" % (self.prefs["editor"], path), shell=True)
         with open(path) as _:
             body = _.read()
         os.remove(path)
@@ -1781,7 +1793,7 @@ class ActionBox(urwid.ListBox):
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
-            try: run("sl", shell=True)
+            try: call("sl", shell=True)
             except: pass
             app.loop.start()
 
@@ -1827,7 +1839,7 @@ def frilly_exit():
         out = "  ~~CoMeE BaCkK SooOn~~  0000000"
         motherfucking_rainbows(out.zfill(width))
     else:
-        run("clear", shell=True)
+        call("clear", shell=True)
         motherfucking_rainbows("Come back soon! <3")
     exit()
 
@@ -1891,7 +1903,7 @@ def paren_prompt(text, positive=True, choices=[], function=input):
 
     try:
         response = function("{0}({1}{2}{0}){3}> \033[0m".format(
-            *mood, text, formatted_choices))
+            mood[0], mood[1], text, formatted_choices))
         if not choices:
             return response
         elif response == "":
@@ -2063,14 +2075,14 @@ def wipe_screen(*_):
     will do, I suppose.
     """
     app.loop.stop()
-    run("clear", shell=True)
+    call("clear", shell=True)
     app.loop.start()
 
 
 def main():
     global app
     app = App()
-    run("clear", shell=True)
+    call("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome)
     try:
