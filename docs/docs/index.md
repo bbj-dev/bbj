@@ -1,6 +1,6 @@
 # Bulletin Butter & Jelly
 ## A simple community textboard
-### BBJ is a trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard.
+### BBJ is a trivial collection of python scripts and database queries that miraculously shit out a fully functional client-server textboard with Python 3.4+
 
 See also: the [GitHub repository](https://github.com/desvox/bbj).
 

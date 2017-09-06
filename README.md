@@ -2,6 +2,7 @@
 
 BBJ is a trivial collection of python scripts and database queries that
 miraculously shit out a fully functional, text-driven community bulletin board.
+Requires Python 3.4 and up for the server and the official TUI client (clients/urwid/).
 
 ![AAAAAAAAAAAAAAAAAAAA](readme.png)
 <center><h2>Look Ma, it boots !!11!</h2></center>
