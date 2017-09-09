@@ -198,7 +198,7 @@ default_prefs = {
 }
 
 bars = {
-    "index": "[RET]Open [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
+    "index": "[RET]Open [/]Search [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
     "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d"
 }
 
