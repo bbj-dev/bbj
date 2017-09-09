@@ -674,7 +674,7 @@ class App(object):
         return date.strftime(directive)
 
 
-    def index(self, *_):
+    def index(self, *_, threads=None):
         """
         Browse or return to the index.
         """
@@ -686,8 +686,11 @@ class App(object):
         self.mode = "index"
         self.thread = None
         self.window_split = False
-        threads, usermap = network.thread_index()
-        self.usermap.update(usermap)
+        if not threads:
+            threads, usermap = network.thread_index()
+            self.usermap.update(usermap)
+        else:
+            self.last_pos = False
         self.walker.clear()
 
         try:
@@ -705,6 +708,34 @@ class App(object):
             self.box.set_focus_valign("middle")
         except:
             pass
+
+
+    def search_prompt(self):
+        popup = OptionsMenu(
+            urwid.ListBox(
+                urwid.SimpleFocusListWalker([
+                    urwid.Text(("button", "Enter a query:")),
+                    urwid.AttrMap(StringPrompt(self.search_callback), "opt_prompt")
+                ])),
+            **frame_theme())
+
+        self.loop.widget = urwid.Overlay(
+            popup, self.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 25 if self.window_split else 50),
+            width=("relative", 40), height=6)
+
+
+    def search_callback(self, query):
+        if self.mode == "index":
+            results = [
+                thread for thread in network.thread_index()[0]
+                  if query in thread["title"].lower().strip().replace(" ", "")
+            ]
+            if results:
+                self.index(threads=results)
+            else:
+                self.temp_footer_message("No results for '{}'".format(query))
 
 
     def thread_load(self, button, thread_id):
@@ -1507,6 +1538,26 @@ class FootPrompt(Prompt):
             app.set_default_footer()
 
 
+class StringPrompt(Prompt, urwid.Edit):
+    def __init__(self, callback, *callback_args):
+        super(StringPrompt, self).__init__()
+        self.callback = callback
+        self.args = callback_args
+
+
+    def keypress(self, size, key):
+        keyl = key.lower()
+        if key == "enter":
+            app.remove_overlays()
+            self.callback(self.get_edit_text(), *self.args)
+
+        elif keyl in ("esc", "ctrl g", "ctrl c"):
+            app.remove_overlays()
+
+        else:
+            super(StringPrompt, self).keypress((size[0],), key)
+
+
 class JumpPrompt(Prompt, urwid.IntEdit):
     def __init__(self, max_length, callback, *callback_args):
         super(JumpPrompt, self).__init__()
@@ -1680,7 +1731,7 @@ class ExternalEditor(urwid.Terminal):
 class OptionsMenu(urwid.LineBox):
     def keypress(self, size, key):
         keyl = key.lower()
-        if key == "esc":
+        if keyl in ("esc", "ctrl g"):
             app.loop.widget = app.loop.widget[0]
         # try to let the base class handle the key, if not, we'll take over
         elif not super(OptionsMenu, self).keypress(size, key):
@@ -1735,6 +1786,9 @@ class ActionBox(urwid.ListBox):
 
         elif key in ("k", "p", "ctrl p"):
             self._keypress_up(size)
+
+        elif key == "/":
+            app.search_prompt()
 
         elif key in ("shift down", "J", "N"):
             for x in range(app.prefs["shift_multiplier"]):
