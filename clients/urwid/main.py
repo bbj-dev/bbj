@@ -715,7 +715,8 @@ class App(object):
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
                     urwid.Text(("button", "Enter a query:")),
-                    urwid.AttrMap(StringPrompt(self.search_callback), "opt_prompt")
+                    urwid.AttrMap(StringPrompt(self.search_callback), "opt_prompt"),
+                    urwid.Text("Use a blank query to reset the index.")
                 ])),
             **frame_theme())
 
