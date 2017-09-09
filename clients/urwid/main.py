@@ -711,12 +711,16 @@ class App(object):
 
 
     def search_prompt(self):
+        # XXX: remove if when thread search is supported
+        if self.mode != "index":
+            return
+
         popup = OptionsMenu(
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
                     urwid.Text(("button", "Enter a query:")),
                     urwid.AttrMap(StringPrompt(self.search_callback), "opt_prompt"),
-                    urwid.Text("Use a blank query to reset the index.")
+                    urwid.Text("Use a blank query to reset the {}.".format(self.mode))
                 ])),
             **frame_theme())
 
