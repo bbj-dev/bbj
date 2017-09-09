@@ -727,15 +727,21 @@ class App(object):
 
 
     def search_callback(self, query):
+        threads, usermap = network.thread_index()
+        self.usermap.update(usermap)
         if self.mode == "index":
             results = [
-                thread for thread in network.thread_index()[0]
+                thread for thread in threads
                   if query in thread["title"].lower().strip().replace(" ", "")
             ]
             if results:
                 self.index(threads=results)
+                if query:
+                    self.set_header("Searching for '{}'", query)
             else:
                 self.temp_footer_message("No results for '{}'".format(query))
+        elif self.mode == "thread":
+            pass
 
 
     def thread_load(self, button, thread_id):
