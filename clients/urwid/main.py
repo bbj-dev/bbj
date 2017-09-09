@@ -1209,7 +1209,7 @@ class App(object):
             content.append(item)
 
         for item in edit_mode:
-            content.append(edit_mode)
+            content.append(item)
 
         content.append(urwid.Divider("-"))
 
