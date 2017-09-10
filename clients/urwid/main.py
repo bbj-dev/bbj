@@ -194,7 +194,12 @@ default_prefs = {
     "date": "%Y/%m/%d",
     "time": "%H:%M",
     "frame_title": "> > T I L D E T O W N < <",
-    "max_text_width": 80
+    "max_text_width": 80,
+    "edit_escapes": {
+        "abort": "f1",
+        "focus": "f2",
+        "fhelp": "f3"
+    }
 }
 
 bars = {
@@ -379,7 +384,12 @@ class App(object):
             attr.reverse()
 
         self.loop.widget.footer[0].set_text(
-            "[F1]Abort [F2]Swap [F3]Formatting Help [save/quit to send] " + focus)
+            "[{}]Abort [{}]Swap [{}]Formatting Help [save/quit to send] {}".format(
+                app.prefs["edit_escapes"]["abort"].upper(),
+                app.prefs["edit_escapes"]["focus"].upper(),
+                app.prefs["edit_escapes"]["fhelp"].upper(),
+                focus)
+        )
 
         # HACK WHY WHY WHY WHYW HWY
         # this sets the focus color for the editor frame
@@ -1369,7 +1379,9 @@ class App(object):
 
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
-            self.set_footer("[F1]Abort [F3]Formatting Help [Save and quit to submit your thread]")
+            self.set_footer("[{}]Abort [{}]Formatting Help [Save and quit to submit your thread]".format(
+                app.prefs["edit_escapes"]["abort"].upper(), app.prefs["edit_escapes"]["fhelp"].upper()
+            ))
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
                     ExternalEditor("thread_create", title=title),
@@ -1650,7 +1662,7 @@ class ExternalEditor(urwid.Terminal):
         env.update({"LANG": "POSIX"})
         command = ["bash", "-c", "{} {}; echo Press any key to kill this window...".format(
             app.prefs["editor"], self.path)]
-        super(ExternalEditor, self).__init__(command, env, app.loop, "f1")
+        super(ExternalEditor, self).__init__(command, env, app.loop, app.prefs["edit_escapes"]["abort"])
         urwid.connect_signal(self, "closed", self.exterminate)
 
 
@@ -1693,15 +1705,15 @@ class ExternalEditor(urwid.Terminal):
             # always do this, and also pass it to the terminal
             wipe_screen()
 
-        elif key == "f1":
+        elif key == app.prefs["edit_escapes"]["abort"]:
             self.terminate()
             app.close_editor()
             return app.refresh()
 
-        elif key == "f2":
+        elif key == app.prefs["edit_escapes"]["focus"]:
             return app.switch_editor()
 
-        elif key == "f3":
+        elif key == app.prefs["edit_escapes"]["fhelp"]:
             return app.formatting_help()
 
         elif keyl == "ctrl z":
