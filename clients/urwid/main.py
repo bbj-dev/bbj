@@ -1101,6 +1101,34 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def save_escape_key(self, value, mode):
+        self.prefs["edit_escapes"].update({mode[0]: value})
+        bbjrc("update", **self.prefs)
+
+
+    def set_escape_key(self, button, args):
+        mode = args[0]
+        widget = OptionsMenu(
+            urwid.ListBox(urwid.SimpleFocusListWalker([
+                urwid.Text("Press Enter when done"),
+                urwid.AttrMap(KeyPrompt(
+                    self.prefs["edit_escapes"][mode],
+                    self.save_escape_key,
+                    [mode]
+                ), "opt_prompt")])),
+            title="Set key for " + mode,
+            **frame_theme()
+        )
+
+        app.loop.widget = urwid.Overlay(
+            urwid.AttrMap(widget, "30"),
+            app.loop.widget,
+            align=("relative", 50),
+            valign=("relative", 50),
+            width=25, height=5
+        )
+
+
     def incr_jump(self):
         if self.mode != "thread":
             return
@@ -1251,6 +1279,17 @@ class App(object):
             content.append(item)
 
         for item in editor_buttons:
+            content.append(item)
+
+        for item in [urwid.Divider(),
+                     urwid.Text(("button", "Internal Editor Escape Keys:")),
+                     urwid.Text("You can change these keybinds to whatever "
+                                "you want. Just remember that these will "
+                                "shadow over the text editor itself."),
+                     urwid.Divider(),
+                     urwid.Button("Abort", self.set_escape_key, ["abort"]),
+                     urwid.Button("Change Focus", self.set_escape_key, ["focus"]),
+                     urwid.Button("Formatting Help", self.set_escape_key, ["fhelp"])]:
             content.append(item)
 
         for item in [urwid.Divider(),
@@ -1497,6 +1536,26 @@ class MessageBody(urwid.Text):
             result.append("\n\n")
         result.pop() # lazily ensure \n\n between paragraphs but not at the end
         super(MessageBody, self).__init__(result)
+
+
+class KeyPrompt(urwid.Edit):
+    """
+    Allows setting the value of the editor to any
+    keybinding that is pressed. Is used to customize
+    keybinds across the client.
+    """
+    def __init__(self, initkey, callback, *callback_args):
+        super(KeyPrompt, self).__init__()
+        self.set_edit_text(initkey)
+        self.callback = callback
+        self.args = callback_args
+
+    def keypress(self, size, key):
+        if key == "enter":
+            self.callback(self.get_edit_text(), *self.args)
+            app.loop.widget = app.loop.widget[0]
+        else:
+            self.set_edit_text(key)
 
 
 class Prompt(urwid.Edit):
@@ -1843,7 +1902,7 @@ class ActionBox(urwid.ListBox):
         elif key == "?":
             app.general_help()
 
-        elif key == "f2" and not overlay:
+        elif key == app.prefs["edit_escapes"]["focus"] and not overlay:
             app.switch_editor()
 
         elif key in ">." and not overlay:
