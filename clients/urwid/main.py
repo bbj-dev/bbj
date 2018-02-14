@@ -46,7 +46,7 @@ def get_arg(key, default=None, get_value=True):
     return value
 
 try:
-    network = BBJ(get_arg("host", "127.0.0.1"), get_arg("port", 7099))
+    network = BBJ(get_arg("host", "127.0.0.1"), get_arg("port", 7099), get_arg("https", False, False))
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))

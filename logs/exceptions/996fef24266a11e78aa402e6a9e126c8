@@ -1,0 +1,7 @@
+  File "server.py", line 64, in wrapper
+    value = function(self, body, connection, user)
+  File "server.py", line 380, in format_message
+    formatting.apply_formatting(message, formatter)
+  File "/home/desvox/BBJ/src/formatting.py", line 183, in apply_formatting
+    if not msg_obj[x]["send_raw"]:
+KeyError('send_raw',)
