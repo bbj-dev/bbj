@@ -45,8 +45,20 @@ def get_arg(key, default=None, get_value=True):
         exit("invalid format for --" + key)
     return value
 
+if get_arg("help", False, False):
+    print("""BBJ Urwid Client
+Available options:
+    --help: this message
+    --https: enable use of https, requires host support
+    --host <hostname>: the ip address/hostname/website/server to connect to
+    --port <port>: the port to use when connecting to the host
+    --user <username>: automatically connect with the given username""")
+    exit()
+
 try:
-    network = BBJ(get_arg("host", "127.0.0.1"), get_arg("port", 7099), get_arg("https", False, False))
+    network = BBJ(get_arg("host", "127.0.0.1"),
+                  get_arg("port", 7099),
+                  get_arg("https", False, False))
 except URLError as e:
     # print the connection error in red
     exit("\033[0;31m%s\033[0m" % repr(e))
