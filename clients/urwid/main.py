@@ -99,15 +99,15 @@ format_help = [
 
     "[red: Whitespace]",
 
-    "Single line breaks in the body join into eachother to form sentences, "
-    "putting a space where the break was. This works like html. When you want "
-    "to split it off into a paragraph, **use two or more line breaks.**",
+    "When you're composing, it is desirable to not include your own linebreaks "
+    "into paragraphs of your post, because clients handle text wrapping on their "
+    "own. Adding them yourself can cause your posts to look very strange. You can "
+    "always edit your posts after submitting them if you do this by accident, as "
+    "long as you are not anonymous.",
 
-    "When you're composing, it is desirable to introduce linebreaks into the "
-    "body to keep it from overflowing the screen. However, you __dont__ want "
-    "that same spacing to bleed over to other people's screens, because clients "
-    "will wrap the text themselves according to user preferences or implementation "
-    "details. Thats why it works like this.",
+    "In previous versions of BBJ, linebreaks were joined into sentences if they "
+    "occured in the same paragraph, however this confused many users and has been "
+    "reverted to just use whatever was submitted, as-is.",
 
 
     "[red: Colors, Bold, Underline & Expressions]",
