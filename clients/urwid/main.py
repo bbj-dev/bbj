@@ -268,6 +268,12 @@ class App(object):
         self.usermap = {}
         self.window_split = False
         self.last_pos = None
+        self.last_alarm = None
+        self.match_data = {
+            "query": "",
+            "matches": [],
+            "position": 0,
+        }
 
         # these can be changed and manipulated by other methods
         self.walker = urwid.SimpleFocusListWalker([])
@@ -732,16 +738,91 @@ class App(object):
             pass
 
 
+    def search_index_callback(self, query):
+        simple_query = query.lower().strip()
+        threads, usermap = network.thread_index()
+        self.usermap.update(usermap)
+        results = [
+            thread for thread in threads
+                if simple_query in thread["title"].lower().strip()
+        ]
+        if results:
+            self.index(threads=results)
+            if query:
+                self.set_header("Searching for '{}'", query)
+        else:
+            self.temp_footer_message("No results for '{}'".format(query))
+
+
+    def search_thread_callback(self, query):
+        # TODO: Not that!!
+        # fetch the thread again because we need all the messages without formatting
+        thread, _ = network.thread_load(self.thread["thread_id"])
+        query = query.lower().strip()
+        self.match_data["matches"] = [
+            message for message in thread["messages"]
+                if query in message["body"].lower().strip()
+        ]
+        if self.match_data["matches"]:
+            self.match_data["query"] = query
+            self.match_data["position"] = -1
+            # self.highlight_query()
+            self.do_search_result()
+        else:
+            self.temp_footer_message("No results for '{}'".format(query))
+
+
+    def do_search_result(self, forward=True):
+        self.match_data["position"] += 1 if forward else -1
+        length = len(self.match_data["matches"])
+        if forward:
+            if self.match_data["position"] == length:
+                self.match_data["position"] = 0
+        else:
+            if self.match_data["position"] == -1:
+                self.match_data["position"] = length - 1
+        self.goto_post(self.match_data["matches"][self.match_data["position"]]["post_id"])
+        self.temp_footer_message(
+            "({}/{}) Searching for {} [#]Next [@]Previous".format(
+                self.match_data["position"] + 1, length, self.match_data["query"]
+            ), 5)
+
+
+    # XXX: Try to find a way to overlay properties onto an existing widget instead of this trainwreck.
+    # def highlight_query(self):
+    #     # pass
+    #     query = self.match_data["query"]
+    #     for match in self.match_data["matches"]:
+    #         widget = self.walker[match["post_id"] * 5 + 2].base_widget
+    #         # (">>OP\n\nThat's a nice initiative x)", [('50', 4), (None, 2), ('default', 27)])
+    #         text, attrs = widget.get_text()
+    #         spans = [m.span() for m in re.finditer(query, text)]
+    #         start, end = spans.pop(0)
+    #         new_attrs = []
+    #         index = 0
+    #         for prop, length in attrs:
+    #             if index and index > start:
+    #                 index = end
+    #                 new_attrs.append(("20", end - start))
+    #                 start, end = spans.pop(0)
+    #             else:
+    #                 index += length
+    #                 new_attrs.append((prop, length))
+
+
     def search_prompt(self):
-        # XXX: remove if when thread search is supported
-        if self.mode != "index":
+        if self.mode == "index":
+            callback = self.search_index_callback
+        elif self.mode == "thread":
+            callback = self.search_thread_callback
+        else:
             return
 
         popup = OptionsMenu(
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
                     urwid.Text(("button", "Enter a query:")),
-                    urwid.AttrMap(StringPrompt(self.search_callback), "opt_prompt"),
+                    urwid.AttrMap(StringPrompt(callback), "opt_prompt"),
                     urwid.Text("Use a blank query to reset the {}.".format(self.mode))
                 ])),
             **frame_theme())
@@ -751,24 +832,6 @@ class App(object):
             align=("relative", 50),
             valign=("relative", 25 if self.window_split else 50),
             width=("relative", 40), height=6)
-
-
-    def search_callback(self, query):
-        threads, usermap = network.thread_index()
-        self.usermap.update(usermap)
-        if self.mode == "index":
-            results = [
-                thread for thread in threads
-                  if query in thread["title"].lower().strip().replace(" ", "")
-            ]
-            if results:
-                self.index(threads=results)
-                if query:
-                    self.set_header("Searching for '{}'", query)
-            else:
-                self.temp_footer_message("No results for '{}'".format(query))
-        elif self.mode == "thread":
-            pass
 
 
     def thread_load(self, button, thread_id):
@@ -786,6 +849,7 @@ class App(object):
         thread, usermap = network.thread_load(thread_id, format="sequential")
         self.usermap.update(usermap)
         self.thread = thread
+        self.match_data["matches"].clear()
         self.walker.clear()
         for message in thread["messages"]:
             self.walker += self.make_message_body(message)
@@ -1347,19 +1411,20 @@ class App(object):
         self.loop.widget.focus_position = "footer"
 
 
-    def reset_footer(self, _, from_temp):
-        if from_temp and self.window_split:
+    def reset_footer(self, *_):
+        if self.window_split:
             return
-        try:
-            self.set_default_footer(True)
-            self.loop.widget.focus_position = "body"
-        except:
+        self.set_default_footer()
+        # try:
+            # self.loop.widget.focus_position = "body"
+        # except:
             # just keep trying until the focus widget can handle it
-            self.loop.set_alarm_in(0.5, self.reset_footer)
+            # return self.loop.set_alarm_in(0.25, self.reset_footer)
 
 
     def temp_footer_message(self, string, duration=3):
-        self.loop.set_alarm_in(duration, self.reset_footer, True)
+        self.loop.remove_alarm(self.last_alarm)
+        self.last_alarm = self.loop.set_alarm_in(duration, self.reset_footer)
         self.set_footer(string)
 
 
@@ -1939,12 +2004,21 @@ class ActionBox(urwid.ListBox):
         elif keyl in ("r", "f5") and not overlay:
             app.refresh()
 
+        elif key == "#":
+            app.do_search_result(True)
+
+        elif key == "@":
+            app.do_search_result(False)
+
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
             try: call("sl", shell=True)
             except: pass
             app.loop.start()
+
+        elif keyl == "f12":
+            app.loop.stop()
 
         elif app.mode == "thread" and not app.window_split and not overlay:
             message = app.thread["messages"][app.get_focus_post()]

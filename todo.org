@@ -5,3 +5,4 @@ when given a certain time (kind of like `message_feed`)
 * TODO Author-only "announcement" threads
 * TODO HTML output from the formatter
 * TODO integrate thread pins to urwid client
+* TODO add search highlights to in-thread searching
