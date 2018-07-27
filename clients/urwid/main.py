@@ -216,7 +216,7 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [/]Search [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
-    "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d"
+    "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d [/]Search"
 }
 
 colormap = [
@@ -310,7 +310,12 @@ class App(object):
         Sets the footer to display `string`, applying bar formatting.
         Other than setting the color, `string` is shown verbatim.
         """
-        self.loop.widget.footer = urwid.AttrMap(urwid.Text(string), "bar")
+        widget = urwid.AttrMap(urwid.Text(string), "bar")
+        self.loop.widget.footer = widget
+        # TODO: make this set the title line when the window is split
+        # if self.window_split:
+        #     self.loop.widget.footer[0].set_text(widget)
+        # else:
 
 
     def set_default_header(self):
@@ -333,6 +338,8 @@ class App(object):
 
         elif self.mode == "thread":
             footer = bars["thread"] % self.prefs["jump_count"]
+            if self.match_data["matches"]:
+                footer += " [@#] Search Control"
 
         else:
             footer = bars["index"]
@@ -755,13 +762,12 @@ class App(object):
 
 
     def search_thread_callback(self, query):
-        # TODO: Not that!!
-        # fetch the thread again because we need all the messages without formatting
-        thread, _ = network.thread_load(self.thread["thread_id"])
+        # normally i would just use self.thread["messages"] but I need the visbile text post-formatted
         query = query.lower().strip()
         self.match_data["matches"] = [
-            message for message in thread["messages"]
-                if query in message["body"].lower().strip()
+            self.thread["messages"][widget.base_widget.post_id] for widget in self.walker
+                if isinstance(widget.base_widget, MessageBody)
+                and query in widget.base_widget.text.lower().strip()
         ]
         if self.match_data["matches"]:
             self.match_data["query"] = query
@@ -773,6 +779,8 @@ class App(object):
 
 
     def do_search_result(self, forward=True):
+        if not self.match_data["matches"]:
+            return
         self.match_data["position"] += 1 if forward else -1
         length = len(self.match_data["matches"])
         if forward:
@@ -1425,7 +1433,10 @@ class App(object):
     def temp_footer_message(self, string, duration=3):
         self.loop.remove_alarm(self.last_alarm)
         self.last_alarm = self.loop.set_alarm_in(duration, self.reset_footer)
-        self.set_footer(string)
+        if self.window_split:
+            pass
+        else:
+            self.set_footer(string)
 
 
     def overthrow_ext_edit(self, init_body=""):
@@ -1544,6 +1555,7 @@ class MessageBody(urwid.Text):
         if message["send_raw"]:
             return super(MessageBody, self).__init__(message["body"])
 
+        self.post_id = message["post_id"]
         text_objects = message["body"]
         result = []
         last_directive = None
