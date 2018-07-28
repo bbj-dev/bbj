@@ -220,7 +220,7 @@ default_prefs = {
 }
 
 bars = {
-    "index": "[RET]Open [/]Search [C]ompose [R]efresh [O]ptions [?]Help [Q]uit",
+    "index": "[RET]Open [/]Search [C]ompose [R]efresh [*]Bookmark [O]ptions [?]Help [Q]uit",
     "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d [/]Search"
 }
 
@@ -263,6 +263,7 @@ escape_map = {
 
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
+pinpath = os.path.join(os.getenv("HOME"), ".bbjpins")
 
 class App(object):
     def __init__(self):
@@ -272,8 +273,9 @@ class App(object):
         self.thread = None
         self.usermap = {}
         self.window_split = False
-        self.last_pos = None
+        self.last_index_pos = None
         self.last_alarm = None
+        self.client_pinned_threads = load_client_pins()
         self.match_data = {
             "query": "",
             "matches": [],
@@ -622,12 +624,17 @@ class App(object):
         return [value_type(q) for q in quotes]
 
 
-    def make_thread_body(self, thread):
+    def make_thread_body(self, thread, pinned=False):
         """
         Returns the pile widget that comprises a thread in the index.
         """
         button = cute_button(">>", self.thread_load, thread["thread_id"])
-        title = urwid.Text(thread["title"])
+        if pinned == "server":
+            title = urwid.AttrWrap(urwid.Text("[STICKY] " + thread["title"]), "20")
+        elif pinned == "client":
+            title = urwid.AttrWrap(urwid.Text("[*] " + thread["title"]), "50")
+        else:
+            title = urwid.Text(thread["title"])
         user = self.usermap[thread["author"]]
         dateline = [
             ("default", "by "),
@@ -662,7 +669,9 @@ class App(object):
     def make_message_body(self, message, no_action=False):
         """
         Returns the widgets that comprise a message in a thread, including the
-        text body, author info and the action button
+        text body, author info and the action button. Unlike the thread objects
+        used in the index, this is not a pile widget, because using a pile
+        causes line-by-line text scrolling to be unusable.
         """
         info = "@ " + self.timestring(message["created"])
         if message["edited"]:
@@ -726,28 +735,72 @@ class App(object):
         self.mode = "index"
         self.thread = None
         self.window_split = False
-        if not threads:
+        if threads:
+            # passing in an argument for threads implies that we are showing a
+            # narrowed selection of content, so we dont want to resume last_index_pos
+            self.last_index_pos = False
+        else:
             threads, usermap = network.thread_index()
             self.usermap.update(usermap)
-        else:
-            self.last_pos = False
         self.walker.clear()
 
-        try:
-            target_id, pos = self.last_pos
-        except:
-            target_id = pos = 0
+        server_pin_counter = 0
+        client_pin_counter = 0
 
-        for index, thread in enumerate(threads):
-            self.walker.append(self.make_thread_body(thread))
-            if thread["thread_id"] == target_id:
-                pos = index
+        for thread in threads:
+            if thread["pinned"]:
+                self.walker.insert(server_pin_counter, self.make_thread_body(thread, pinned="server"))
+                server_pin_counter += 1
+            elif thread["thread_id"] in self.client_pinned_threads:
+                self.walker.insert(client_pin_counter, self.make_thread_body(thread, pinned="client"))
+                client_pin_counter += 1
+            else:
+                self.walker.append(self.make_thread_body(thread))
+
         self.set_bars(True)
-        try:
-            self.box.change_focus(self.loop.screen_size, pos)
-            self.box.set_focus_valign("middle")
-        except:
-            pass
+
+        if self.last_index_pos:
+            thread_ids = [widget.thread["thread_id"] for widget in self.walker]
+            if self.last_index_pos in thread_ids:
+                self.box.change_focus(self.loop.screen_size, thread_ids.index(self.last_index_pos))
+                self.box.set_focus_valign("middle")
+        elif self.walker:
+            # checks to make sure there are any posts to focus
+            self.box.set_focus(0)
+
+
+
+    def thread_load(self, button, thread_id):
+        """
+        Open a thread.
+        """
+        if app.mode == "index":
+            # make sure the index goes back to this selected thread
+            pos = self.get_focus_post(return_widget=True)
+            self.last_index_pos = pos.thread["thread_id"]
+
+        if not self.window_split:
+            self.body.attr_map = {None: "default"}
+
+        self.mode = "thread"
+        thread, usermap = network.thread_load(thread_id, format="sequential")
+        self.usermap.update(usermap)
+        self.thread = thread
+        self.match_data["matches"].clear()
+        self.walker.clear()
+        for message in thread["messages"]:
+            self.walker += self.make_message_body(message)
+        self.set_default_header()
+        self.set_default_footer()
+        self.goto_post(mark(thread_id))
+
+
+    def toggle_client_pin(self):
+        if self.mode != "index":
+            return
+        thread_id = self.walker.get_focus()[0].thread["thread_id"]
+        self.client_pinned_threads = toggle_client_pin(thread_id)
+        self.index()
 
 
     def search_index_callback(self, query):
@@ -847,38 +900,19 @@ class App(object):
             width=("relative", 40), height=6)
 
 
-    def thread_load(self, button, thread_id):
-        """
-        Open a thread.
-        """
-        if app.mode == "index":
-            pos = app.get_focus_post()
-            self.last_pos = (self.walker[pos].thread["thread_id"], pos)
-
-        if not self.window_split:
-            self.body.attr_map = {None: "default"}
-
-        self.mode = "thread"
-        thread, usermap = network.thread_load(thread_id, format="sequential")
-        self.usermap.update(usermap)
-        self.thread = thread
-        self.match_data["matches"].clear()
-        self.walker.clear()
-        for message in thread["messages"]:
-            self.walker += self.make_message_body(message)
-        self.set_default_header()
-        self.set_default_footer()
-        self.goto_post(mark(thread_id))
-
-
     def refresh(self):
         self.remove_overlays()
         if self.mode == "index":
-            return self.index()
-        mark()
-        thread = self.thread["thread_id"]
-        self.thread_load(None, thread)
-        self.goto_post(mark(thread))
+            # check to make sure there are any posts
+            if self.walker:
+                self.last_index_pos = self.get_focus_post(True).thread["thread_id"]
+            self.index()
+        else:
+            mark()
+            thread = self.thread["thread_id"]
+            self.thread_load(None, thread)
+            self.goto_post(mark(thread))
+        self.temp_footer_message("Refreshed content!")
 
 
     def back(self, terminate=False):
@@ -916,11 +950,11 @@ class App(object):
             self.index()
 
 
-    def get_focus_post(self):
+    def get_focus_post(self, return_widget=False):
         pos = self.box.get_focus_path()[0]
         if self.mode == "thread":
             return (pos - (pos % 5)) // 5
-        return pos
+        return pos if not return_widget else self.walker[pos]
 
 
     def header_jump_next(self):
@@ -1831,15 +1865,17 @@ class ExternalEditor(urwid.Terminal):
         if body and not re.search("^>>[0-9]+$", body):
             self.params.update({"body": body})
             network.request(self.endpoint, **self.params)
-            app.refresh()
             if self.endpoint == "edit_post":
+                app.refresh()
                 app.goto_post(self.params["post_id"])
 
             elif app.mode == "thread":
+                app.refresh()
                 app.goto_post(app.thread["reply_count"])
 
             else:
-                app.box.keypress(app.loop.screen_size, "t")
+                app.last_pos = None
+                app.index()
         else:
             app.temp_footer_message("EMPTY POST DISCARDED")
 
@@ -1984,11 +2020,13 @@ class ActionBox(urwid.ListBox):
             app.back(keyl == "q")
 
         elif keyl == "b":
-            offset = 5 if (app.mode == "thread") else 1
-            self.change_focus(size, len(self.body) - offset)
+            if app.walker:
+                offset = 5 if (app.mode == "thread") else 1
+                self.change_focus(size, len(self.body) - offset)
 
         elif keyl == "t":
-            self.change_focus(size, 0)
+            if app.walker:
+                self.change_focus(size, 0)
 
         elif key == "ctrl l":
             wipe_screen()
@@ -2029,6 +2067,9 @@ class ActionBox(urwid.ListBox):
         elif key == "@":
             app.do_search_result(False)
 
+        elif key == "*":
+            app.toggle_client_pin()
+
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
@@ -2038,6 +2079,18 @@ class ActionBox(urwid.ListBox):
 
         elif keyl == "f12":
             app.loop.stop()
+            call("clear", shell=True)
+            try:
+                line = input("(REPL)> ")
+                while line:
+                    try:
+                        print(eval(line))
+                    except BaseException as E:
+                        print(E)
+                    line = input("(REPL)> ")
+            except EOFError:
+                pass
+            app.loop.start()
 
         elif app.mode == "thread" and not app.window_split and not overlay:
             message = app.thread["messages"][app.get_focus_post()]
@@ -2258,6 +2311,8 @@ def frame_theme(mode="default"):
 
 
 def bbjrc(mode, **params):
+    # TODO: Refactor this, the arguments and code do not properly match how this
+    # function is used anymore
     """
     Maintains a user a preferences file, setting or returning
     values depending on `mode`.
@@ -2310,6 +2365,33 @@ def mark(directive=True):
             return values[directive]
         except KeyError:
             return 0
+
+
+def load_client_pins():
+    """
+    Retrieve the pinned threads list.
+    """
+    try:
+        with open(pinpath, "r") as _in:
+            pins = json.load(_in)
+    except FileNotFoundError:
+        pins = []
+    return pins
+
+
+def toggle_client_pin(thread_id):
+    """
+    Given a thread_id, will either add it to the pins or remove it from the
+    pins if it already exists.
+    """
+    pins = load_client_pins()
+    if thread_id in pins:
+        pins.remove(thread_id)
+    else:
+        pins.append(thread_id)
+    with open(pinpath, "w") as _out:
+        json.dump(pins, _out)
+    return pins
 
 
 def ignore(*_, **__):
