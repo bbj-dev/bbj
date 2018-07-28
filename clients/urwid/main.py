@@ -52,7 +52,12 @@ Available options:
     --https: enable use of https, requires host support
     --host <hostname>: the ip address/hostname/website/server to connect to
     --port <port>: the port to use when connecting to the host
-    --user <username>: automatically connect with the given username""")
+    --user <username>: automatically connect with the given username
+Available environment variables:
+    BBJ_USER: set your username to log in automatically.
+      User --user is passed, this is ignored.
+    BBJ_PASSWORD: set your password to log in automatically.
+      if the password is wrong, will prompt you as normal.""")
     exit()
 
 try:
