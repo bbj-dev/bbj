@@ -1031,8 +1031,10 @@ class App(object):
         self.loop.stop()
         call("clear", shell=True)
         print(welcome)
-        try: log_in()
-        except (KeyboardInterrupt, InterruptedError): pass
+        try:
+            log_in(relog=True)
+        except (KeyboardInterrupt, InterruptedError):
+            pass
         self.loop.start()
         self.set_default_header()
         self.options_menu()
@@ -2182,20 +2184,29 @@ def nameloop(prompt, positive):
     return name
 
 
-def log_in():
+def log_in(relog=False):
     """
     Handles login or registration using an oldschool input()
     chain. The user is run through this before starting the
     curses app.
     """
-    name = get_arg("user") or sane_value("user_name", "Username", return_empty=True)
+    if relog:
+        name = sane_value("user_name", "Username", return_empty=True)
+    else:
+        name = get_arg("user") \
+           or os.getenv("BBJ_USER") \
+           or sane_value("user_name", "Username", return_empty=True)
     if name == "":
         motherfucking_rainbows("~~W3 4R3 4n0nYm0u5~~")
     else:
         # ConnectionRefusedError means registered but needs a
         # password, ValueError means we need to register the user.
         try:
-            network.set_credentials(name, "")
+            network.set_credentials(
+                name,
+                os.getenv("BBJ_PASSWORD", default="")
+                  if not relog else ""
+            )
             # make it easy for people who use an empty password =)
             motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
 
@@ -2226,7 +2237,7 @@ def log_in():
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
             motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
-    sleep(0.8) # let that confirmation message shine
+    sleep(0.5) # let that confirmation message shine
 
 
 def frame_theme(mode="default"):
