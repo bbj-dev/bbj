@@ -55,7 +55,7 @@ Available options:
     --user <username>: automatically connect with the given username
 Available environment variables:
     BBJ_USER: set your username to log in automatically.
-      User --user is passed, this is ignored.
+      If --user is passed, this is ignored.
     BBJ_PASSWORD: set your password to log in automatically.
       if the password is wrong, will prompt you as normal.""")
     exit()
