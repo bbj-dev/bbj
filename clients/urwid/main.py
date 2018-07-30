@@ -92,6 +92,14 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 @_________________________________________________________@
 """
 
+anon_warn = """>>> \033[1;31mJust a reminder!\033[0m ----------------------------------@
+| You are not logged into BBJ, and are posting this    |
+| message anonymously. If you do not log in, you will  |
+| not be able to edit or delete this message. This     |
+| warning can be disabled in the settings.             |
+|------------------------------------------------------|
+"""
+
 format_help = [
     "Quick reminder: \[rainbow: expressions work like this]. You may scroll "
     "this message, or press Q or escape to close it.\n\n"
@@ -212,6 +220,7 @@ default_prefs = {
     "time": "%H:%M",
     "frame_title": "> > T I L D E T O W N < <",
     "max_text_width": 80,
+    "confirm_anon": True,
     "edit_escapes": {
         "abort": "f1",
         "focus": "f2",
@@ -221,7 +230,8 @@ default_prefs = {
 
 bars = {
     "index": "[RET]Open [/]Search [C]ompose [R]efresh [*]Bookmark [O]ptions [?]Help [Q]uit",
-    "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d [/]Search"
+    "thread": "[Q]Back [RET]Menu [C]ompose [^R]eply [R]efresh [0-9]Goto [B/T]End [</>]Jump[X]%d [/]Search",
+    "edit_window": "[{}]Abort [{}]Swap [{}]Formatting Help [save/quit to send] {}"
 }
 
 colormap = [
@@ -416,7 +426,7 @@ class App(object):
             attr.reverse()
 
         self.loop.widget.footer[0].set_text(
-            "[{}]Abort [{}]Swap [{}]Formatting Help [save/quit to send] {}".format(
+            bars["edit_window"].format(
                 app.prefs["edit_escapes"]["abort"].upper(),
                 app.prefs["edit_escapes"]["focus"].upper(),
                 app.prefs["edit_escapes"]["fhelp"].upper(),
@@ -1085,6 +1095,7 @@ class App(object):
         then redisplay the options menu.
         """
         network.user_name = network.user_auth = None
+        network.user = network("get_me")["data"]
         self.loop.widget = self.loop.widget[0]
         self.set_default_header()
         self.options_menu()
@@ -1155,6 +1166,11 @@ class App(object):
 
     def toggle_exit(self, button, value):
         self.prefs["dramatic_exit"] = value
+        bbjrc("update", **self.prefs)
+
+
+    def toggle_anon_warn(self, button, value):
+        self.prefs["confirm_anon"] = value
         bbjrc("update", **self.prefs)
 
 
@@ -1373,6 +1389,11 @@ class App(object):
                          "Dump rainbows on exit",
                          state=self.prefs["dramatic_exit"],
                          on_state_change=self.toggle_exit
+                     ),
+                     urwid.CheckBox(
+                         "Warn when posting anonymously",
+                         state=self.prefs["confirm_anon"],
+                         on_state_change=self.toggle_anon_warn
                      ),
                      urwid.CheckBox(
                          "Increase index padding",
@@ -1856,7 +1877,56 @@ class ExternalEditor(urwid.Terminal):
         urwid.connect_signal(self, "closed", self.exterminate)
 
 
-    def exterminate(self, *_):
+    # def confirm_anon(self, button, value):
+    #     app.loop.widget = app.loop.widget[0]
+    #     if not value:
+    #         app.loop.stop()
+    #         call("clear", shell=True)
+    #         print(welcome)
+    #         log_in(True)
+    #         app.loop.start()
+    #     self.exterminate(anon_confirmed=True)
+
+
+    def exterminate(self, *_, anon_confirmed=False):
+        if app.prefs["confirm_anon"] \
+           and not anon_confirmed    \
+           and network.user["user_name"] == "anonymous":
+            # TODO fixoverlay: urwid terminal widgets have been mucking
+            # up overlay dialogs since the wee days of bbj, i really
+            # need to find a real solution instead of dodging the issue
+            # constantly
+            # if app.window_split:
+            #     buttons = [
+            #         urwid.Text(("bold", "Post anonymously?")),
+            #         urwid.Text("(settings can disable this warning)"),
+            #         urwid.Divider(),
+            #         cute_button(("20" , ">> Yes"), self.confirm_anon, True),
+            #         cute_button(("20", "<< Log in"), self.confirm_anon, False)
+            #     ]
+
+            #     popup = OptionsMenu(
+            #         urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
+            #         **frame_theme())
+
+            #     app.loop.widget = urwid.Overlay(
+            #         popup, app.loop.widget,
+            #         align=("relative", 50),
+            #         valign=("relative", 20),
+            #         width=20, height=6)
+
+            #     return
+            # else:
+            app.loop.stop()
+            call("clear", shell=True)
+            print(anon_warn)
+            choice = paren_prompt(
+                "Post anonymously?", default="yes", choices=["Yes", "no"]
+            )
+            if choice == "n":
+                log_in(True)
+            app.loop.start()
+
         app.close_editor()
         with open(self.path) as _:
             body = _.read().strip()
@@ -2172,7 +2242,7 @@ def motherfucking_rainbows(string, inputmode=False, end="\n"):
     return print(end, end="")
 
 
-def paren_prompt(text, positive=True, choices=[], function=input):
+def paren_prompt(text, positive=True, choices=[], function=input, default=None):
     """
     input(), but riced the fuck out. Changes color depending on
     the value of positive (blue/green for good stuff, red/yellow
@@ -2202,9 +2272,9 @@ def paren_prompt(text, positive=True, choices=[], function=input):
         if not choices:
             return response
         elif response == "":
-            response = " "
+            response = default or " "
         char = response.lower()[0]
-        if char in [c[0] for c in choices]:
+        if char in [c[0].lower() for c in choices]:
             return char
         return paren_prompt("Invalid choice", False, choices, function)
 
