@@ -26,7 +26,7 @@ try:
         app_config.update(json.load(_conf))
 except FileNotFoundError:
     with open("config.json", "w") as _conf:
-        json.dump(app_config, _conf)
+        json.dump(app_config, _conf, indent=2)
 
 
 def api_method(function):
@@ -184,6 +184,16 @@ class API(object):
     site generator. The ugly `doctype` and `arglist` attributes assigned
     after each method definition are for use in the `mkendpoints.py` script.
     """
+
+    @api_method
+    def instance_info(self, args, database, user, **kwargs):
+        """
+        Return configuration info for this running instance of the BBJ server.
+        """
+        return {
+            "allow_anon": app_config["allow_anon"],
+            "instance_name": app_config["instance_name"]
+        }
 
     @api_method
     def user_register(self, args, database, user, **kwargs):

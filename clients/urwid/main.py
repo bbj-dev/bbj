@@ -218,7 +218,8 @@ default_prefs = {
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
     "time": "%H:%M",
-    "frame_title": "> > T I L D E T O W N < <",
+    "frame_title": "BBJ",
+    "use_custom_frame_title": False,
     "max_text_width": 80,
     "confirm_anon": True,
     "edit_escapes": {
@@ -278,31 +279,31 @@ pinpath = os.path.join(os.getenv("HOME"), ".bbjpins")
 class App(object):
     def __init__(self):
         self.prefs = bbjrc("load")
-
-        self.mode = None
-        self.thread = None
-        self.usermap = {}
-        self.window_split = False
-        self.last_index_pos = None
-        self.last_alarm = None
         self.client_pinned_threads = load_client_pins()
+        self.usermap = {}
         self.match_data = {
             "query": "",
             "matches": [],
             "position": 0,
         }
 
-        # these can be changed and manipulated by other methods
+        self.mode = None
+        self.thread = None
+        self.window_split = False
+        self.last_index_pos = None
+        self.last_alarm = None
+
         self.walker = urwid.SimpleFocusListWalker([])
         self.box = ActionBox(self.walker)
         self.body = urwid.AttrMap(
             urwid.LineBox(
                 self.box,
-                title=self.prefs["frame_title"],
+                title=self.prefs["frame_title"]
+                        if self.prefs["use_custom_frame_title"]
+                        else network.instance_info["instance_name"],
                 **frame_theme()),
             "default"
         )
-
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
             palette=colormap,

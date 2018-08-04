@@ -76,6 +76,7 @@ class BBJ(object):
         self.send_auth = True
         try:
             self.user = self("get_me")["data"]
+            self.update_instance_info()
         except URLError:
             raise URLError("Cannot connect to %s (is the server down?)" % self.base[0:-2])
 
@@ -176,6 +177,19 @@ class BBJ(object):
 
         e.code, e.description, e.body = code, description, error_object
         raise e
+
+
+    def update_instance_info(self):
+        """
+        Stores configuration info for the connected BBJ server.
+
+        {
+            "instance_name": (string), // a title set by the server owner
+            "allow_anon": (bool) // whether anonymous participation is allowed
+        }
+        """
+        response = self("instance_info")
+        self.instance_info = response["data"]
 
 
     def validate(self, key, value, exception=AssertionError):
