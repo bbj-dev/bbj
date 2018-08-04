@@ -57,7 +57,9 @@ Available environment variables:
     BBJ_USER: set your username to log in automatically.
       If --user is passed, this is ignored.
     BBJ_PASSWORD: set your password to log in automatically.
-      if the password is wrong, will prompt you as normal.""")
+      if the password is wrong, will prompt you as normal.
+Please note that these environment variables need to be exported, and are
+visible to all other programs run from your shell.""")
     exit()
 
 try:
