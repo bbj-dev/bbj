@@ -925,7 +925,7 @@ class App(object):
             thread = self.thread["thread_id"]
             self.thread_load(None, thread)
             self.goto_post(mark(thread))
-        self.temp_footer_message("Refreshed content!")
+        self.temp_footer_message("Refreshed content!", 1)
 
 
     def back(self, terminate=False):
