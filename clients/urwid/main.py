@@ -220,6 +220,8 @@ default_prefs = {
     "dramatic_exit": True,
     "date": "%Y/%m/%d",
     "time": "%H:%M",
+    "frame_theme": "tilde",
+    "custom_divider_char": False,
     "frame_title": "BBJ",
     "use_custom_frame_title": False,
     "max_text_width": 80,
@@ -274,6 +276,50 @@ escape_map = {
       if len(key) > 1
 }
 
+themes = {
+    "tilde": {
+        "divider": "-",
+        "frame": {
+            "tlcorner": "@",
+            "trcorner": "@",
+            "blcorner": "@",
+            "brcorner": "@",
+            "tline":    "=",
+            "bline":    "=",
+            "lline":    "|",
+            "rline":    "|",
+        }
+    },
+
+    "urwid": {
+        "divider": "─",
+        "frame": {
+            "tlcorner": "┌",
+            "trcorner": "┐",
+            "blcorner": "└",
+            "brcorner": "┘",
+            "tline":    "─",
+            "bline":    "─",
+            "lline":    "│",
+            "rline":    "│",
+        }
+    },
+
+    "none": {
+        "divider": " ",
+        "frame": {
+            "tlcorner": "",
+            "trcorner": "",
+            "blcorner": "",
+            "brcorner": "",
+            "tline":    "",
+            "bline":    "",
+            "lline":    "",
+            "rline":    "",
+        }
+    }
+}
+
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
 pinpath = os.path.join(os.getenv("HOME"), ".bbjpins")
@@ -289,27 +335,46 @@ class App(object):
             "position": 0,
         }
 
+        try:
+            self.theme = themes[self.prefs["frame_theme"]].copy()
+            if isinstance(self.prefs["custom_divider_char"], str):
+                self.theme["divider"] = self.prefs["custom_divider_char"]
+        except KeyError:
+            exit("Selected theme does not exist. Please check "
+                 "the `frame_theme` value in ~/.bbjrc")
+
         self.mode = None
         self.thread = None
         self.window_split = False
         self.last_index_pos = None
         self.last_alarm = None
 
+        if self.prefs["use_custom_frame_title"]:
+            self.frame_title = self.prefs["frame_title"]
+        else:
+            self.frame_title = network.instance_info["instance_name"]
+
         self.walker = urwid.SimpleFocusListWalker([])
         self.box = ActionBox(self.walker)
         self.body = urwid.AttrMap(
-            urwid.LineBox(
-                self.box,
-                title=self.prefs["frame_title"]
-                        if self.prefs["use_custom_frame_title"]
-                        else network.instance_info["instance_name"],
-                **frame_theme()),
+            urwid.LineBox(self.box, **self.frame_theme(self.frame_title)),
             "default"
         )
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
             palette=colormap,
             handle_mouse=self.prefs["mouse_integration"])
+
+
+    def frame_theme(self, title=""):
+        """
+        Return the kwargs for a frame theme.
+        """
+        # TITLE
+        theme = self.theme["frame"].copy()
+        if theme["tline"] != "":
+            theme.update({"title": title})
+        return theme
 
 
     def set_header(self, text, *format_specs):
@@ -430,9 +495,9 @@ class App(object):
 
         self.loop.widget.footer[0].set_text(
             bars["edit_window"].format(
-                app.prefs["edit_escapes"]["abort"].upper(),
-                app.prefs["edit_escapes"]["focus"].upper(),
-                app.prefs["edit_escapes"]["fhelp"].upper(),
+                self.prefs["edit_escapes"]["abort"].upper(),
+                self.prefs["edit_escapes"]["focus"].upper(),
+                self.prefs["edit_escapes"]["fhelp"].upper(),
                 focus)
         )
 
@@ -469,8 +534,7 @@ class App(object):
         """
         widget = OptionsMenu(
             ActionBox(urwid.SimpleFocusListWalker(self.make_message_body(message))),
-            title=">>%d" % message["post_id"],
-            **frame_theme()
+            **self.frame_theme(">>%d" % message["post_id"])
         )
 
         self.loop.widget = urwid.Overlay(
@@ -508,7 +572,7 @@ class App(object):
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
-            title="View a Quote", **frame_theme()
+            **self.frame_theme("View a Quote")
         )
 
         self.loop.widget = urwid.Overlay(
@@ -559,7 +623,7 @@ class App(object):
         # TODO: create a central routine for creating popups. this is getting really ridiculous
         popup = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
-            **frame_theme())
+            **self.frame_theme())
 
         self.loop.widget = urwid.Overlay(
             popup, self.loop.widget,
@@ -607,8 +671,7 @@ class App(object):
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
-            title=str(">>%d (%s)" % (message["post_id"], author["user_name"])),
-            **frame_theme()
+            **self.frame_theme(">>%d (%s)" % (message["post_id"], author["user_name"]))
         )
         size = self.loop.screen_size
 
@@ -668,7 +731,7 @@ class App(object):
                 ("dim", "last post by "),
                 (str(last_author["color"]), "~" + last_author["user_name"])
             ]),
-            urwid.AttrMap(urwid.Divider("-"), "dim")
+            urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim")
         ]
 
         if self.prefs["index_spacing"]:
@@ -715,7 +778,7 @@ class App(object):
                 MessageBody(message),
                 width=self.prefs["max_text_width"]),
             urwid.Divider(),
-            urwid.AttrMap(urwid.Divider("-"), "dim")
+            urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim")
         ]
 
 
@@ -904,7 +967,7 @@ class App(object):
                     urwid.AttrMap(StringPrompt(callback), "opt_prompt"),
                     urwid.Text("Use a blank query to reset the {}.".format(self.mode))
                 ])),
-            **frame_theme())
+            **self.frame_theme())
 
         self.loop.widget = urwid.Overlay(
             popup, self.loop.widget,
@@ -950,7 +1013,7 @@ class App(object):
             # TODO: create a central routine for creating popups. this is getting really ridiculous
             popup = OptionsMenu(
                 urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
-                **frame_theme())
+                **self.frame_theme())
 
             self.loop.widget = urwid.Overlay(
                 popup, self.loop.widget,
@@ -1026,7 +1089,7 @@ class App(object):
 
         popup = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(items)),
-            **frame_theme())
+            **self.frame_theme())
 
         self.loop.widget = urwid.Overlay(
             popup, self.loop.widget,
@@ -1041,6 +1104,18 @@ class App(object):
         msg = self.thread["messages"][int(value)]
         author = self.usermap[msg["author"]]
         display.set_text((str(author["color"]), ">>%s %s" % (value, author["user_name"])))
+
+
+    def set_theme(self, button, new_state):
+        """
+        Callback for the theme radio buttons in the options.
+        """
+        if new_state == True:
+            self.theme = themes[button.label].copy()
+            if self.prefs["custom_divider_char"]:
+                self.theme["divider"] = self.prefs["custom_divider_char"]
+            self.prefs["frame_theme"] = button.label
+            bbjrc("update", **self.prefs)
 
 
     def set_new_editor(self, button, value, arg):
@@ -1117,13 +1192,12 @@ class App(object):
                         "This is BBJ, a client/server textboard made for tilde.town!",
                         True),
                     urwid.Text(("dim", "...by ~desvox")),
-                    urwid.Divider("-"),
+                    urwid.Divider(self.theme["divider"]),
                     urwid.Button("Post Formatting Help", self.formatting_help),
-                    urwid.Divider("-"),
+                    urwid.Divider(self.theme["divider"]),
                     urwid.Text(general_help)
                 ])),
-            title="?????",
-            **frame_theme()
+            **self.frame_theme("?????")
         )
 
         app.loop.widget = urwid.Overlay(
@@ -1146,8 +1220,7 @@ class App(object):
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(app.make_message_body(message, True))),
-            title="Formatting Help",
-            **frame_theme()
+            **self.frame_theme("Formatting Help")
         )
 
         va = 5 if self.window_split else 50
@@ -1156,7 +1229,7 @@ class App(object):
             widget, app.loop.widget,
             align=("relative", 50),
             valign=("relative", va),
-            width=app.prefs["max_text_width"],
+            width=self.prefs["max_text_width"],
             height=("relative", vh)
         )
 
@@ -1260,8 +1333,7 @@ class App(object):
                     self.save_escape_key,
                     [mode]
                 ), "opt_prompt")])),
-            title="Set key for " + mode,
-            **frame_theme()
+            **self.frame_theme("Set key for " + mode)
         )
 
         app.loop.widget = urwid.Overlay(
@@ -1335,6 +1407,14 @@ class App(object):
             account_message = "You're browsing anonymously, and cannot set account preferences."
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
+        theme_buttons = []
+        for name, theme in themes.items():
+            urwid.RadioButton(
+                theme_buttons, name,
+                state=theme["frame"] == self.theme["frame"],
+                on_state_change=self.set_theme
+            )
+
         time_box = urwid.Text(self.timestring(time(), "time"))
         time_edit = Prompt(edit_text=self.prefs["time"])
         urwid.connect_signal(time_edit, "change", self.live_time_render, (time_box, "time"))
@@ -1385,7 +1465,7 @@ class App(object):
         for item in account_stuff:
             content.append(item)
 
-        for item in [urwid.Divider("-"),
+        for item in [urwid.Divider(self.theme["divider"]),
                      urwid.Text(("opt_header", "App"), 'center'),
                      urwid.Divider(),
                      urwid.CheckBox(
@@ -1410,6 +1490,15 @@ class App(object):
                      ),
                      urwid.Divider()]:
             content.append(item)
+
+        for item in [urwid.Text(("button", "Border Theme")),
+                     urwid.Text("Restart to fully apply.")]:
+            content.append(item)
+
+        for item in theme_buttons:
+            content.append(item)
+
+        content.append(urwid.Divider())
 
         for item in time_stuff:
             content.append(item)
@@ -1451,12 +1540,11 @@ class App(object):
         for item in edit_mode:
             content.append(item)
 
-        content.append(urwid.Divider("-"))
+        content.append(urwid.Divider(self.theme["divider"]))
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(content)),
-            title="Options",
-            **frame_theme())
+            **self.frame_theme("Options"))
 
         self.loop.widget = urwid.Overlay(
             widget, self.loop.widget,
@@ -1572,13 +1660,12 @@ class App(object):
         if self.mode == "index":
             self.set_header('Composing "{}"', title)
             self.set_footer("[{}]Abort [{}]Formatting Help [Save and quit to submit your thread]".format(
-                app.prefs["edit_escapes"]["abort"].upper(), app.prefs["edit_escapes"]["fhelp"].upper()
+                self.prefs["edit_escapes"]["abort"].upper(), self.prefs["edit_escapes"]["fhelp"].upper()
             ))
             self.loop.widget = urwid.Overlay(
                 urwid.LineBox(
                     ExternalEditor("thread_create", title=title),
-                    title=self.prefs["editor"] or "",
-                    **frame_theme()),
+                    **self.frame_theme(self.prefs["editor"] or "")),
                 self.loop.widget,
                 align="center",
                 valign="middle",
@@ -1603,7 +1690,7 @@ class App(object):
                 urwid.AttrMap(
                     urwid.LineBox(
                         ExternalEditor(endpoint, init_body=init_body, **params),
-                        **frame_theme()
+                        **self.frame_theme()
                     ), "bar"),
                 self.loop.screen_size[1] // 2)])
 
@@ -2369,18 +2456,6 @@ def log_in(relog=False):
             network.user_register(name, password)
             motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
     sleep(0.5) # let that confirmation message shine
-
-
-def frame_theme(mode="default"):
-    """
-    Return the kwargs for a frame theme.
-    """
-    if mode == "default":
-        return dict(
-            tlcorner="@", trcorner="@", blcorner="@", brcorner="@",
-            tline="=", bline="=", lline="|", rline="|"
-        )
-
 
 
 def bbjrc(mode, **params):
