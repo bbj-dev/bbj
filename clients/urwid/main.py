@@ -23,11 +23,14 @@ Please mail me (~desvox) for feedback and for any of your
 from network import BBJ, URLError
 from string import punctuation
 from datetime import datetime
+from sys import argv, version
 from time import time, sleep
 from getpass import getpass
 from subprocess import call
 from random import choice
-from sys import argv
+from code import interact
+import rlcompleter
+import readline
 import tempfile
 import urwid
 import json
@@ -2240,16 +2243,9 @@ class ActionBox(urwid.ListBox):
         elif keyl == "f12":
             app.loop.stop()
             call("clear", shell=True)
-            try:
-                line = input("(REPL)> ")
-                while line:
-                    try:
-                        print(eval(line))
-                    except BaseException as E:
-                        print(E)
-                    line = input("(REPL)> ")
-            except EOFError:
-                pass
+            readline.set_completer(rlcompleter.Completer().complete)
+            readline.parse_and_bind("tab: complete")
+            interact(banner=version + "\n(BBJ Interactive Console)", local=globals())
             app.loop.start()
 
         elif app.mode == "thread" and not app.window_split and not overlay:
