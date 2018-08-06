@@ -592,15 +592,14 @@ class BBJ(object):
         return response["data"]
 
 
-    def set_thread_pin(self, thread_id, new_status):
+    def thread_set_pin(self, thread_id, new_status):
         """
         Set whether a thread should be pinned or not. new_status
         is evaluated as a boolean, and given that the logged in
         user is an admin, the thread is set to this status on
         the server, and the boolean is returned.
         """
-        assert self.get_me()["is_admin"]
-        response = self("set_thread_pin", thread_id=pinned, pinned=new_status)
+        response = self("thread_set_pin", thread_id=thread_id, value=new_status)
         return response["data"]
 
 

@@ -668,6 +668,8 @@ class App(object):
                 "Enable Formatting" if raw else "Disable Formatting",
                 self.toggle_formatting, message))
             buttons.insert(0, urwid.Button("Edit Post", self.edit_post, message))
+            if network.user["is_admin"]:
+                buttons.insert(0, urwid.Text(("20", "Reminder: You're an admin!")))
 
         if not buttons:
             return
@@ -823,18 +825,21 @@ class App(object):
             self.usermap.update(usermap)
         self.walker.clear()
 
-        server_pin_counter = 0
+        server_pins = []
         client_pin_counter = 0
 
         for thread in threads:
             if thread["pinned"]:
-                self.walker.insert(server_pin_counter, self.make_thread_body(thread, pinned="server"))
-                server_pin_counter += 1
+                server_pins.append(thread)
             elif thread["thread_id"] in self.client_pinned_threads:
                 self.walker.insert(client_pin_counter, self.make_thread_body(thread, pinned="client"))
                 client_pin_counter += 1
             else:
                 self.walker.append(self.make_thread_body(thread))
+
+        # make sure these are always up top
+        for index, thread in enumerate(server_pins):
+            self.walker.insert(index, self.make_thread_body(thread, pinned="server"))
 
         self.set_bars(True)
 
@@ -879,6 +884,14 @@ class App(object):
             return
         thread_id = self.walker.get_focus()[0].thread["thread_id"]
         self.client_pinned_threads = toggle_client_pin(thread_id)
+        self.index()
+
+
+    def toggle_server_pin(self):
+        if self.mode != "index" or not network.user["is_admin"]:
+            return
+        thread = self.walker.get_focus()[0].thread
+        network.thread_set_pin(thread["thread_id"], not thread["pinned"])
         self.index()
 
 
@@ -2233,6 +2246,9 @@ class ActionBox(urwid.ListBox):
         elif key == "*":
             app.toggle_client_pin()
 
+        elif key == "\\":
+            app.toggle_server_pin()
+
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
@@ -2240,13 +2256,12 @@ class ActionBox(urwid.ListBox):
             except: pass
             app.loop.start()
 
-        elif keyl == "f12":
+        elif keyl == "$":
             app.loop.stop()
             call("clear", shell=True)
-            motherfucking_rainbows(obnoxious_logo)
             readline.set_completer(rlcompleter.Completer().complete)
             readline.parse_and_bind("tab: complete")
-            interact(banner=version + "\n(BBJ Interactive Console)", local=globals())
+            interact(banner="Python " + version + "\nBBJ Interactive Console\nCtrl-D exits.", local=globals())
             app.loop.start()
 
         elif app.mode == "thread" and not app.window_split and not overlay:

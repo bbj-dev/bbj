@@ -600,7 +600,7 @@ class API(object):
     )
 
     @api_method
-    def set_thread_pin(self, args, database, user, **kwargs):
+    def thread_set_pin(self, args, database, user, **kwargs):
         """
         Requires the arguments `thread_id` and `value`. `value`
         must be a boolean of what the pinned status should be.
@@ -612,9 +612,9 @@ class API(object):
         validate(args, ["thread_id", "value"])
         if not user["is_admin"]:
             raise BBJUserError("Only admins can set thread pins")
-        return db.set_thread_pin(database, args["thread_id"], args["value"])
-    set_thread_pin.doctype = "Threads & Messages"
-    set_thread_pin.arglist = (
+        return db.thread_set_pin(database, args["thread_id"], args["value"])
+    thread_set_pin.doctype = "Threads & Messages"
+    thread_set_pin.arglist = (
         ("thread_id", "string: the id of the thread to modify."),
         ("value", "boolean: `true` to pin thread, `false` otherwise.")
     )
