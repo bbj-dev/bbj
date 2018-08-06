@@ -185,7 +185,8 @@ class BBJ(object):
 
         {
             "instance_name": (string), // a title set by the server owner
-            "allow_anon": (bool) // whether anonymous participation is allowed
+            "allow_anon": (bool), // whether anonymous participation is allowed
+            "admins": (list) // usernames of those who have admin rights on the server
         }
         """
         response = self("instance_info")
@@ -434,7 +435,7 @@ class BBJ(object):
         If the user element isnt found, ValueError is raised.
         See also `user_is_registered`
         """
-        response = self("user_get", user=user_id_or_name)
+        response = self("user_get", target_user=user_id_or_name)
         return response["data"]
 
 

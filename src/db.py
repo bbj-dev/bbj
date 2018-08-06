@@ -411,6 +411,21 @@ def user_update(connection, user_object, parameters):
     return user_resolve(connection, user_id)
 
 
+def set_admins(connection, users):
+    """
+    Set the server admins to be the content of `users`.
+    Any other users that previously had admin rights
+    not included in `users` will have their privledge
+    revoked.
+    """
+    connection.execute("UPDATE users SET is_admin = 0")
+    for user in users:
+        connection.execute(
+            "UPDATE users SET is_admin = 1 WHERE user_name = ?",
+            (user,))
+    connection.commit()
+
+
 def user_externalize(user_object):
     """
     Cleanse private/internal data from a user object

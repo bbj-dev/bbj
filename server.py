@@ -12,7 +12,8 @@ dbname = "data.sqlite"
 
 # any values here may be overrided in the config.json. Any values not listed
 # here will have no effect on the server.
-app_config = {
+default_config = {
+    "admins": [],
     "port": 7099,
     "host": "127.0.0.1",
     "instance_name": "BBJ",
@@ -20,13 +21,22 @@ app_config = {
     "debug": False
 }
 
-
 try:
-    with open("config.json") as _conf:
-        app_config.update(json.load(_conf))
+    with open("config.json", "r") as _in:
+        app_config = json.load(_in)
+    # update the file with new keys if necessary
+    for key, default_value in default_config.items():
+        # The application will never store a config value
+        # as the NoneType, so users may set an option as
+        # null in their file to reset it to default
+        if key not in app_config or app_config[key] == None:
+            app_config[key] = default_value
+# else just use the defaults
 except FileNotFoundError:
-    with open("config.json", "w") as _conf:
-        json.dump(app_config, _conf, indent=2)
+    app_config = default_prefs
+finally:
+    with open("config.json", "w") as _out:
+        json.dump(app_config, _out, indent=2)
 
 
 def api_method(function):
@@ -192,7 +202,8 @@ class API(object):
         """
         return {
             "allow_anon": app_config["allow_anon"],
-            "instance_name": app_config["instance_name"]
+            "instance_name": app_config["instance_name"],
+            "admins": app_config["admins"]
         }
 
     @api_method
@@ -667,10 +678,11 @@ API_CONFIG = {
 
 
 def run():
-    # user anonymity is achieved in the laziest possible way: a literal user
-    # named anonymous. may god have mercy on my soul.
     _c = sqlite3.connect(dbname)
     try:
+        db.set_admins(_c, app_config["admins"])
+        # user anonymity is achieved in the laziest possible way: a literal user
+        # named anonymous. may god have mercy on my soul.
         db.anon = db.user_resolve(_c, "anonymous")
         if not db.anon:
             db.anon = db.user_register(

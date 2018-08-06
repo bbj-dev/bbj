@@ -2243,6 +2243,7 @@ class ActionBox(urwid.ListBox):
         elif keyl == "f12":
             app.loop.stop()
             call("clear", shell=True)
+            motherfucking_rainbows(obnoxious_logo)
             readline.set_completer(rlcompleter.Completer().complete)
             readline.parse_and_bind("tab: complete")
             interact(banner=version + "\n(BBJ Interactive Console)", local=globals())
@@ -2466,11 +2467,12 @@ def bbjrc(mode, **params):
             values = json.load(_in)
         # update it with new keys if necessary
         for key, default_value in default_prefs.items():
-            # HACK: checking if they == None should not be necessary, as the program
-            # should never store a preference value as a NoneType. However ~vilmibm
-            # encountered the editor being stored as None, so there is a misstep somewhere
-            # and this will at least keep the program from continuing to crash should
-            # anyone else ever run into it
+            # The application will never store a config value
+            # as the NoneType, so users may set an option as
+            # null in their file to reset it to default.
+            # Also covers a previous encounter a user
+            # had with having a NoneType set in their
+            # config by accident, crashing the program.
             if key not in values or values[key] == None:
                 values[key] = default_value
     # else make one
