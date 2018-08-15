@@ -33,7 +33,7 @@ try:
             app_config[key] = default_value
 # else just use the defaults
 except FileNotFoundError:
-    app_config = default_prefs
+    app_config = default_config
 finally:
     with open("config.json", "w") as _out:
         json.dump(app_config, _out, indent=2)
