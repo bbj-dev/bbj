@@ -273,6 +273,14 @@ colormap = [
     ("60", "light magenta", "default")
 ]
 
+def replace_color(name,fg,bg=None):
+	for i,t in enumerate(colormap):
+		t = list(t)
+		if t[0]==name:
+			t[1] = fg
+			t[2] = bg if bg is not None else t[2]
+			colormap.__setitem__(i,tuple(t))
+
 escape_map = {
     key: urwid.vterm.ESC + sequence
       for sequence, key in urwid.escape.input_sequences
