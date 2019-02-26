@@ -89,7 +89,7 @@ obnoxious_logo = """
 
 welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 | BBJ is a persistent, chronologically ordered text       |
-| discussion board for tilde.town. You may log in,        |
+| discussion board for tildes. You may log in,            |
 | register as a new user, or participate anonymously.     |
 |---------------------------------------------------------|
 | \033[1;31mTo go anon, just press enter. Otherwise, give me a name\033[0m |
@@ -1205,7 +1205,7 @@ class App(object):
             urwid.ListBox(
                 urwid.SimpleFocusListWalker([
                     urwid_rainbows(
-                        "This is BBJ, a client/server textboard made for tilde.town!",
+                        "This is BBJ, a client/server textboard made for tildes!",
                         True),
                     urwid.Text(("dim", "...by ~desvox")),
                     urwid.Divider(self.theme["divider"]),
