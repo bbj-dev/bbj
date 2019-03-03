@@ -15,20 +15,29 @@ It takes the following flags:
 
 You can optionally pass a different python interpreter to use (such as
 a virtual environment), with no arguments this will use the system python3
+
 EOF
         exit;;
+
     --dbset )
         sqlite3 data.sqlite < schema.sql
-	      echo cleared
+        echo cleared
         chmod 600 data.sqlite
-	      exit;;
+        exit;;
 esac
 
-PYTHON=`which python3`
 [[ -e logs ]] || mkdir logs; mkdir logs/exceptions
+
+PYTHON=`which python3`
 [[ -z $1 ]] || PYTHON=$1
 echo Using $PYTHON...
 $PYTHON -m pip install ${DEPS[*]}
+
 echo "Enter [i] to initialize a new database"
 read CLEAR
-[[ $CLEAR == "i" ]] && sqlite3 data.sqlite < schema.sql; chmod 600 data.sqlite
+
+if [[ $CLEAR == "i" ]]; then
+    sqlite3 data.sqlite < schema.sql 
+    chmod 600 data.sqlite
+fi
+
