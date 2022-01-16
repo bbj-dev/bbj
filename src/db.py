@@ -1,12 +1,12 @@
 """
-This module contains all of the interaction with the SQLite database. It
-doesnt hold a connection itself, rather, a connection is passed in as
+This module contains all the interaction with the SQLite database. It
+doesn't hold a connection itself, rather, a connection is passed in as
 an argument to all the functions and is maintained by CherryPy's threading
 system. This is clunky but fuck it, it works (for now at least).
 
 All post and thread data are stored in the database without formatting.
 This is questionable, as it causes formatting to be reapplied with each
-pull for the database. Im debating whether posts should be stored in all
+pull for the database. I'm debating whether posts should be stored in all
 4 formats, or if maybe a caching system should be used.
 
 The database, nor ANY part of the server, DOES NOT HANDLE PASSWORD HASHING!
@@ -20,13 +20,12 @@ use of sha256.
 # database user object: these user objects are always resolved on
 # incoming requests and re-resolving them from their ID is wasteful.
 
+from time import time
+from uuid import uuid1
+
+from src import schema
 from src.exceptions import BBJParameterError, BBJUserError
 from src.utils import ordered_keys, schema_values
-from src import schema
-from uuid import uuid1
-from time import time
-import json
-import os
 
 anon = None
 
@@ -58,15 +57,15 @@ def message_feed(connection, time):
     """
     threads = {
         obj[0]: schema.thread(*obj) for obj in
-            connection.execute(
-                "SELECT * FROM threads WHERE last_mod > ?", (time,))
+        connection.execute(
+            "SELECT * FROM threads WHERE last_mod > ?", (time,))
     }
 
     messages = list()
     for thread in threads.values():
         messages += [
             schema.message(*obj) for obj in
-                connection.execute("""
+            connection.execute("""
                 SELECT * FROM messages WHERE thread_id = ?
                     AND created > ? """, (thread["thread_id"], time))
         ]
@@ -97,10 +96,9 @@ def thread_get(connection, thread_id, messages=True, op_only=False):
     thread = schema.thread(*thread)
 
     if messages or op_only:
-        query = "SELECT * FROM messages WHERE thread_id = ? %s"
-        c.execute(query % (
-            "AND post_id = 0" if op_only else "ORDER BY post_id"
-        ), (thread_id,))
+        query = "SELECT * FROM messages WHERE thread_id = ? "
+        query += "AND post_id = 0" if op_only else "ORDER BY post_id"
+        c.execute(query, (thread_id,))
         # create a list where each post_id matches its list[index]
         thread["messages"] = [schema.message(*values) for values in c.fetchall()]
 
@@ -121,7 +119,7 @@ def thread_index(connection, include_op=False):
 
     threads = [
         thread_get(connection, obj[0], False, include_op)
-            for obj in c.fetchall()
+        for obj in c.fetchall()
     ]
     return threads
 
@@ -146,7 +144,7 @@ def thread_create(connection, author_id, body, title, send_raw=False):
     Create a new thread and return it.
     """
     validate([
-        ("body",  body),
+        ("body", body),
         ("title", title)
     ])
 
@@ -154,7 +152,7 @@ def thread_create(connection, author_id, body, title, send_raw=False):
     thread_id = uuid1().hex
     scheme = schema.thread(
         thread_id, author_id, title,
-        now, now, -1, # see below for why i set -1 instead of 0
+        now, now, -1,  # see below for why i set -1 instead of 0
         False, author_id)
 
     connection.execute("""
@@ -230,7 +228,7 @@ def message_delete(connection, author, thread_id, post_id):
             WHERE thread_id = ?
             AND post_id = ?
         """, (anon["user_id"], "[deleted]", False, thread_id, post_id))
-        # DONT deincrement the reply_count of this thread,
+        # DON'T decrement the reply_count of this thread,
         # or even delete the message itself. This breaks
         # balance between post_id and the post's index when
         # the thread is served with the messages in an array.
@@ -250,7 +248,8 @@ def message_edit_query(connection, author, thread_id, post_id):
     user = user_resolve(connection, author)
     thread = thread_get(connection, thread_id)
 
-    try: message = thread["messages"][post_id]
+    try:
+        message = thread["messages"][post_id]
     except IndexError:
         raise BBJParameterError("post_id out of bounds for requested thread")
 
@@ -364,7 +363,7 @@ def user_resolve(connection, name_or_id, externalize=False, return_false=True):
          SELECT * FROM users
          WHERE user_name = ?
             OR user_id = ? """,
-        (name_or_id, name_or_id)).fetchone()
+                              (name_or_id, name_or_id)).fetchone()
 
     if user:
         user = schema.user_internal(*user)
@@ -397,8 +396,8 @@ def user_update(connection, user_object, parameters):
             user_object[key] = value
 
     values = ordered_keys(user_object,
-        "user_name", "quip", "auth_hash",
-        "bio", "color", "user_id")
+                          "user_name", "quip", "auth_hash",
+                          "bio", "color", "user_id")
 
     connection.execute("""
         UPDATE users SET
@@ -418,7 +417,6 @@ def set_admins(connection, users):
     not included in `users` will have their privledge
     revoked.
     """
-    connection.execute("UPDATE users SET is_admin = 0")
     for user in users:
         connection.execute(
             "UPDATE users SET is_admin = 1 WHERE user_name = ?",

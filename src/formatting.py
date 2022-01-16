@@ -62,18 +62,16 @@ Just like the brackets themselves, backslashes may occur freely within bodies,
 they are only removed when they occur before a valid expression.
 """
 
-from string import punctuation
 import re
 
 colors = [
-#0,   1        2        3        4       5        6       dim is not used in color api
+    # 0,   1        2        3        4       5        6       dim is not used in color api
     "red", "yellow", "green", "blue", "cyan", "magenta", "dim"
 ]
 
 markup = [
     "bold", "underline", "linequote", "quote", "rainbow"
 ]
-
 
 # quotes being references to other post_ids, like >>34 or >>0 for OP
 quotes = re.compile(">>([0-9]+)")
@@ -133,9 +131,9 @@ def sequential_expressions(string):
     but this cannot effectively express an input like
     [bold: [red: bolded colors.]], in which case the innermost
     expression will take precedence. For the input:
-        "[bold: [red: this] is some shit [green: it cant handle]]"
+        "[bold: [red: this] is some shit [green: it can't handle]]"
     you get:
-    [('red', 'this'), ('bold', ' is some shit '), ('green', 'it cant handle')]
+    [('red', 'this'), ('bold', ' is some shit '), ('green', 'it can't handle')]
     """
     # abandon all hope ye who enter here
     directives = colors + markup
@@ -151,13 +149,13 @@ def sequential_expressions(string):
                 continue
 
             if not escaped and char == "[":
-                directive = paragraph[index+1:paragraph.find(": ", index+1)]
+                directive = paragraph[index + 1:paragraph.find(": ", index + 1)]
                 open_p = directive in directives
             else:
                 open_p = False
             clsd_p = not escaped and nest[-1] != None and char == "]"
 
-            # dont splice other directives into linequotes: that is far
+            # don't splice other directives into linequotes: that is far
             # too confusing for the client to determine where to put line
             # breaks
             if open_p and nest[-1] != "linequote":
@@ -207,8 +205,7 @@ def strip(text):
     Returns the text with all formatting directives removed.
     Not to be confused with `raw`.
     """
-    pass # me the bong im boutta smash tha bish
-
+    pass  # me the bong im boutta smash tha bish
 
 
 def entities(text):
@@ -218,7 +215,6 @@ def entities(text):
     # once someone asked me if i wanted a life
     # and i said
     pass
-
 
 
 def html(text):

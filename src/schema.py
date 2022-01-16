@@ -43,7 +43,9 @@ def base():
     }
 
 
-def response(data, usermap={}):
+def response(data, usermap=None):
+    if usermap is None:
+        usermap = {}
     result = base()
     result["data"] = data
     result["usermap"].update(usermap)

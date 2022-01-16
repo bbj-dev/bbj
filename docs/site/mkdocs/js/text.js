@@ -13,10 +13,10 @@ define(['module'], function (module) {
 
     var text, fs, Cc, Ci, xpcIsWindows,
         progIds = ['Msxml2.XMLHTTP', 'Microsoft.XMLHTTP', 'Msxml2.XMLHTTP.4.0'],
-        xmlRegExp = /^\s*<\?xml(\s)+version=[\'\"](\d)*.(\d)*[\'\"](\s)*\?>/im,
+        xmlRegExp = /^\s*<\?xml(\s)+version=['"](\d)*.(\d)*['"](\s)*\?>/im,
         bodyRegExp = /<body[^>]*>\s*([\s\S]+)\s*<\/body>/im,
         hasLocation = typeof location !== 'undefined' && location.href,
-        defaultProtocol = hasLocation && location.protocol && location.protocol.replace(/\:/, ''),
+        defaultProtocol = hasLocation && location.protocol && location.protocol.replace(/:/, ''),
         defaultHostName = hasLocation && location.hostname,
         defaultPort = hasLocation && (location.port || undefined),
         buildMap = {},
@@ -116,7 +116,7 @@ define(['module'], function (module) {
             };
         },
 
-        xdRegExp: /^((\w+)\:)?\/\/([^\/\\]+)/,
+        xdRegExp: /^((\w+):)?\/\/([^\/\\]+)/,
 
         /**
          * Is an URL on another domain. Only works for browser use, returns

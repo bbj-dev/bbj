@@ -1,0 +1,16 @@
+[Unit]
+Description=bbj daemon
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/srv/bbj/bbj
+ExecStart=/srv/bbj/bbj/venv/bin/python3 server.py
+User=bbj
+Restart=always
+RestartSec=5
+StartLimitInterval=60s
+StartLimitBurst=3
+
+[Install]
+WantedBy=default.target

@@ -12,7 +12,7 @@ def geterr(obj):
     error = obj.get("error")
     if not error:
         return False
-    return (error["code"], error["description"])
+    return error["code"], error["description"]
 
 
 def register_prompt(user, initial=True):
