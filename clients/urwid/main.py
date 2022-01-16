@@ -3,50 +3,54 @@
 If you're looking for help on how to use the program, just press
 ? while its running. This mess will not help you.
 
-Urwid aint my speed. Hell, making complex, UI-oriented programs
-aint my speed. So some of this code is pretty messy. I stand by
+Urwid ain't my speed. Hell, making complex, UI-oriented programs
+ain't my speed. So some of this code is pretty messy. I stand by
 it though, and it seems to be working rather well.
 
 Most of the functionality is crammed in the App() class. Key
 handling is found in the other subclasses for urwid widgets.
-An instantiation of App() is casted as `app` globally and
+An instantiation of App() is cast as `app` globally and
 the keypress methods will call into this global `app` object.
 
 There are few additional functions that are defined outside
-of the App class. They are delegated to the very bottom of
+the App class. They are delegated to the very bottom of
 this file.
 
 Please mail me (~desvox) for feedback and for any of your
 "OH MY GOD WHY WOULD YOU DO THIS"'s or "PEP8 IS A THING"'s.
 """
 
-from network import BBJ, URLError
-from string import punctuation
-from datetime import datetime
-from sys import argv, version
-from time import time, sleep
-from getpass import getpass
-from subprocess import call
-from random import choice
-from code import interact
-import rlcompleter
-import readline
-import tempfile
-import urwid
 import json
 import os
 import re
+import readline
+import rlcompleter
+import tempfile
+from code import interact
+from datetime import datetime
+from getpass import getpass
+from random import choice
+from string import punctuation
+from subprocess import call
+from sys import argv, version
+from time import time, sleep
+
+import urwid
+
+from network import BBJ, URLError
+
 
 # XxX_N0_4rgP4rs3_XxX ###yoloswag
 def get_arg(key, default=None, get_value=True):
     try:
         spec = argv.index("--" + key)
         value = argv[spec + 1] if get_value else True
-    except ValueError: # --key not specified
+    except ValueError:  # --key not specified
         value = default
-    except IndexError: # flag given but no value
+    except IndexError:  # flag given but no value
         exit("invalid format for --" + key)
     return value
+
 
 if get_arg("help", False, False):
     print("""BBJ Urwid Client
@@ -124,9 +128,8 @@ format_help = [
     "long as you are not anonymous.",
 
     "In previous versions of BBJ, linebreaks were joined into sentences if they "
-    "occured in the same paragraph, however this confused many users and has been "
+    "occurred in the same paragraph, however this confused many users and has been "
     "reverted to just use whatever was submitted, as-is.",
-
 
     "[red: Colors, Bold, Underline & Expressions]",
 
@@ -146,13 +149,13 @@ format_help = [
     "closing brackets need to be escaped within an expression. Any backslashes used "
     "for escaping will not show in the body unless you use two slashes.",
 
-    "This peculiar syntax elimiates false positives. You never have to escape [normal] "
+    "This peculiar syntax eliminates false positives. You never have to escape [normal] "
     "brackets when using the board. Only expressions with **valid and defined** directives "
     "will be affected. [so: this is totally valid and requires no escapes] because 'so' is "
     "not a directive. [red this will pass too] because the colon is missing.",
 
     "The following directives may be used in this form: red, yellow, green, blue, cyan, "
-    "magenta, bold, underline, dim, and rainbow. Nesting expressions into eachother will "
+    "magenta, bold, underline, dim, and rainbow. Nesting expressions into each other will "
     "override the parent directives until the innermost expression closes. Thus, nesting "
     "is valid but doesn't produce layered results on the command line client.",
 
@@ -161,7 +164,7 @@ format_help = [
     "You can refer to a post number using two angle brackets pointing into a number. >>432 "
     "like this. You can color a whole line green by proceeding it with a '>'. Note that "
     "this violates the sentence structure outlined in the **Whitespace** section above, "
-    "so you may introduce >greentext without splicing into seperate paragraphs. The '>' "
+    "so you may introduce >greentext without splicing into separate paragraphs. The '>' "
     "must be the first character on the line with no whitespace before it.\n>it looks like this\n"
     "and the paragraph doesnt have to break on either side. The formatter is smart enough to "
     "differentiate between >>greentext with multiple arrows and numeric quotes (outlined below) "
@@ -179,29 +182,30 @@ general_help = [
     ("bold", "use the arrow keys, j/k, or n/p to scroll down this menu\n\n"),
     ("bold", "use q or escape to close dialogs and menus (including this one)\n\n"),
     ("10", "use q, escape, or a left directional key to go back at any point"
-     " from just about anywhere.\n\n"),
+           " from just about anywhere.\n\n"),
     ("20", "use the o key to change your settings when this dialog is closed\n\n"),
 
     "You may use the arrow keys, or use ", ("button", "jk/np/Control-n|p"),
     " to move up and down by "
     "an element. If an element is overflowing the screen, it will scroll only one line. "
     "To make scrolling faster, ", ("button", "hold shift"), " when using a control: it "
-    "will repeat 5 times by default, and you can change this number in your settings.\n\n"
+                                                            "will repeat 5 times by default, and you can change this number in your settings.\n\n"
 
-    "In threads, The ", ("button", "<"), " and ", ("button", ">"), " keys will jump by "
-    "a chosen number of post headers. You can see the count inside of the footer line at "
-    "the far right side: press ", ("button", "x"), " to cycle it upwards or ",
+                                                            "In threads, The ", ("button", "<"), " and ",
+    ("button", ">"), " keys will jump by "
+                     "a chosen number of post headers. You can see the count inside of the footer line at "
+                     "the far right side: press ", ("button", "x"), " to cycle it upwards or ",
     ("button", "X"), " to cycle it downwards.\n\n"
 
-    "In the thread index and any open thread, the ", ("button", "b"), " and ", ("button", "t "),
+                     "In the thread index and any open thread, the ", ("button", "b"), " and ", ("button", "t "),
     "keys may be used to go to very top or bottom.\n\n"
 
     "To go back and forth between threads, you may also use the left/right arrow keys, "
     "or ", ("button", "h"), "/", ("button", "l"), " to do it vi-style.\n\n"
 
-    "Aside from those, primary controls are shown on the very bottom of the screen "
-    "in the footer line, or may be placed in window titles for other actions like "
-    "dialogs or composers."
+                                                  "Aside from those, primary controls are shown on the very bottom of the screen "
+                                                  "in the footer line, or may be placed in window titles for other actions like "
+                                                  "dialogs or composers."
 ]
 
 colors = [
@@ -275,8 +279,8 @@ colormap = [
 
 escape_map = {
     key: urwid.vterm.ESC + sequence
-      for sequence, key in urwid.escape.input_sequences
-      if len(key) > 1
+    for sequence, key in urwid.escape.input_sequences
+    if len(key) > 1
 }
 
 themes = {
@@ -287,10 +291,10 @@ themes = {
             "trcorner": "@",
             "blcorner": "@",
             "brcorner": "@",
-            "tline":    "=",
-            "bline":    "=",
-            "lline":    "|",
-            "rline":    "|",
+            "tline": "=",
+            "bline": "=",
+            "lline": "|",
+            "rline": "|",
         }
     },
 
@@ -301,10 +305,10 @@ themes = {
             "trcorner": "┐",
             "blcorner": "└",
             "brcorner": "┘",
-            "tline":    "─",
-            "bline":    "─",
-            "lline":    "│",
-            "rline":    "│",
+            "tline": "─",
+            "bline": "─",
+            "lline": "│",
+            "rline": "│",
         }
     },
 
@@ -315,10 +319,10 @@ themes = {
             "trcorner": "",
             "blcorner": "",
             "brcorner": "",
-            "tline":    "",
-            "bline":    "",
-            "lline":    "",
-            "rline":    "",
+            "tline": "",
+            "bline": "",
+            "lline": "",
+            "rline": "",
         }
     }
 }
@@ -326,6 +330,7 @@ themes = {
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
 pinpath = os.path.join(os.getenv("HOME"), ".bbjpins")
+
 
 class App(object):
     def __init__(self):
@@ -368,7 +373,6 @@ class App(object):
             palette=colormap,
             handle_mouse=self.prefs["mouse_integration"])
 
-
     def frame_theme(self, title=""):
         """
         Return the kwargs for a frame theme.
@@ -379,10 +383,9 @@ class App(object):
             theme.update({"title": title})
         return theme
 
-
     def set_header(self, text, *format_specs):
         """
-        Update the header line with the logged in user, a seperator,
+        Update the header line with the logged-in user, a seperator,
         then concat text with format_specs applied to it. Applies
         bar formatting to it.
         """
@@ -391,7 +394,6 @@ class App(object):
             *format_specs
         )
         self.loop.widget.header = urwid.AttrMap(urwid.Text(header), "bar")
-
 
     def set_footer(self, string):
         """
@@ -405,7 +407,6 @@ class App(object):
         #     self.loop.widget.footer[0].set_text(widget)
         # else:
 
-
     def set_default_header(self):
         """
         Sets the header to the default for the current screen.
@@ -415,7 +416,6 @@ class App(object):
             self.set_header("~{}: {}", name, self.thread["title"])
         else:
             self.set_header("{} threads", len(self.walker))
-
 
     def set_default_footer(self, clobber_composer=False):
         """
@@ -434,7 +434,6 @@ class App(object):
 
         self.set_footer(footer)
 
-
     def set_bars(self, clobber_composer=False):
         """
         Sets both the footer and header to their default values
@@ -442,7 +441,6 @@ class App(object):
         """
         self.set_default_header()
         self.set_default_footer(clobber_composer)
-
 
     def close_editor(self):
         """
@@ -457,13 +455,11 @@ class App(object):
             self.loop.widget = self.loop.widget[0]
         self.set_default_header()
 
-
     def overlay_p(self):
         """
         Return True or False if the current widget is an overlay.
         """
         return isinstance(self.loop.widget, urwid.Overlay)
-
 
     def remove_overlays(self, *_):
         """
@@ -475,7 +471,6 @@ class App(object):
                 self.loop.widget = self.loop.widget[0]
             except:
                 break
-
 
     def switch_editor(self):
         """
@@ -511,7 +506,6 @@ class App(object):
         self.loop.widget.header.attr_map = {None: attr[1]}
         self.body.attr_map = {None: attr[1]}
 
-
     def readable_delta(self, modified):
         """
         Return a human-readable string representing the difference
@@ -530,7 +524,6 @@ class App(object):
             return "%d minutes ago" % minutes
         return "less than a minute ago"
 
-
     def quote_view_action(self, button, message):
         """
         Callback function to view a quote from the message object menu.
@@ -547,7 +540,6 @@ class App(object):
             width=("relative", 98),
             height=("relative", 60)
         )
-
 
     def quote_view_menu(self, button, post_ids):
         """
@@ -571,7 +563,7 @@ class App(object):
                 ]
                 buttons.append(cute_button(label, self.quote_view_action, message))
             except IndexError:
-                continue # users can submit >>29384234 garbage references
+                continue  # users can submit >>29384234 garbage references
 
         widget = OptionsMenu(
             urwid.ListBox(urwid.SimpleFocusListWalker(buttons)),
@@ -586,7 +578,6 @@ class App(object):
             width=30
         )
 
-
     def edit_post(self, button, message):
         post_id = message["post_id"]
         thread_id = message["thread_id"]
@@ -600,11 +591,9 @@ class App(object):
         self.remove_overlays()
         self.compose(init_body=message["body"], edit=message)
 
-
     def reply(self, button, message):
         self.remove_overlays()
         self.compose(init_body=">>%d\n\n" % message["post_id"])
-
 
     def deletion_dialog(self, button, message):
         """
@@ -615,7 +604,7 @@ class App(object):
         buttons = [
             urwid.Text(("bold", "Delete this %s?" % ("whole thread" if op else "post"))),
             urwid.Divider(),
-            cute_button(("10" , ">> Yes"), lambda _: [
+            cute_button(("10", ">> Yes"), lambda _: [
                 network.message_delete(message["thread_id"], message["post_id"]),
                 self.remove_overlays(),
                 self.index() if op else self.refresh()
@@ -634,13 +623,11 @@ class App(object):
             valign=("relative", 50),
             width=30, height=6)
 
-
     def toggle_formatting(self, button, message):
         self.remove_overlays()
         raw = not message["send_raw"]
         network.set_post_raw(message["thread_id"], message["post_id"], raw)
         return self.refresh()
-
 
     def on_post(self, button, message):
         quotes = self.get_quotes(message)
@@ -656,11 +643,12 @@ class App(object):
                 self.quote_view_menu, quotes))
 
         if network.can_edit(message["thread_id"], message["post_id"]) \
-               and not self.window_split:
+                and not self.window_split:
 
             if message["post_id"] == 0:
                 msg = "Thread"
-            else: msg = "Post"
+            else:
+                msg = "Post"
 
             raw = message["send_raw"]
             buttons.insert(0, urwid.Button("Delete %s" % msg, self.deletion_dialog, message))
@@ -681,14 +669,13 @@ class App(object):
         size = self.loop.screen_size
 
         self.loop.widget = urwid.Overlay(
-            urwid.AttrMap(widget, str(author["color"]*10)),
+            urwid.AttrMap(widget, str(author["color"] * 10)),
             self.loop.widget,
             align=("relative", 50),
             valign=("relative", 50),
             width=30,
             height=len(buttons) + 2
         )
-
 
     def get_quotes(self, msg_object, value_type=int):
         """
@@ -703,7 +690,6 @@ class App(object):
             # yes python is lisp fuck you
             [quotes.append(cdr) for car, cdr in paragraph if car == "quote"]
         return [value_type(q) for q in quotes]
-
 
     def make_thread_body(self, thread, pinned=False):
         """
@@ -746,7 +732,6 @@ class App(object):
         pile.thread = thread
         return pile
 
-
     def make_message_body(self, message, no_action=False):
         """
         Returns the widgets that comprise a message in a thread, including the
@@ -769,11 +754,11 @@ class App(object):
 
         post = str(message["post_id"])
         head = urwid.Columns([
-                (2 + len(post), urwid.AttrMap(
-                    cute_button(">" + post, callback, message), "button", "hover")),
-                (len(name._text) + 1, urwid.AttrMap(name, color)),
-                urwid.AttrMap(urwid.Text(info), "dim")
-            ])
+            (2 + len(post), urwid.AttrMap(
+                cute_button(">" + post, callback, message), "button", "hover")),
+            (len(name._text) + 1, urwid.AttrMap(name, color)),
+            urwid.AttrMap(urwid.Text(info), "dim")
+        ])
 
         head.message = message
         return [
@@ -785,7 +770,6 @@ class App(object):
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim")
         ]
-
 
     def timestring(self, epoch, mode="both"):
         """
@@ -800,9 +784,8 @@ class App(object):
         elif mode == "date":
             directive = self.prefs["date"]
         else:
-            directive = "%s %s" % ( self.prefs["time"], self.prefs["date"])
+            directive = "%s %s" % (self.prefs["time"], self.prefs["date"])
         return date.strftime(directive)
-
 
     def index(self, *_, threads=None):
         """
@@ -818,7 +801,7 @@ class App(object):
         self.window_split = False
         if threads:
             # passing in an argument for threads implies that we are showing a
-            # narrowed selection of content, so we dont want to resume last_index_pos
+            # narrowed selection of content, so we don't want to resume last_index_pos
             self.last_index_pos = False
         else:
             threads, usermap = network.thread_index()
@@ -852,8 +835,6 @@ class App(object):
             # checks to make sure there are any posts to focus
             self.box.set_focus(0)
 
-
-
     def thread_load(self, button, thread_id):
         """
         Open a thread.
@@ -878,14 +859,12 @@ class App(object):
         self.set_default_footer()
         self.goto_post(mark(thread_id))
 
-
     def toggle_client_pin(self):
         if self.mode != "index":
             return
         thread_id = self.walker.get_focus()[0].thread["thread_id"]
         self.client_pinned_threads = toggle_client_pin(thread_id)
         self.index()
-
 
     def toggle_server_pin(self):
         if self.mode != "index" or not network.user["is_admin"]:
@@ -894,14 +873,13 @@ class App(object):
         network.thread_set_pin(thread["thread_id"], not thread["pinned"])
         self.index()
 
-
     def search_index_callback(self, query):
         simple_query = query.lower().strip()
         threads, usermap = network.thread_index()
         self.usermap.update(usermap)
         results = [
             thread for thread in threads
-                if simple_query in thread["title"].lower().strip()
+            if simple_query in thread["title"].lower().strip()
         ]
         if results:
             self.index(threads=results)
@@ -910,14 +888,13 @@ class App(object):
         else:
             self.temp_footer_message("No results for '{}'".format(query))
 
-
     def search_thread_callback(self, query):
-        # normally i would just use self.thread["messages"] but I need the visbile text post-formatted
+        # normally i would just use self.thread["messages"] but I need the visible text post-formatted
         query = query.lower().strip()
         self.match_data["matches"] = [
             self.thread["messages"][widget.base_widget.post_id] for widget in self.walker
-                if isinstance(widget.base_widget, MessageBody)
-                and query in widget.base_widget.text.lower().strip()
+            if isinstance(widget.base_widget, MessageBody)
+               and query in widget.base_widget.text.lower().strip()
         ]
         if self.match_data["matches"]:
             self.match_data["query"] = query
@@ -926,7 +903,6 @@ class App(object):
             self.do_search_result()
         else:
             self.temp_footer_message("No results for '{}'".format(query))
-
 
     def do_search_result(self, forward=True):
         if not self.match_data["matches"]:
@@ -944,7 +920,6 @@ class App(object):
             "({}/{}) Searching for {} [#]Next [@]Previous".format(
                 self.match_data["position"] + 1, length, self.match_data["query"]
             ), 5)
-
 
     # XXX: Try to find a way to overlay properties onto an existing widget instead of this trainwreck.
     # def highlight_query(self):
@@ -966,7 +941,6 @@ class App(object):
     #             else:
     #                 index += length
     #                 new_attrs.append((prop, length))
-
 
     def search_prompt(self):
         if self.mode == "index":
@@ -991,7 +965,6 @@ class App(object):
             valign=("relative", 25 if self.window_split else 50),
             width=("relative", 40), height=6)
 
-
     def refresh(self):
         self.remove_overlays()
         if self.mode == "index":
@@ -1006,7 +979,6 @@ class App(object):
             self.goto_post(mark(thread))
         self.temp_footer_message("Refreshed content!", 1)
 
-
     def back(self, terminate=False):
         if app.mode == "index" and terminate:
             frilly_exit()
@@ -1019,7 +991,7 @@ class App(object):
             buttons = [
                 urwid.Text(("bold", "Discard current post?")),
                 urwid.Divider(),
-                cute_button(("10" , ">> Yes"), lambda _: [
+                cute_button(("10", ">> Yes"), lambda _: [
                     self.remove_overlays(),
                     self.index()
                 ]),
@@ -1041,13 +1013,11 @@ class App(object):
             mark()
             self.index()
 
-
     def get_focus_post(self, return_widget=False):
         pos = self.box.get_focus_path()[0]
         if self.mode == "thread":
             return (pos - (pos % 5)) // 5
         return pos if not return_widget else self.walker[pos]
-
 
     def header_jump_next(self):
         if self.mode == "index":
@@ -1056,8 +1026,8 @@ class App(object):
             post = self.get_focus_post()
             if post != self.thread["reply_count"]:
                 self.goto_post(post + 1)
-            else: break
-
+            else:
+                break
 
     def header_jump_previous(self):
         if self.mode == "index":
@@ -1066,8 +1036,8 @@ class App(object):
             post = self.get_focus_post()
             if post != 0:
                 self.goto_post(post - 1)
-            else: break
-
+            else:
+                break
 
     def goto_post(self, number):
         if self.mode != "thread":
@@ -1083,7 +1053,6 @@ class App(object):
                 "below" if (cur_pos < new_pos) else "above")
         except IndexError:
             self.temp_footer_message("OUT OF BOUNDS")
-
 
     def goto_post_prompt(self, init):
         if self.mode != "thread":
@@ -1113,7 +1082,6 @@ class App(object):
             valign=("relative", 25 if self.window_split else 50),
             width=20, height=6)
 
-
     def jump_peek(self, editor, value, display):
         if not value:
             return display.set_text("")
@@ -1121,24 +1089,22 @@ class App(object):
         author = self.usermap[msg["author"]]
         display.set_text((str(author["color"]), ">>%s %s" % (value, author["user_name"])))
 
-
     def set_theme(self, button, new_state):
         """
         Callback for the theme radio buttons in the options.
         """
-        if new_state == True:
+        if new_state:
             self.theme = themes[button.label].copy()
             if self.prefs["custom_divider_char"]:
                 self.theme["divider"] = self.prefs["custom_divider_char"]
             self.prefs["frame_theme"] = button.label
             bbjrc("update", **self.prefs)
 
-
     def set_new_editor(self, button, value, arg):
         """
-        Callback for the option radio buttons to set the the text editor.
+        Callback for the option radio buttons to set the text editor.
         """
-        if value == False:
+        if not value:
             return
         elif isinstance(value, str):
             [button.set_state(False) for button in arg]
@@ -1151,7 +1117,6 @@ class App(object):
         self.prefs.update({"editor": key})
         bbjrc("update", **self.prefs)
 
-
     def set_editor_mode(self, button, value):
         """
         Callback for the editor mode radio buttons in the options.
@@ -1159,10 +1124,8 @@ class App(object):
         self.prefs["integrate_external_editor"] = value
         bbjrc("update", **self.prefs)
 
-
     def toggle_thread_pin(self, thread_id):
         pass
-
 
     def relog(self, *_, **__):
         """
@@ -1182,7 +1145,6 @@ class App(object):
         self.set_default_header()
         self.options_menu()
 
-
     def unlog(self, *_, **__):
         """
         Options menu callback to anonymize the user and
@@ -1194,10 +1156,9 @@ class App(object):
         self.set_default_header()
         self.options_menu()
 
-
     def general_help(self):
         """
-        Show a general help dialog. In all honestly, its not
+        Show a general help dialog. In all honestly, it's not
         very useful and will only help people who have never
         really used terminal software before =)
         """
@@ -1224,7 +1185,6 @@ class App(object):
             height=("relative", 60)
         )
 
-
     def formatting_help(self, *_):
         """
         Pops a help window for formatting directives.
@@ -1249,22 +1209,18 @@ class App(object):
             height=("relative", vh)
         )
 
-
     def set_color(self, button, value, color):
-        if value == False:
+        if not value:
             return
         network.user_update(color=color)
-
 
     def toggle_exit(self, button, value):
         self.prefs["dramatic_exit"] = value
         bbjrc("update", **self.prefs)
 
-
     def toggle_anon_warn(self, button, value):
         self.prefs["confirm_anon"] = value
         bbjrc("update", **self.prefs)
-
 
     def toggle_mouse(self, button, value):
         self.prefs["mouse_integration"] = value
@@ -1272,11 +1228,9 @@ class App(object):
         self.loop.screen.set_mouse_tracking(value)
         bbjrc("update", **self.prefs)
 
-
     def toggle_spacing(self, button, value):
         self.prefs["index_spacing"] = value
         bbjrc("update", **self.prefs)
-
 
     def change_username(self, *_):
         self.loop.stop()
@@ -1293,7 +1247,6 @@ class App(object):
         except (KeyboardInterrupt, InterruptedError):
             self.loop.start()
 
-
     def change_password(self, *_):
         self.loop.stop()
         call("clear", shell=True)
@@ -1309,7 +1262,6 @@ class App(object):
         except (KeyboardInterrupt, InterruptedError):
             self.loop.start()
 
-
     def live_time_render(self, editor, text, args):
         widget, key = args
         try:
@@ -1320,24 +1272,21 @@ class App(object):
             rendered = ("1", "Invalid Input")
         widget.set_text(rendered)
 
-
     def edit_width(self, editor, content):
         value = int(content) if content else 0
-        if value < 10: value = 10
+        if value < 10:
+            value = 10
         self.prefs["max_text_width"] = value
         bbjrc("update", **self.prefs)
-
 
     def edit_shift(self, editor, content):
         self.prefs["shift_multiplier"] = \
             int(content) if content else 0
         bbjrc("update", **self.prefs)
 
-
     def save_escape_key(self, value, mode):
         self.prefs["edit_escapes"].update({mode[0]: value})
         bbjrc("update", **self.prefs)
-
 
     def set_escape_key(self, button, args):
         mode = args[0]
@@ -1360,7 +1309,6 @@ class App(object):
             width=25, height=5
         )
 
-
     def incr_jump(self):
         if self.mode != "thread":
             return
@@ -1373,7 +1321,6 @@ class App(object):
         self.set_default_footer()
         bbjrc("update", **self.prefs)
 
-
     def decr_jump(self):
         if self.mode != "thread":
             return
@@ -1385,7 +1332,6 @@ class App(object):
         self.prefs["jump_count"] = value
         self.set_default_footer()
         bbjrc("update", **self.prefs)
-
 
     def options_menu(self):
         """
@@ -1405,7 +1351,7 @@ class App(object):
                 urwid.Divider(),
                 urwid.Text(("button", "Your color:")),
                 urwid.Text(("default", "This color will show on your "
-                            "post headers and when people quote you.")),
+                                       "post headers and when people quote you.")),
                 urwid.Divider()
             ]
 
@@ -1570,7 +1516,6 @@ class App(object):
             height=("relative", 75)
         )
 
-
     def footer_prompt(self, text, callback, *callback_args, extra_text=None):
         text = "(%s)> " % text
         widget = urwid.Columns([
@@ -1587,17 +1532,15 @@ class App(object):
         self.loop.widget.footer = widget
         self.loop.widget.focus_position = "footer"
 
-
     def reset_footer(self, *_):
         if self.window_split:
             return
         self.set_default_footer()
         # try:
-            # self.loop.widget.focus_position = "body"
+        # self.loop.widget.focus_position = "body"
         # except:
-            # just keep trying until the focus widget can handle it
-            # return self.loop.set_alarm_in(0.25, self.reset_footer)
-
+        # just keep trying until the focus widget can handle it
+        # return self.loop.set_alarm_in(0.25, self.reset_footer)
 
     def temp_footer_message(self, string, duration=3):
         self.loop.remove_alarm(self.last_alarm)
@@ -1606,7 +1549,6 @@ class App(object):
             pass
         else:
             self.set_footer(string)
-
 
     def overthrow_ext_edit(self, init_body=""):
         """
@@ -1625,7 +1567,6 @@ class App(object):
         self.loop.start()
         return body.strip()
 
-
     def compose(self, title=None, init_body="", edit=False):
         """
         Dispatches the appropriate composure mode and widget based on application
@@ -1635,7 +1576,8 @@ class App(object):
             return self.footer_prompt("Title", self.compose)
 
         elif title:
-            try: network.validate("title", title)
+            try:
+                network.validate("title", title)
             except AssertionError as e:
                 return self.footer_prompt(
                     "Title", self.compose, extra_text=e.description)
@@ -1711,7 +1653,7 @@ class App(object):
                 self.loop.screen_size[1] // 2)])
 
         self.set_header(*header)
-        self.window_split=True
+        self.window_split = True
         self.switch_editor()
 
 
@@ -1719,6 +1661,7 @@ class MessageBody(urwid.Text):
     """
     An urwid.Text object that works with the BBJ formatting directives.
     """
+
     def __init__(self, message):
         if message["send_raw"]:
             return super(MessageBody, self).__init__(message["body"])
@@ -1744,9 +1687,9 @@ class MessageBody(urwid.Text):
                     result.append(("3", "%s" % body.strip()))
                     # TEN MILLION YEARS DUNGEON NO TRIAL
                     # try:
-                        # this /naughty/ hack is supposed to keep spacing consistent....needs tweaking
-                        # if result[-1][-1][-1] != "\n":
-                        #     result.append(("default", "\n"))
+                    # this /naughty/ hack is supposed to keep spacing consistent....needs tweaking
+                    # if result[-1][-1][-1] != "\n":
+                    #     result.append(("default", "\n"))
                     # except IndexError:
                     #     pass
 
@@ -1776,7 +1719,7 @@ class MessageBody(urwid.Text):
                             color += "0"
                         else:
                             display = "[%s]" % user["user_name"]
-                    except: # the quote may be garbage and refer to a nonexistant post
+                    except:  # the quote may be garbage and refer to a nonexistent post
                         display = ""
                     result.append((color, ">>%s%s" % (body, display)))
 
@@ -1792,7 +1735,7 @@ class MessageBody(urwid.Text):
                     result.append(("default", body))
                 last_directive = directive
             result.append("\n\n")
-        result.pop() # lazily ensure \n\n between paragraphs but not at the end
+        result.pop()  # lazily ensure \n\n between paragraphs but not at the end
         super(MessageBody, self).__init__(result)
 
 
@@ -1802,6 +1745,7 @@ class KeyPrompt(urwid.Edit):
     keybinding that is pressed. Is used to customize
     keybinds across the client.
     """
+
     def __init__(self, initkey, callback, *callback_args):
         super(KeyPrompt, self).__init__()
         self.set_edit_text(initkey)
@@ -1823,6 +1767,7 @@ class Prompt(urwid.Edit):
     character-wise (not word-wise) movements are
     implemented.
     """
+
     def keypress(self, size, key):
         if not super(Prompt, self).keypress(size, key):
             return
@@ -1854,7 +1799,7 @@ class Prompt(urwid.Edit):
             self.set_edit_pos(len(text))
 
         elif key == "d":
-            self.set_edit_text(text[0:column] + text[column+1:])
+            self.set_edit_text(text[0:column] + text[column + 1:])
 
         return key
 
@@ -1864,7 +1809,6 @@ class FootPrompt(Prompt):
         super(FootPrompt, self).__init__()
         self.callback = callback
         self.args = callback_args
-
 
     def keypress(self, size, key):
         super(FootPrompt, self).keypress(size, key)
@@ -1883,7 +1827,6 @@ class StringPrompt(Prompt, urwid.Edit):
         super(StringPrompt, self).__init__()
         self.callback = callback
         self.args = callback_args
-
 
     def keypress(self, size, key):
         keyl = key.lower()
@@ -1905,7 +1848,6 @@ class JumpPrompt(Prompt, urwid.IntEdit):
         self.callback = callback
         self.args = callback_args
 
-
     def valid_char(self, char):
         if not (len(char) == 1 and char in "0123456789"):
             return False
@@ -1919,10 +1861,9 @@ class JumpPrompt(Prompt, urwid.IntEdit):
                 text.set_text((attr, body))
                 app.loop.draw_screen()
                 sleep(0.05)
-        except: # fuck it who cares
+        except:  # fuck it who cares
             pass
         return False
-
 
     def incr(self, direction):
         value = self.value()
@@ -1939,7 +1880,6 @@ class JumpPrompt(Prompt, urwid.IntEdit):
 
         self.set_edit_pos(len(value))
 
-
     def keypress(self, size, key):
         keyl = key.lower()
         if key == "enter":
@@ -1955,7 +1895,7 @@ class JumpPrompt(Prompt, urwid.IntEdit):
         elif keyl in ("up", "ctrl p", "p", "k"):
             self.incr("up")
 
-        else: # dont use super because we want to allow zeros in this box
+        else:  # don't use super because we want to allow zeros in this box
             urwid.Edit.keypress(self, (size[0],), key)
 
 
@@ -1982,7 +1922,6 @@ class ExternalEditor(urwid.Terminal):
         super(ExternalEditor, self).__init__(command, env, app.loop, app.prefs["edit_escapes"]["abort"])
         urwid.connect_signal(self, "closed", self.exterminate)
 
-
     # def confirm_anon(self, button, value):
     #     app.loop.widget = app.loop.widget[0]
     #     if not value:
@@ -1993,11 +1932,10 @@ class ExternalEditor(urwid.Terminal):
     #         app.loop.start()
     #     self.exterminate(anon_confirmed=True)
 
-
     def exterminate(self, *_, anon_confirmed=False):
         if app.prefs["confirm_anon"] \
-           and not anon_confirmed    \
-           and network.user["user_name"] == "anonymous":
+                and not anon_confirmed \
+                and network.user["user_name"] == "anonymous":
             # TODO fixoverlay: urwid terminal widgets have been mucking
             # up overlay dialogs since the wee days of bbj, i really
             # need to find a real solution instead of dodging the issue
@@ -2055,7 +1993,6 @@ class ExternalEditor(urwid.Terminal):
         else:
             app.temp_footer_message("EMPTY POST DISCARDED")
 
-
     def keypress(self, size, key):
         """
         The majority of the things the parent keypress method will do is
@@ -2108,7 +2045,6 @@ class ExternalEditor(urwid.Terminal):
 
         os.write(self.master, key.encode("utf8"))
 
-
     def __del__(self):
         """
         Make damn sure we scoop up after ourselves here...
@@ -2151,7 +2087,6 @@ class OptionsMenu(urwid.LineBox):
         elif keyl == "ctrl l":
             wipe_screen()
 
-
     def mouse_event(self, size, event, button, x, y, focus):
         if super(OptionsMenu, self).mouse_event(size, event, button, x, y, focus):
             return
@@ -2167,6 +2102,7 @@ class ActionBox(urwid.ListBox):
     The listwalker used by all the browsing pages. Most of the application
     takes place in an instance of this box. Handles many keybinds.
     """
+
     def keypress(self, size, key):
         super(ActionBox, self).keypress(size, key)
         overlay = app.overlay_p()
@@ -2252,8 +2188,10 @@ class ActionBox(urwid.ListBox):
         elif key == "~":
             # sssssshhhhhhhh
             app.loop.stop()
-            try: call("sl", shell=True)
-            except: pass
+            try:
+                call("sl", shell=True)
+            except:
+                pass
             app.loop.start()
 
         elif keyl == "$":
@@ -2273,7 +2211,6 @@ class ActionBox(urwid.ListBox):
             elif keyl == "ctrl r":
                 app.reply(None, message)
 
-
     def mouse_event(self, size, event, button, x, y, focus):
         if super(ActionBox, self).mouse_event(size, event, button, x, y, focus):
             return
@@ -2286,7 +2223,6 @@ class ActionBox(urwid.ListBox):
                 self._keypress_down(size)
 
 
-
 def frilly_exit():
     """
     Exit with some flair. Will fill the screen with rainbows
@@ -2294,15 +2230,17 @@ def frilly_exit():
     setting, `dramatic_exit`
     """
     # sometimes this gets called before the loop is set up properly
-    try: app.loop.stop()
-    except: pass
+    try:
+        app.loop.stop()
+    except:
+        pass
     if app.prefs["dramatic_exit"] and app.loop.screen_size:
         width, height = app.loop.screen_size
         for x in range(height - 1):
             motherfucking_rainbows(
                 "".join([choice([" ", choice(punctuation)])
-                        for x in range(width)]
-                ))
+                         for x in range(width)]
+                        ))
         out = "  ~~CoMeE BaCkK SooOn~~  0000000"
         motherfucking_rainbows(out.zfill(width))
     else:
@@ -2328,7 +2266,8 @@ def urwid_rainbows(string, bold=False):
     a markup list suitable for urwid's Text contructor.
     """
     colors = [str(x) for x in range(1, 7)]
-    if bold: colors = [(c + "0") for c in colors]
+    if bold:
+        colors = [(c + "0") for c in colors]
     return urwid.Text([(choice(colors), char) for char in string])
 
 
@@ -2344,7 +2283,7 @@ def motherfucking_rainbows(string, inputmode=False, end="\n"):
     return print(end, end="")
 
 
-def paren_prompt(text, positive=True, choices=[], function=input, default=None):
+def paren_prompt(text, positive=True, choices=None, function=input, default=None):
     """
     input(), but riced the fuck out. Changes color depending on
     the value of positive (blue/green for good stuff, red/yellow
@@ -2352,12 +2291,14 @@ def paren_prompt(text, positive=True, choices=[], function=input, default=None):
     system capable of rejecting unavailable choices and highlighting
     their first characters.
     """
+    if choices is None:
+        choices = []
     end = text[-1]
     if end != "?" and end in punctuation:
         text = text[0:-1]
 
     mood = ("\033[1;36m", "\033[1;32m") if positive \
-           else ("\033[1;31m", "\033[1;33m")
+        else ("\033[1;31m", "\033[1;33m")
 
     if choices:
         prompt = "%s{" % mood[0]
@@ -2389,7 +2330,8 @@ def sane_value(key, prompt, positive=True, return_empty=False):
     response = paren_prompt(prompt, positive)
     if return_empty and response == "":
         return response
-    try: network.validate(key, response)
+    try:
+        network.validate(key, response)
     except AssertionError as e:
         return sane_value(key, e.description, False)
     return response
@@ -2424,8 +2366,8 @@ def log_in(relog=False):
         name = sane_value("user_name", "Username", return_empty=True)
     else:
         name = get_arg("user") \
-           or os.getenv("BBJ_USER") \
-           or sane_value("user_name", "Username", return_empty=True)
+               or os.getenv("BBJ_USER") \
+               or sane_value("user_name", "Username", return_empty=True)
     if name == "":
         motherfucking_rainbows("~~W3 4R3 4n0nYm0u5~~")
     else:
@@ -2435,7 +2377,7 @@ def log_in(relog=False):
             network.set_credentials(
                 name,
                 os.getenv("BBJ_PASSWORD", default="")
-                  if not relog else ""
+                if not relog else ""
             )
             # make it easy for people who use an empty password =)
             motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
@@ -2467,7 +2409,7 @@ def log_in(relog=False):
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
             motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
-    sleep(0.5) # let that confirmation message shine
+    sleep(0.5)  # let that confirmation message shine
 
 
 def bbjrc(mode, **params):
@@ -2488,7 +2430,7 @@ def bbjrc(mode, **params):
             # Also covers a previous encounter a user
             # had with having a NoneType set in their
             # config by accident, crashing the program.
-            if key not in values or values[key] == None:
+            if key not in values or values[key] is None:
                 values[key] = default_value
     # else make one
     except FileNotFoundError:
@@ -2505,7 +2447,7 @@ def bbjrc(mode, **params):
 def mark(directive=True):
     """
     Set and retrieve positional marks for threads.
-    This uses a seperate file from the preferences
+    This uses a separate file from the preferences
     to keep it free from clutter.
     """
     try:
@@ -2514,7 +2456,7 @@ def mark(directive=True):
     except FileNotFoundError:
         values = {}
 
-    if directive == True and app.mode == "thread":
+    if directive and app.mode == "thread":
         pos = app.get_focus_post()
         values[app.thread["thread_id"]] = pos
         with open(markpath, "w") as _out:
@@ -2564,8 +2506,8 @@ def ignore(*_, **__):
 
 def wipe_screen(*_):
     """
-    A crude hack to repaint the whole screen. I didnt immediately
-    see anything to acheive this in the MainLoop methods so this
+    A crude hack to repaint the whole screen. I didn't immediately
+    see anything to achieve this in the MainLoop methods so this
     will do, I suppose.
     """
     app.loop.stop()

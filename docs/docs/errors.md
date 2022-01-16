@@ -23,7 +23,7 @@ users.
 
   * **Code 0**: Malformed but non-empty json input. An empty json input where it is required is handled by code 3. This is just decoding errors. The exception text is returned as description.
 
-  * **Code 1**: Internal server error. A short representation of the internal exception as well as the code the server logged it as is returned in the description. Your clients cannot recover from this class of error, and its probably not your fault if you encounter it. If you ever get one, file a bug report.
+  * **Code 1**: Internal server error. A short representation of the internal exception as well as the code the server logged it as is returned in the description. Your clients cannot recover from this class of error, and it's probably not your fault if you encounter it. If you ever get one, file a bug report.
 
   * **Code 2**: Server HTTP error: This is similar to the above but captures errors for the HTTP server rather than BBJs own codebase. The description contains the HTTP error code and server description. This notably covers 404s and thus invalid endpoint names. The HTTP error code is left intact, so you may choose to let your HTTP library or tool of choice handle these for you.
 

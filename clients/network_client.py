@@ -1,15 +1,15 @@
-from urllib.error import URLError
+import json
 import urllib.request as url
 from hashlib import sha256
 from time import time
-import json
+from urllib.error import URLError
 
 
 class BBJ(object):
-    # this module isnt exactly complete. The below description claims
+    # this module isn't exactly complete. The below description claims
     # `all of its endpoints are mapped to native methods` though this
     # is not yet true. The documentation for the API is not yet
-    # complete, and neither is this client. Currently this module is
+    # complete, and neither is this client. Currently, this module is
     # being adapted to fit the needs of the urwid client. As it evolves,
     # and the rest of the project evolves, this client will be completed
     # and well documented.
@@ -44,11 +44,12 @@ class BBJ(object):
     except UserWarning as e:
         assert e.code == 4
         print(e.description)
-        # want the raw error object? thats weird, but whatever.
+        # want the raw error object? that's weird, but whatever.
         return e.body
 
-    See the offical API error documentation for more details.
+    See the official API error documentation for more details.
     """
+
     def __init__(self, host="127.0.0.1", port=7099, https=False):
         """
         Optionally takes port and host as kwargs. It will immediately
@@ -80,21 +81,19 @@ class BBJ(object):
         except URLError:
             raise URLError("Cannot connect to %s (is the server down?)" % self.base[0:-2])
 
-
     def __call__(self, *args, **kwargs):
         """
         Calling the network object itself is exactly the same as calling
-        it's .request() method.
+        its .request() method.
         """
         return self.request(*args, **kwargs)
 
-
-    def _hash(self, string):
+    @staticmethod
+    def _hash(string):
         """
         Handy function to hash a password and return it.
         """
         return sha256(bytes(string, "utf8")).hexdigest()
-
 
     def request(self, endpoint, **params):
         """
@@ -104,7 +103,7 @@ class BBJ(object):
         raised.
 
         However, one kwarg is magical here: no_auth. If you include
-        this, its not sent with the request, it just disables the
+        this, it's not sent with the request, it just disables the
         sending of auth info when it is available (for more info,
         read __init__'s documentation).
 
@@ -139,7 +138,6 @@ class BBJ(object):
 
         return value
 
-
     def raise_exception(self, error_object):
         """
         Takes an API error object and raises the appropriate exception,
@@ -158,7 +156,7 @@ class BBJ(object):
         except UserWarning as e:
             assert e.code == 4
             print(e.description)
-            # want the raw error object? thats weird, but whatever.
+            # want the raw error object? that's weird, but whatever.
             return e.body
         """
         description = error_object["description"]
@@ -178,7 +176,6 @@ class BBJ(object):
         e.code, e.description, e.body = code, description, error_object
         raise e
 
-
     def update_instance_info(self):
         """
         Stores configuration info for the connected BBJ server.
@@ -192,10 +189,9 @@ class BBJ(object):
         response = self("instance_info")
         self.instance_info = response["data"]
 
-
     def validate(self, key, value, exception=AssertionError):
         """
-        Uses the server's db_validate method to verify the validty
+        Uses the server's db_validate method to verify the validity
         of `value` by `key`. If it is invalid, kwarg exception (default
         AssertionError) is raised with the exception containing the
         attribute .description as the server's reason. Exception can
@@ -203,7 +199,7 @@ class BBJ(object):
 
         Examples:
 
-        # this will fail bacause the server wont allow newlines in usernames.
+        # this will fail because the server won't allow newlines in usernames.
           try:
               bbj.validate("user_name", "des\nvox")
           except AssertionError as e:
@@ -228,7 +224,6 @@ class BBJ(object):
             raise error
 
         return True
-
 
     def validate_all(self, keys_and_values, exception=AssertionError):
         """
@@ -263,12 +258,11 @@ class BBJ(object):
             self.validate(key, value, exception) for key, value in keys_and_values
         ]
 
-
     def set_credentials(self, user_name, user_auth, hash_auth=True, check_validity=True):
         """
         Internalizes user_name and user_auth. Unless hash_auth=False is
         specified, user_auth is assumed to be an unhashed password
-        string and it gets hashed with sha256. If you want to handle
+        string, and it gets hashed with sha256. If you want to handle
         hashing yourself, make sure to disable that.
 
         Unless check_validity is set to false, the new credentials are
@@ -290,7 +284,7 @@ class BBJ(object):
           except ConnectionRefusedError:
               # bad auth info
           except ValueError:
-              # paramter validation failed or the user is not registered
+              # parameter validation failed or the user is not registered
 
           # you can handle hashing yourself if you want
           password = input("Enter your password:")
@@ -311,7 +305,6 @@ class BBJ(object):
         self.user_name = user_name
         self.user = self("get_me")["data"]
         return True
-
 
     def validate_credentials(self, user_name, user_auth, exception=True):
         """
@@ -335,22 +328,21 @@ class BBJ(object):
           is_okay = bbj.validate_credentials("desvox", hashed_password, exception=False)
         """
         self.validate_all([
-                ("user_name", user_name),
-                ("auth_hash", user_auth)
-            ], ValueError)
+            ("user_name", user_name),
+            ("auth_hash", user_auth)
+        ], ValueError)
         try:
             response = self("check_auth",
-                no_auth=True,
-                target_user=user_name,
-                target_hash=user_auth
-            )
+                            no_auth=True,
+                            target_user=user_name,
+                            target_hash=user_auth
+                            )
             return response["data"]
 
         except ConnectionRefusedError as e:
             if exception:
                 raise e
             return False
-
 
     def user_is_registered(self, user_name):
         """
@@ -364,7 +356,6 @@ class BBJ(object):
         )
 
         return response["data"]
-
 
     def user_register(self, user_name, user_auth, hash_auth=True, set_as_user=True):
         """
@@ -391,10 +382,10 @@ class BBJ(object):
             user_auth = sha256(bytes(user_auth, "utf8")).hexdigest()
 
         response = self("user_register",
-            no_auth=True,
-            user_name=user_name,
-            auth_hash=user_auth
-        )["data"]
+                        no_auth=True,
+                        user_name=user_name,
+                        auth_hash=user_auth
+                        )["data"]
 
         assert all([
             user_auth == response["auth_hash"],
@@ -405,7 +396,6 @@ class BBJ(object):
             self.set_credentials(user_name, user_auth, False)
 
         return response
-
 
     def user_update(self, **params):
         """
@@ -422,7 +412,6 @@ class BBJ(object):
         self.user = self("get_me")["data"]
         return response["data"]
 
-
     def user_get(self, user_id_or_name):
         """
         Return a full user object by their id or username.
@@ -432,12 +421,11 @@ class BBJ(object):
         same objects. You shouldn't use this method when a usermap
         is provided.
 
-        If the user element isnt found, ValueError is raised.
+        If the user element isn't found, ValueError is raised.
         See also `user_is_registered`
         """
         response = self("user_get", target_user=user_id_or_name)
         return response["data"]
-
 
     def thread_index(self, include_op=False):
         """
@@ -453,7 +441,6 @@ class BBJ(object):
         response = self("thread_index", include_op=include_op)
         return response["data"], response["usermap"]
 
-
     def thread_load(self, thread_id, format=None, op_only=False):
         """
         Returns a tuple where [0] is a thread object and [1] is a usermap object.
@@ -466,9 +453,8 @@ class BBJ(object):
               print(message["body"])
         """
         response = self("thread_load",
-            format=format, thread_id=thread_id, op_only=op_only)
+                        format=format, thread_id=thread_id, op_only=op_only)
         return response["data"], response["usermap"]
-
 
     def thread_create(self, title, body):
         """
@@ -480,7 +466,6 @@ class BBJ(object):
         response = self("thread_create", title=title, body=body)
         return response["data"]
 
-
     def thread_reply(self, thread_id, body):
         """
         Submits a new reply to a thread and returns the new object.
@@ -489,10 +474,9 @@ class BBJ(object):
         response = self("thread_reply", thread_id=thread_id, body=body)
         return response["data"]
 
-
     def fake_message(self, body="!!", format="sequential", author=None, post_id=0):
         """
-        Produce a a valid message object with `body`. Useful for
+        Produce a valid message object with `body`. Useful for
         testing and can also be used mimic server messages in a
         client.
         """
@@ -506,7 +490,6 @@ class BBJ(object):
             "thread_id": "gibberish"
         }
 
-
     def format_message(self, body, format="sequential"):
         """
         Send `body` to the server to be formatted according to `format`,
@@ -514,7 +497,6 @@ class BBJ(object):
         """
         response = self("format_message", body=body, format=format)
         return response["data"]
-
 
     def message_delete(self, thread_id, post_id):
         """
@@ -526,11 +508,10 @@ class BBJ(object):
         response = self("delete_post", thread_id=thread_id, post_id=post_id)
         return response["data"]
 
-
     def edit_query(self, thread_id, post_id):
         """
-        Queries ther server database to see if a post can
-        be edited by the logged in user. thread_id and
+        Queries the database to see if a post can
+        be edited by the logged-in user. thread_id and
         post_id are required.
 
         Returns a message object on success, or raises
@@ -539,18 +520,16 @@ class BBJ(object):
         response = self("edit_query", thread_id=thread_id, post_id=int(post_id))
         return response["data"]
 
-
     def can_edit(self, thread_id, post_id):
         """
         Return bool True/False that the post at thread_id | post_id
-        can be edited by the logged in user. Will not raise UserWarning.
+        can be edited by the logged-in user. Will not raise UserWarning.
         """
         try:
             result = bool(self.edit_query(thread_id, post_id))
         except UserWarning:
             result = False
         return result
-
 
     def edit_message(self, thread_id, post_id, new_body):
         """
@@ -566,7 +545,6 @@ class BBJ(object):
             post_id=post_id, body=new_body)
         return response["data"]
 
-
     def set_post_raw(self, thread_id, post_id, value):
         """
         This is a subset of `edit_message` that retains the old
@@ -581,7 +559,6 @@ class BBJ(object):
             value=bool(value))
         return response["data"]
 
-
     def user_is_admin(self, user_name_or_id):
         """
         Return boolean True or False whether the given user identifier
@@ -591,17 +568,15 @@ class BBJ(object):
         response = self("is_admin", target_user=user_name_or_id)
         return response["data"]
 
-
     def thread_set_pin(self, thread_id, new_status):
         """
         Set whether a thread should be pinned or not. new_status
-        is evaluated as a boolean, and given that the logged in
+        is evaluated as a boolean, and given that the logged-in
         user is an admin, the thread is set to this status on
         the server, and the boolean is returned.
         """
         response = self("thread_set_pin", thread_id=thread_id, value=new_status)
         return response["data"]
-
 
     def message_feed(self, time, format=None):
         """
@@ -628,7 +603,7 @@ class BBJ(object):
         objects from the usermap object.
 
         The "messages" array is already sorted by submission time, newest
-        first. The order in the threads object is undefined and you should
+        first. The order in the threads object is undefined, and you should
         instead use their `last_mod` attribute if you intend to list them
         out visually.
 

@@ -12,7 +12,7 @@ at the root:
 
 `http://server.com/api/endpoint_here`
 
-The body of your request contains all of it's argument fields, instead of
+The body of your request contains all of its argument fields, instead of
 using URL parameters. As a demonstration, to call `thread_create`,
 it requires two arguments: `title`, and `body`. We put those argument
 names at the root of the json object, and their values are the info
@@ -33,13 +33,13 @@ GET these if you so choose.
 
 For all endpoints, argument keys that are not consumed by the endpoint are
 ignored. Posting an object with a key/value pair of `"sandwich": True` will
-not clog up any pipes :) In the same vein, endpoints who dont take arguments
+not clog up any pipes :) In the same vein, endpoints who don't take arguments
 don't care if you supply them anyway.
 
 ## Output
 
 BBJ returns data in a consistently formatted json object. The base object
-has three keys: `data`, `usermap`, and `error`. Visualizied:
+has three keys: `data`, `usermap`, and `error`. Visualized:
 
 ```javascript
 {
@@ -74,7 +74,7 @@ objects. BBJ handles users entirely by an ID system, meaning any references
 to them inside of response data will not include vital information like their
 username, or their profile information. Instead, we fetch those values from
 this usermap object. All of it's root keys are user_id's and their values
-are user objects. It should be noted that the anonymous user has it's own
+are user objects. It should be noted that the anonymous user has its own
 ID and profile object as well.
 
 ### error
@@ -121,7 +121,7 @@ is correct for the given user.
 Requires the arguments `thread_id` and `post_id`.
 
 Delete a message from a thread. The same rules apply
-here as `edit_post` and `edit_query`: the logged in user
+here as `edit_post` and `edit_query`: the logged-in user
 must either be the one who posted the message within 24hrs,
 or have admin rights. The same error descriptions and code
 are returned on falilure. Boolean true is returned on
@@ -215,7 +215,7 @@ you can access metadata for these threads by the `threads` object
 which is also provided.
 
 The `messages` array is already sorted by submission time, newest
-first. The order in the threads object is undefined and you should
+first. The order in the threads object is undefined, and you should
 instead use their `last_mod` attribute if you intend to list them
 out visually.
 
@@ -319,7 +319,7 @@ for the original post.
 Returns the thread object with all of its messages loaded.
 Requires the argument `thread_id`. `format` may also be
 specified as a formatter to run the messages through.
-Currently only "sequential" is supported.
+Currently, only "sequential" is supported.
 
 You may also supply the parameter `op_only`. When it's value
 is non-nil, the messages array will only include post_id 0 (the first)

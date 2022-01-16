@@ -1,25 +1,24 @@
+from time import time
+
+from src import db
 from src import formatting
 from src import schema
-from time import time
-from src import db
-
 
 endpoints = {
-    "check_auth":      ["user", "auth_hash"],
-    "is_registered":   ["target_user"],
-    "is_admin":        ["target_user"],
-    "thread_index":    [],
-    "thread_load":     ["thread_id"],
-    "thread_create":   ["title", "body", "tags"],
-    "thread_reply":    ["thread_id", "body"],
-    "edit_post":       ["thread_id", "post_id", "body"],
-    "edit_query":      ["thread_id", "post_id"],
-    "can_edit":        ["thread_id", "post_id"],
-    "user_register":   ["user", "auth_hash", "quip", "bio"],
-    "user_get":        ["target_user"],
+    "check_auth": ["user", "auth_hash"],
+    "is_registered": ["target_user"],
+    "is_admin": ["target_user"],
+    "thread_index": [],
+    "thread_load": ["thread_id"],
+    "thread_create": ["title", "body", "tags"],
+    "thread_reply": ["thread_id", "body"],
+    "edit_post": ["thread_id", "post_id", "body"],
+    "edit_query": ["thread_id", "post_id"],
+    "can_edit": ["thread_id", "post_id"],
+    "user_register": ["user", "auth_hash", "quip", "bio"],
+    "user_get": ["target_user"],
     "user_name_to_id": ["target_user"]
 }
-
 
 authless = [
     "is_registered",
@@ -32,7 +31,7 @@ authless = [
 def create_usermap(thread, index=False):
     if index:
         return {user: db.user_get(user) for user in
-                  {i["author"] for i in thread}}
+                {i["author"] for i in thread}}
 
     result = {reply["author"] for reply in thread["replies"]}
     result.add(thread["author"])
@@ -58,7 +57,7 @@ def is_registered(json):
 
 
 def check_auth(json):
-    "Returns true or false whether auth_hashes matches user."
+    """Returns true or false whether auth_hashes matches user."""
     return bool(db.user_auth(json["user"], json["auth_hash"]))
 
 
