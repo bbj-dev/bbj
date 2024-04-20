@@ -188,7 +188,8 @@ general_help = [
     "To make scrolling faster, ", ("button", "hold shift"), " when using a control: it "
     "will repeat 5 times by default, and you can change this number in your settings.\n\n"
 
-    "In threads, The ", ("button", "<"), " and ", ("button", ">"), " keys will jump by "
+    "In threads, The ", ("button", "<"), " or ", ("button", ","), " keys, and ", ("button", ">"), 
+    " or ", ("button", "."), " keys will jump by "
     "a chosen number of post headers. You can see the count inside of the footer line at "
     "the far right side: press ", ("button", "x"), " to cycle it upwards or ",
     ("button", "X"), " to cycle it downwards.\n\n"
@@ -1207,7 +1208,7 @@ class App(object):
                     urwid_rainbows(
                         "This is BBJ, a client/server textboard made for tildes!",
                         True),
-                    urwid.Text(("dim", "...by ~desvox")),
+                    # urwid.Text(("dim", "...by ~desvox")),
                     urwid.Divider(self.theme["divider"]),
                     urwid.Button("Post Formatting Help", self.formatting_help),
                     urwid.Divider(self.theme["divider"]),
