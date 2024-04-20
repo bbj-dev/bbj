@@ -1,11 +1,11 @@
 # Bulletin Butter & Jelly
 
 BBJ is a trivial collection of python scripts and database queries that
-miraculously shit out a fully functional, text-driven community bulletin board.
+create a fully functional, text-driven community bulletin board.
 Requires Python 3.4 and up for the server and the official TUI client (clients/urwid/).
 
 ![AAAAAAAAAAAAAAAAAAAA](readme.png)
-<center><h2>Look Ma, it boots !!11!</h2></center>
+<center><h2>it boots!</h2></center>
 
 It's all driven by an API sitting on top of CherryPy. Currently it does not
 serve HTML but this is planned for the (distant?) future.
