@@ -3,6 +3,7 @@
 DEPS=(
     cherrypy
     urwid
+    jinja2
 )
 
 case $1 in

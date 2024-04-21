@@ -1,5 +1,7 @@
 from src.exceptions import BBJException, BBJParameterError, BBJUserError
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from src import db, schema, formatting
+from os.path import abspath
 from functools import wraps
 from uuid import uuid1
 from sys import argv
@@ -9,6 +11,8 @@ import sqlite3
 import json
 
 dbname = "data.sqlite"
+template_environment = Environment(loader=FileSystemLoader("templates/"), autoescape=select_autoescape())
+
 
 # any values here may be overrided in the config.json. Any values not listed
 # here will have no effect on the server.
@@ -122,6 +126,12 @@ def api_method(function):
 
     return wrapper
 
+
+# def html_method(function):
+#     """
+#     Wrapper function for HTML methods.
+#     """
+#     pass
 
 def create_usermap(connection, obj, index=False):
     """
@@ -372,7 +382,7 @@ class API(object):
         instead use their `last_mod` attribute if you intend to list them
         out visually.
         """
-        # XXX: Update with new formatting documentation for arg `format`
+        # TODO: Update with new formatting documentation for arg `format`
         validate(args, ["time"])
         feed = db.message_feed(database, args["time"])
 
@@ -665,6 +675,52 @@ class API(object):
     )
 
 
+class HTML(object):
+    """
+    This object contains all of the endpoints for the HTML application.
+    Javascript isn't used, and a more "retro" aesthetic is aimed for.
+    This fits in line with the general "theme" of the tilde servers
+    this application was originally designed for. If you want a more
+    modern implementation, a javascript-based client can be developed.
+    But the server will not have one built in.
+    """
+
+    @cherrypy.expose
+    def index(self):
+        database = sqlite3.connect(dbname)
+        cookie = cherrypy.request.cookie
+        include_op = "include_op" in cookie.keys() and cookie["include_op"]
+        threads = db.thread_index(database, include_op=include_op)
+        usermap = create_usermap(database, threads, True)
+        template = template_environment.get_template("threadIndex.html")
+        variables = {
+            "threads": threads,
+            "include_op": include_op,
+            "usermap": usermap
+        }
+        return template.render(variables)
+    
+    @cherrypy.expose
+    def thread(self, id=None):
+        if not id:
+            return "None"
+        database = sqlite3.connect(dbname)
+        thread = db.thread_get(database, id)
+        usermap = create_usermap(database, thread["messages"])
+        template = template_environment.get_template("threadLoad.html")
+        variables = {
+            "thread": thread,
+            "usermap": usermap
+        }
+        return template.render(variables)
+
+
+
+
+    def test(self):
+        return "Hello world!"
+
+
 def api_http_error(status, message, traceback, version):
     return json.dumps(schema.error(
         2, "HTTP error {}: {}".format(status, message)))
@@ -673,6 +729,17 @@ def api_http_error(status, message, traceback, version):
 API_CONFIG = {
     "/": {
         "error_page.default": api_http_error
+    }
+}
+
+WEB_CONFIG = {
+    "/css": {
+        "tools.staticdir.on": True,
+        "tools.staticdir.dir": abspath("css")
+    },
+    "/js": {
+        "tools.staticdir.on": True,
+        "tools.staticdir.dir": abspath("js")
     }
 }
 
@@ -691,7 +758,12 @@ def run():
                 "1ccf1ab6b9802b09a313be1478a4d614")
     finally:
         _c.close()
-    cherrypy.quickstart(API(), "/api", API_CONFIG)
+
+    cherrypy.tree.mount(API(), '/api', API_CONFIG)
+    cherrypy.tree.mount(HTML(), '/', WEB_CONFIG)
+    cherrypy.engine.start()
+    cherrypy.engine.block()
+    # cherrypy.quickstart(API(), "/api", API_CONFIG)
 
 
 def get_arg(key, default, get_value=True):

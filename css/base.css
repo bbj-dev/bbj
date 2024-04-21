@@ -1,0 +1,47 @@
+body {
+    font-family: monospace;
+    font-size: 125%;
+}
+
+.thread {
+    padding: 1em;
+    margin: 1em;
+    border: 2px solid black;
+    max-width: 40em;
+}
+
+.message {
+    padding: 1em;
+    margin: 1em;
+    border: 2px solid black;
+    max-width: 60em;
+}
+
+pre {
+    white-space: pre-wrap;
+}
+
+.color1 {
+    color: red;
+}
+
+.color2 {
+    color: yellow;
+}
+
+.color3 {
+    color: green;
+}
+
+.color4 {
+    color: blue;
+}
+
+.color5 {
+    color: cyan;
+}
+
+.color6 {
+    color: magenta;
+}
+

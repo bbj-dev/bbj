@@ -1,0 +1,61 @@
+<!-- {
+  'thread_id': '41556750260c11e78aa402e6a9e126c8', 
+  'author': 'd2ab28b4215911e78aa402e6a9e126c8', 
+  'title': 'New here? a thread for introductions', 
+  'last_mod': 1713633906.6122937, 
+  'created': 1492721973.5667894, 
+  'reply_count': 277, 
+  'pinned': False, 
+  'last_author': '567c3dd0ff3911eea983a1cead9c88ba', 
+  'messages': [
+    {
+      'thread_id': '41556750260c11e78aa402e6a9e126c8', 
+      'post_id': 0, 
+      'author': 'd2ab28b4215911e78aa402e6a9e126c8', 
+      'created': 1492721973.5667894, 
+      'edited': False, 
+      'body': "Message body", 
+      'send_raw': False
+    }
+    ]
+  } -->
+
+  <!-- '841905e68d1011eb9227cd49f80bac2d': 
+    {
+      'user_id': '841905e68d1011eb9227cd49f80bac2d', 
+      'user_name': 'joy', 
+      'quip': '',
+      'bio': '',
+      'color': 0, 
+      'is_admin': False, 
+      'created': 1616638764.0158434
+    } -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="x-ua-compatible" content="ie=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/css/base.css">
+  <title>Thread Index: BBJ</title>
+</head>
+
+<body>
+    {% for thread in threads %}
+    <div class="thread">
+      <a href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
+      <br>
+      by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
+      <br>
+      Created: <span class="datetime">{{ thread["created"] }}</span>
+      <br>
+      {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
+      <br>
+
+    </div>
+    {% endfor %}
+</body>
+<script src="/js/datetime.js"></script>
+</html>

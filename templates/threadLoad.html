@@ -1,0 +1,59 @@
+<!-- {
+    "thread_id": "55ed6cc6ec7511ee9da5d7b798671d27",
+    "author": "e7694b188ccd11eab5efc91820ae1c8d",
+    "title": "joyful things",
+    "last_mod": 1713570345.1295059,
+    "created": 1711569919.20138,
+    "reply_count": 3,threads
+    "pinned": false,
+    "last_author": "9e598ed21f8a11e78aa402e6a9e126c8",
+    "messages": [
+      {
+        "thread_id": "55ed6cc6ec7511ee9da5d7b798671d27",
+        "post_id": 0,
+        "author": "e7694b188ccd11eab5efc91820ae1c8d",
+        "created": 1711569919.20138,
+        "edited": false,
+        "body": "Share something that has brought you joy today. :) And if you're feeling so inspired, maybe take a look at the other joyful things people have posted and ask a question or share how their post makes you feel.\n\nMy hot cup of coffee against the backdrop of a gray, rainy day brought me much joy this morning.",
+        "send_raw": false
+      },
+      {
+        "thread_id": "55ed6cc6ec7511ee9da5d7b798671d27",
+        "post_id": 1,
+        "author": "cf6d84ecb8f511ec827f01ac1bddac88",
+        "created": 1711585515.4367874,
+        "edited": false,
+        "body": "I live in a society where I can just get fresh fruit whenever I want to. I ate\nan orange with lunch today and it was SO good. I am very thankful.",
+        "send_raw": false
+      }
+    ]
+  }
+   -->
+
+
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta http-equiv="x-ua-compatible" content="ie=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <link rel="stylesheet" href="/css/base.css">
+      <title>{{ thread["title"] }}: BBJ</title>
+    </head>
+    
+    <body>
+        {% for message in thread["messages"] %}
+        <div class="message">
+            <div class="messageHeader">
+                >{{ message["post_id"] }}
+                <span class="color{{ usermap[message['author']]['color'] }}">{{ usermap[message["author"]]["user_name"] }}</span>
+                @ <span class="datetime">{{ message["created"] }}</span>
+            </div>
+            <div class="messageBody">
+                <pre>{{ message["body"] }}</pre>
+            </div>
+        </div>
+        {% endfor %}
+    </body>
+    <script src="/js/datetime.js"></script>
+    </html>
