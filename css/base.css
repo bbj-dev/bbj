@@ -27,21 +27,23 @@ body {
 }
 
 #navbar {
-    /* overflow: hidden; */
+    overflow: hidden;
     background-color: #CCC;
     font-size: 1em;
-    padding: 0.25em;
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
     margin: 0px;
     position: fixed;
     top: 0;
-    right: 0;
+    left: 0;
     width: 100%;
   }
 
 .bbjLogo {
     background-color: black;
     color: white;
-    padding: 0.25em
+    padding: 0.10em;
+    margin: 0px;
 
 }
 
