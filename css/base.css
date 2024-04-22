@@ -1,6 +1,7 @@
 body {
     font-family: monospace;
     font-size: 125%;
+    padding-top: 1em;
 }
 
 .thread {
@@ -10,11 +11,49 @@ body {
     max-width: 40em;
 }
 
+.pinned {
+    background-color: aquamarine;
+}
+
+.bookmarked {
+    background-color: lightskyblue;
+}
+
 .message {
     padding: 1em;
     margin: 1em;
     border: 2px solid black;
     max-width: 60em;
+}
+
+#navbar {
+    /* overflow: hidden; */
+    background-color: #CCC;
+    font-size: 1em;
+    padding: 0.25em;
+    margin: 0px;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+  }
+
+.bbjLogo {
+    background-color: black;
+    color: white;
+    padding: 0.25em
+
+}
+
+.newThreadButton {
+    font-size: 140%;
+    padding: 0.5em;
+    margin: 1em;
+    margin-top: 1.5em;
+    background-color: black;
+    color: white;
+    text-decoration: none;
+    display: inline-block;
 }
 
 pre {

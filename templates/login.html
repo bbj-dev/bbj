@@ -2,22 +2,21 @@
 <html>
 <head>
     <title>Log In: BBJ</title>
-    <link rel="stylesheet" href="/css/login.css">
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="/css/base.css">
 </head>
 <body>
-    <center>
-        <form action="/thread" autocomplete="off">
-            <label for="coords">Coordinates:</label>
-            <br>
-            <input type="text" id="coords" name="coords">
-            <br>
-            <label for="label">Label:</label>
-            <br>
-            <input type="text" id="label" name="label">
-            <br>
-            <input type="submit" value="Request Document">
-        </form>
-    <center>
+    {% if authorized_user %}
+    <span>Currently logged in as <span class="color{{ authorized_user['color'] }}">~{{ authorized_user["user_name"] }}</span></span>
+    <br>
+    <a href="/logout">Log out.</a>
+    {% endif %}
+    <form class="loginForm" method="post" action="/login">
+        <label for="username">Username:</label>
+        <input type="text" name="username" /><br />
+        <label for="password">Password:</label>
+        <input type="password" name="password" /><br />
+        <input type="submit" value="Log in" />
+    </form>
 </body>
 </html>
