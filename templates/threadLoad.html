@@ -27,9 +27,10 @@
       <a class="newReplyButton" href="javascript:revealPostReplyForm()">Reply</a>
       <div class="postReplyBox" id="postReplyBox" style="display: none;">
         <form method="post" action="/threadReply">
+            <br>
           <label for="postContent">Reply:</label><br>
           <textarea type="text" id="postContent" name="postContent" rows="10" cols="50"></textarea><br>
-          <input type="text" name="threadId" value="{{ thread['thread_id'] }}">
+          <input type="text" name="threadId" value="{{ thread['thread_id'] }}" style="display:none">
           <input type="submit" value="Post">
         </form>
       </div>
