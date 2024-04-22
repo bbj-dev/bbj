@@ -14,11 +14,15 @@
     <div id="navbar">
         <span class="bbjLogo" onclick="window.location.href='/index'">&lt;- Index</span>
         {% if authorized_user %}
-        <span>Logged in as <span class="color{{ authorized_user['color']}}">~{{ authorized_user["user_name"] }}</span></span>
+        Account: <span class="color{{ authorized_user['color']}}">~{{ authorized_user["user_name"] }}</span>
         {% else %}
         <span>Not logged in.</span>
         {% endif %}
-        <a class="navbarLink" href="/login">Manage login.</a>
+        {% if authorized_user %}
+        <a class="navbarLink" href="/login">Manage</a>
+        {% else %}
+        <a class="navbarLink" href="/login">Login</a>
+        {% endif %}
       </div> 
 
       <h3><span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>: {{ thread["title"] }}</h3>
