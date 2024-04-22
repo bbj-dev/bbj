@@ -40,5 +40,13 @@ function revealThreadCreateForm() {
     } else {
         form.style.display = "none"
     }
-    
+}
+
+function revealPostReplyForm() {
+    form = document.getElementById("postReplyBox")
+    if (form.style.display == "none") {
+        form.style.display = "block"
+    } else {
+        form.style.display = "none"
+    }
 }

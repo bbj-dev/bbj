@@ -23,6 +23,18 @@
 
       <h3><span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>: {{ thread["title"] }}</h3>
 
+      {% if authorized_user %}
+      <a class="newReplyButton" href="javascript:revealPostReplyForm()">Reply</a>
+      <div class="postReplyBox" id="postReplyBox" style="display: none;">
+        <form method="post" action="/threadReply">
+          <label for="postContent">Reply:</label><br>
+          <textarea type="text" id="postContent" name="postContent" rows="10" cols="50"></textarea><br>
+          <input type="text" name="threadId" value="{{ thread['thread_id'] }}">
+          <input type="submit" value="Post">
+        </form>
+      </div>
+      {% endif %}
+
     {% for message in thread["messages"] %}
     <div class="message">
         <div class="messageHeader">
