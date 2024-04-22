@@ -16,7 +16,7 @@
       {% else %}
       <span>Not logged in.</span>
       {% endif %}
-      <a class="navbarLink" href="/login">Set login info.</a>
+      <a class="navbarLink" href="/login">Manage login.</a>
     </div> 
 
     {% if authorized_user %}
@@ -45,6 +45,7 @@
         <br>
         {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
         <br>
+        last active by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
       </div>
       {% endfor %}
     </div>
@@ -63,7 +64,8 @@
         <br>
         {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
         <br>
-        <a href="setBookmark?delBookmark={{ thread['thread_id'] }}">Unbookmark this thread.</a>
+        last active by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
+        <br><a href="setBookmark?delBookmark={{ thread['thread_id'] }}">Unbookmark this thread.</a>
       </div>
       {% endfor %}
     </div>
@@ -82,7 +84,8 @@
         <br>
         {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
         <br>
-        <a href="setBookmark?bookmarkId={{ thread['thread_id'] }}">Bookmark this thread.</a>
+        last active by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
+        <br><a href="setBookmark?bookmarkId={{ thread['thread_id'] }}">Bookmark this thread.</a>
       </div>
       {% endfor %}
     </div>

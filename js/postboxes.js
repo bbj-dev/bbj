@@ -8,8 +8,8 @@ function revealPostReplyBox(post_id) {
 
     textarea = document.createElement("textarea")
     textarea.setAttribute("class", "directReplyBox")
-    textarea.setAttribute("id", "postBody")
-    textarea.setAttribute("name", "postBody")
+    textarea.setAttribute("id", "postContent")
+    textarea.setAttribute("name", "postContent")
     textarea.setAttribute("rows", "10")
     textarea.setAttribute("cols", "50")
     textarea.value = ">>" + post_id + " \n"

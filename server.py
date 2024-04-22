@@ -730,6 +730,7 @@ class HTML(object):
             cherrypy.response.cookie["auth_hash"]["expires"] = 0
         raise cherrypy.HTTPRedirect("/index")
 
+
     @cherrypy.expose
     def setBookmark(self, bookmarkId=None, delBookmark=None):
         if "bookmarks" in cherrypy.request.cookie:
@@ -751,6 +752,7 @@ class HTML(object):
         cherrypy.response.cookie["bookmarks"]["max-age"] = 34560000
         raise cherrypy.HTTPRedirect("/index")
 
+
     @cherrypy.expose
     def index(self, bookmarkId=None, delBookmark=None):
         database = sqlite3.connect(dbname)
@@ -771,12 +773,12 @@ class HTML(object):
         pinned_threads = [thread for thread in threads if thread["pinned"]]
 
         if "bookmarks" in cookie:
-            loads = json.loads(cookie["bookmarks"].value)
-            bookmarked_threads = [thread for thread in threads if thread["thread_id"] in loads]
+            user_bookmarks = json.loads(cookie["bookmarks"].value)
+            bookmarked_threads = [thread for thread in threads if thread["thread_id"] in user_bookmarks]
             threads = [
                 thread for thread in threads 
                 if not thread["pinned"] 
-                and not thread["thread_id"] in loads
+                and not thread["thread_id"] in user_bookmarks
             ]
         else:
             bookmarked_threads = []
@@ -795,6 +797,7 @@ class HTML(object):
             "authorized_user": authorized_user
         }
         return template.render(variables)
+
 
     @cherrypy.expose
     def thread(self, id=None):
@@ -822,6 +825,7 @@ class HTML(object):
         }
         return template.render(variables)
     
+
     @cherrypy.expose
     def threadSubmit(self, title=None, postContent=None):
         database = sqlite3.connect(dbname)
@@ -840,14 +844,21 @@ class HTML(object):
                 
     
     @cherrypy.expose
-    def threadReply(self, postBody, threadId):
+    def threadReply(self, postContent=None, threadId=None):
+        if not threadId:
+            return "No thread ID provided."
+        elif not postContent:
+            return "Reply content is empty."
         database = sqlite3.connect(dbname)
         cookie = cherrypy.request.cookie
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
             if cookie["auth_hash"].value.lower() != user["auth_hash"]:
                 return "Authorization info not correct."
-            db.thread_reply(database, user["user_id"], threadId, postBody)
+            if postContent.strip():
+                db.thread_reply(database, user["user_id"], threadId, postContent)
+            else:
+                return "Post reply is empty."
             raise cherrypy.HTTPRedirect("/thread?id=" + threadId)
         return "User not logged in"
 

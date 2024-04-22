@@ -18,8 +18,10 @@
         {% else %}
         <span>Not logged in.</span>
         {% endif %}
-        <a class="navbarLink" href="/login">Set login info.</a>
+        <a class="navbarLink" href="/login">Manage login.</a>
       </div> 
+
+      <h3><span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>: {{ thread["title"] }}</h3>
 
     {% for message in thread["messages"] %}
     <div class="message">
