@@ -398,7 +398,7 @@ class App(object):
         )
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
-            palette=monochrome_map if self.prefs["monochrome"] else colormap,
+            palette=monochrome_map if os.getenv("NO_COLOR") or self.prefs["monochrome"] else colormap,
             handle_mouse=self.prefs["mouse_integration"])
 
 
