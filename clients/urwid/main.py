@@ -98,7 +98,25 @@ welcome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
 @_________________________________________________________@
 """
 
+welcome_monochrome = """>>> Welcome to Bulletin Butter & Jelly! ------------------@
+| BBJ is a persistent, chronologically ordered text       |
+| discussion board for tildes. You may log in,            |
+| register as a new user, or participate anonymously.     |
+|---------------------------------------------------------|
+| To go anon, just press enter. Otherwise, give me a name |
+|                 (registered or not)                     |
+@_________________________________________________________@
+"""
+
 anon_warn = """>>> \033[1;31mJust a reminder!\033[0m ----------------------------------@
+| You are not logged into BBJ, and are posting this    |
+| message anonymously. If you do not log in, you will  |
+| not be able to edit or delete this message. This     |
+| warning can be disabled in the settings.             |
+|------------------------------------------------------|
+"""
+
+anon_warn_monochrome = """>>> Just a reminder! ----------------------------------@
 | You are not logged into BBJ, and are posting this    |
 | message anonymously. If you do not log in, you will  |
 | not be able to edit or delete this message. This     |
@@ -1254,7 +1272,7 @@ class App(object):
         self.loop.widget = self.loop.widget[0]
         self.loop.stop()
         call("clear", shell=True)
-        print(welcome)
+        print(welcome_monochrome if self.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
         try:
             log_in(relog=True)
         except (KeyboardInterrupt, InterruptedError):
@@ -2143,7 +2161,7 @@ class ExternalEditor(urwid.Terminal):
             # else:
             app.loop.stop()
             call("clear", shell=True)
-            print(anon_warn)
+            print(anon_warn_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else anon_warn)
             choice = paren_prompt(
                 "Post anonymously?", default="yes", choices=["Yes", "no"]
             )
@@ -2454,6 +2472,14 @@ def motherfucking_rainbows(string, inputmode=False, end="\n"):
     """
     I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee
     """
+    
+    prefs = bbjrc("load")
+    if prefs["monochrome"] or os.getenv("NO_COLOR"):
+        if inputmode:
+            return input("")
+        print(string, end="")
+        return print(end, end="")
+    
     for character in string:
         print(choice(colors) + character, end="")
     print('\033[0m', end="")
@@ -2474,21 +2500,28 @@ def paren_prompt(text, positive=True, choices=[], function=input, default=None):
     if end != "?" and end in punctuation:
         text = text[0:-1]
 
-    mood = ("\033[1;36m", "\033[1;32m") if positive \
-           else ("\033[1;31m", "\033[1;33m")
+    monochrome = app.prefs["monochrome"] or os.getenv("NO_COLOR")
+
+    if monochrome:
+        mood = ("", "")
+    else:
+        mood = ("\033[1;36m", "\033[1;32m") if positive \
+            else ("\033[1;31m", "\033[1;33m")
 
     if choices:
         prompt = "%s{" % mood[0]
         for choice in choices:
             prompt += "{0}[{1}{0}]{2}{3} ".format(
-                "\033[1;35m", choice[0], mood[1], choice[1:])
+                "" if monochrome else "\033[1;35m",
+                choice[0], mood[1], choice[1:])
         formatted_choices = prompt[:-1] + ("%s}" % mood[0])
     else:
         formatted_choices = ""
 
     try:
-        response = function("{0}({1}{2}{0}){3}> \033[0m".format(
-            mood[0], mood[1], text, formatted_choices))
+        response = function("{0}({1}{2}{0}){3}> {4}".format(
+            mood[0], mood[1], text, formatted_choices,
+            "" if monochrome else "\033[0m"))
         if not choices:
             return response
         elif response == "":
@@ -2696,7 +2729,7 @@ def main():
     app = App()
     call("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
-    print(welcome)
+    print(welcome_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
     try:
         log_in()
         app.index()
