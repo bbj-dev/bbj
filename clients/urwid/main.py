@@ -29,6 +29,7 @@ from getpass import getpass
 from subprocess import call
 from random import choice
 from code import interact
+from math import floor
 import rlcompleter
 import readline
 import tempfile
@@ -515,15 +516,19 @@ class App(object):
         self.body.attr_map = {None: attr[1]}
 
 
-    def readable_delta(self, modified):
+    def readable_delta(self, timestamp):
         """
         Return a human-readable string representing the difference
         between a given epoch time and the current time.
         """
-        delta = time() - modified
+        delta = time() - timestamp
         hours, remainder = divmod(delta, 3600)
-        if hours > 48:
-            return self.timestring(modified)
+        if hours > 840: # 5 weeks
+            return self.timestring(timestamp)
+        elif hours > 168: # one week
+            return "%d weeks ago" % floor(hours / 168)
+        elif hours > 48:
+            return "%d days ago" % floor(hours / 24)
         elif hours > 1:
             return "%d hours ago" % hours
         elif hours == 1:
@@ -531,6 +536,8 @@ class App(object):
         minutes, remainder = divmod(remainder, 60)
         if minutes > 1:
             return "%d minutes ago" % minutes
+        if minutes == 1:
+            return "1 minute ago"
         return "less than a minute ago"
 
 
