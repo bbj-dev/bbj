@@ -462,6 +462,10 @@ def validate(keys_and_values):
             if not value:
                 raise BBJUserError(
                     "Username may not be empty.")
+            
+            elif type(value) != str:
+                raise BBJUserError(
+                    "Username must be a string.")
 
             elif contains_nonspaces(value):
                 raise BBJUserError(

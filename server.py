@@ -688,7 +688,8 @@ class HTML(object):
     """
 
     @cherrypy.expose
-    def login(self, username=None, password=None):
+    def account(self, username=None, password=None, color=None, updateUsername=None, 
+                updatePassword=None, passwordConfirmation=None):
         database = sqlite3.connect(dbname)
         cookie = cherrypy.request.cookie
         if username and password:
@@ -706,15 +707,48 @@ class HTML(object):
         
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
-            if cookie["auth_hash"].value.lower() == user["auth_hash"]:
+            if user and cookie["auth_hash"].value.lower() == user["auth_hash"]:
                 authorized_user = user
+                if color:
+                    try:
+                        color_number = int(color)
+                        if color_number in (0, 1, 2, 3, 4, 5, 6):
+                            db.user_update(database, authorized_user, {"color": color_number})
+                            raise cherrypy.HTTPRedirect("/account")
+                    except ValueError:
+                        return "Color must be a number, 0-6"
+                elif updateUsername:
+                    try: 
+                        db.validate([["user_name", updateUsername]])
+                        update = db.user_update(database, authorized_user, {"user_name": updateUsername})
+                        cherrypy.response.cookie["username"] = update["user_name"]
+                        cherrypy.response.cookie["username"]["max-age"] = 34560000
+                        raise cherrypy.HTTPRedirect("/account")
+                    except BBJUserError as e:
+                        return e.description
+                elif updatePassword and passwordConfirmation:
+                    if len(updatePassword) > 4096:
+                        return "Password is too long."
+                    elif updatePassword != passwordConfirmation:
+                        return "Password and password confirmation do not match."
+                    auth_hash = sha256(bytes(updatePassword, "utf8")).hexdigest()
+                    try: 
+                        db.validate([["auth_hash", auth_hash]])
+                        update = db.user_update(database, authorized_user, {"auth_hash": auth_hash})
+                        cherrypy.response.cookie["auth_hash"] = update["auth_hash"]
+                        cherrypy.response.cookie["auth_hash"]["max-age"] = 34560000
+                    except BBJParameterError:
+                        return e.description
+                    
+
+
             else:
                 authorized_user = None
         else:
             authorized_user = None
 
 
-        template = template_environment.get_template("login.html")
+        template = template_environment.get_template("account.html")
         variables = {
             "authorized_user": authorized_user
         }
@@ -763,7 +797,7 @@ class HTML(object):
 
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
-            if cookie["auth_hash"].value.lower() == user["auth_hash"]:
+            if user and cookie["auth_hash"].value.lower() == user["auth_hash"]:
                 authorized_user = user
             else:
                 authorized_user = None
@@ -810,7 +844,7 @@ class HTML(object):
 
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
-            if cookie["auth_hash"].value.lower() == user["auth_hash"]:
+            if user and cookie["auth_hash"].value.lower() == user["auth_hash"]:
                 authorized_user = user
             else:
                 authorized_user = None
@@ -832,7 +866,7 @@ class HTML(object):
         cookie = cherrypy.request.cookie
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
-            if cookie["auth_hash"].value.lower() == user["auth_hash"]:
+            if user and cookie["auth_hash"].value.lower() == user["auth_hash"]:
                 if title and postContent and title.strip() and postContent.strip():
                     thread = db.thread_create(database, user["user_id"], postContent, title)
                     raise cherrypy.HTTPRedirect("/thread?id=" + thread["thread_id"])
@@ -853,7 +887,7 @@ class HTML(object):
         cookie = cherrypy.request.cookie
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
-            if cookie["auth_hash"].value.lower() != user["auth_hash"]:
+            if user and cookie["auth_hash"].value.lower() != user["auth_hash"]:
                 return "Authorization info not correct."
             if postContent.strip():
                 db.thread_reply(database, user["user_id"], threadId, postContent)
