@@ -525,8 +525,10 @@ class App(object):
         hours, remainder = divmod(delta, 3600)
         if hours > 840: # 5 weeks
             return self.timestring(timestamp)
-        elif hours > 168: # one week
+        elif hours > 336: # 2 weeks:
             return "%d weeks ago" % floor(hours / 168)
+        elif hours > 168: # one week
+            return "%d week ago" % floor(hours / 168)
         elif hours > 48:
             return "%d days ago" % floor(hours / 24)
         elif hours > 1:
