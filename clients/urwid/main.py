@@ -233,6 +233,7 @@ default_prefs = {
     "confirm_anon": True,
     "information_density": "default",
     "thread_divider": True,
+    "monochrome": False,
     "edit_escapes": {
         "abort": "f1",
         "focus": "f2",
@@ -275,6 +276,34 @@ colormap = [
     ("40", "light blue", "default"),
     ("50", "light cyan", "default"),
     ("60", "light magenta", "default")
+]
+
+monochrome_map = [
+    ("default", "default", "default"),
+    ("bar", "default", "default"),
+    ("button", "default", "default"),
+    ("quote", "default", "default"),
+    ("opt_prompt", "default", "light gray"),
+    ("opt_header", "default", "default"),
+    ("hover", "default", "default"),
+    ("dim", "default", "default"),
+    ("bold", "default,bold", "default"),
+    ("underline", "default,underline", "default"),
+
+    ("0", "default", "default"),
+    ("1", "default", "default"),
+    ("2", "default", "default"),
+    ("3", "default", "default"),
+    ("4", "default", "default"),
+    ("5", "default", "default"),
+    ("6", "default", "default"),
+
+    ("10", "default", "default"),
+    ("20", "default", "default"),
+    ("30", "default", "default"),
+    ("40", "default", "default"),
+    ("50", "default", "default"),
+    ("60", "default", "default")
 ]
 
 escape_map = {
@@ -369,7 +398,7 @@ class App(object):
         )
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
-            palette=colormap,
+            palette=monochrome_map if self.prefs["monochrome"] else colormap,
             handle_mouse=self.prefs["mouse_integration"])
 
 
@@ -1318,6 +1347,13 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def toggle_monochrome(self, button, value):
+        self.prefs["monochrome"] = value
+        self.loop.screen.register_palette(monochrome_map if value else colormap)
+        self.loop.screen.clear()
+        bbjrc("update", **self.prefs)
+
+
     def toggle_mouse(self, button, value):
         self.prefs["mouse_integration"] = value
         self.loop.handle_mouse = value
@@ -1549,6 +1585,11 @@ class App(object):
         for item in [urwid.Divider(self.theme["divider"]),
                      urwid.Text(("opt_header", "App"), 'center'),
                      urwid.Divider(),
+                     urwid.CheckBox(
+                         "Monochrome mode",
+                         state=self.prefs["monochrome"],
+                         on_state_change=self.toggle_monochrome
+                     ),
                      urwid.CheckBox(
                          "Dump rainbows on exit",
                          state=self.prefs["dramatic_exit"],
