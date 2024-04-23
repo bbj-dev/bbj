@@ -1,6 +1,6 @@
 body {
     font-family: monospace;
-    font-size: 125%;
+    font-size: 110%;
     padding-top: 1em;
 }
 
@@ -43,6 +43,8 @@ body {
     background-color: black;
     color: white;
     padding: 0.10em;
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
     margin: 0px;
 
 }

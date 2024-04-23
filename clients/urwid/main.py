@@ -230,6 +230,8 @@ default_prefs = {
     "use_custom_frame_title": False,
     "max_text_width": 80,
     "confirm_anon": True,
+    "information_density": "default",
+    "thread_divider": True,
     "edit_escapes": {
         "abort": "f1",
         "focus": "f2",
@@ -718,27 +720,61 @@ class App(object):
         else:
             title = urwid.Text(thread["title"])
         user = self.usermap[thread["author"]]
-        dateline = [
-            ("default", "by "),
-            (str(user["color"]), "~%s " % user["user_name"]),
-            ("dim", "@ %s" % self.timestring(thread["created"]))
-        ]
-
-        infoline = "%d replies; active %s" % (
-            thread["reply_count"],
-            self.timestring(thread["last_mod"], "delta"))
-
         last_author = self.usermap[thread["last_author"]]
-        pile = [
-            urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
-            urwid.Text(dateline),
-            urwid.Text(("dim", infoline)),
-            urwid.Text([
-                ("dim", "last post by "),
-                (str(last_author["color"]), "~" + last_author["user_name"])
-            ]),
-            urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim")
-        ]
+
+        if self.prefs["information_density"] == "default":
+            dateline = [
+                ("default", "by "),
+                (str(user["color"]), "~%s " % user["user_name"]),
+                ("dim", "@ %s" % self.timestring(thread["created"]))
+            ]
+
+            infoline = "%d replies; active %s" % (
+                thread["reply_count"],
+                self.timestring(thread["last_mod"], "delta"))
+            
+            pile = [
+                urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
+                urwid.Text(dateline),
+                urwid.Text(("dim", infoline)),
+                urwid.Text([
+                    ("dim", "last post by "),
+                    (str(last_author["color"]), "~" + last_author["user_name"])
+                ])
+            ]
+        
+        elif self.prefs["information_density"] == "compact":
+            firstline = urwid.Columns([
+                (3, urwid.AttrMap(button, "button", "hover")), 
+                (len(title._text), title)
+                ])
+            secondline = urwid.Text([
+                ("default", "by "),
+                (str(user["color"]), "~%s " % user["user_name"]),
+                ("dim", "@ %s; " % self.timestring(thread["created"])),
+                "%d replies; active %s" % (
+                    thread["reply_count"],
+                    self.timestring(thread["last_mod"], "delta"),
+                    )
+            ])
+            pile = [
+                firstline,
+                urwid.AttrMap(secondline, "dim"),
+            ]
+        
+        elif self.prefs["information_density"] == "ultra":
+            line = urwid.Columns([
+                (3, urwid.AttrMap(button, "button", "hover")), 
+                (len(title._text), title),
+                urwid.Text([
+                    ("default", " by "),
+                    (str(user["color"]), "~%s " % user["user_name"]),
+                    ("dim", "@ %s" % self.timestring(thread["created"]))])
+                ])
+            pile = [line]
+
+        if self.prefs["information_density"] != "ultra" and self.prefs["thread_divider"]:
+                pile.append(urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim"))
 
         if self.prefs["index_spacing"]:
             pile.insert(4, urwid.Divider())
@@ -1161,6 +1197,12 @@ class App(object):
         bbjrc("update", **self.prefs)
 
 
+    def set_density(self, button, new_state):
+        if new_state == True:
+            self.prefs["information_density"] = button.label
+            bbjrc("update", **self.prefs)
+
+
     def toggle_thread_pin(self, thread_id):
         pass
 
@@ -1276,6 +1318,10 @@ class App(object):
 
     def toggle_spacing(self, button, value):
         self.prefs["index_spacing"] = value
+        bbjrc("update", **self.prefs)
+
+    def toggle_thread_divider(self, button, value):
+        self.prefs["thread_divider"] = value
         bbjrc("update", **self.prefs)
 
 
@@ -1424,6 +1470,15 @@ class App(object):
             account_message = "You're browsing anonymously, and cannot set account preferences."
             account_stuff = [urwid.Button("Login/Register", on_press=self.relog)]
 
+        density_buttons = []
+        for value in ["default", "compact", "ultra"]:
+            urwid.RadioButton(
+                density_buttons, value,
+                state=self.prefs["information_density"] == value,
+                on_state_change=self.set_density
+                # user_data=value
+            )
+
         theme_buttons = []
         for name, theme in themes.items():
             urwid.RadioButton(
@@ -1501,6 +1556,11 @@ class App(object):
                          on_state_change=self.toggle_spacing
                      ),
                      urwid.CheckBox(
+                         "Use dividers in thread list",
+                         state=self.prefs["thread_divider"],
+                         on_state_change=self.toggle_thread_divider
+                     ),
+                     urwid.CheckBox(
                          "Handle mouse (disrupts URL clicking)",
                          state=self.prefs["mouse_integration"],
                          on_state_change=self.toggle_mouse
@@ -1512,9 +1572,16 @@ class App(object):
                      urwid.Text("Restart to fully apply.")]:
             content.append(item)
 
+
         for item in theme_buttons:
             content.append(item)
 
+        content.append(urwid.Divider())
+
+        content.append(urwid.Text(("button", "Information Density")))
+        for item in density_buttons:
+            content.append(item)
+        
         content.append(urwid.Divider())
 
         for item in time_stuff:
