@@ -819,14 +819,17 @@ class App(object):
             ]
         
         elif self.prefs["information_density"] == "ultra":
+            # for some reason, text overflowing to the right side of terminal
+            # are deleted instead of being properly wrapped. but this is preferable
+            # behviour to what it was doing IMHO
+            info = urwid.Text([
+                ("default", " by "),
+                (str(user["color"]), "~%s " % user["user_name"]),
+                ("dim", "@ %s" % self.timestring(thread["created"]))])
             line = urwid.Columns([
                 (3, urwid.AttrMap(button, "button", "hover")), 
-                (len(title._text), title),
-                urwid.Text([
-                    ("default", " by "),
-                    (str(user["color"]), "~%s " % user["user_name"]),
-                    ("dim", "@ %s" % self.timestring(thread["created"]))])
-                ])
+                (len(title.text), title),
+                (len(info.text), info)])
             pile = [line]
 
         if self.prefs["information_density"] != "ultra" and self.prefs["thread_divider"]:
