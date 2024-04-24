@@ -563,31 +563,33 @@ class App(object):
         self.body.attr_map = {None: attr[1]}
 
 
-    def readable_delta(self, timestamp):
+    def readable_delta(self, timestamp, compact=False):
         """
         Return a human-readable string representing the difference
         between a given epoch time and the current time.
         """
+        # "New BBJ Features Thread by ~deltarae in 2024; ~dzwdz replied 15h ago; 4 total"
+        # "<1m ago", "Xm ago", "Xh Ym ago", "Xd ago", "Xw ago" "Xm ago" "<datestamp>"
         delta = time() - timestamp
         hours, remainder = divmod(delta, 3600)
         if hours > 840: # 5 weeks
             return self.timestring(timestamp)
         elif hours > 336: # 2 weeks:
-            return "%d weeks ago" % floor(hours / 168)
+            return "%d%s ago" % (floor(hours / 168), "w" if compact else " weeks")
         elif hours > 168: # one week
-            return "%d week ago" % floor(hours / 168)
+            return "%d%s ago" % (floor(hours / 168), "w" if compact else " weeks")
         elif hours > 48:
-            return "%d days ago" % floor(hours / 24)
+            return "%d%s ago" % (floor(hours / 24), "d" if compact else " days")
         elif hours > 1:
-            return "%d hours ago" % hours
+            return "%d%s ago" % (hours, "h" if compact else " hours")
         elif hours == 1:
-            return "about an hour ago"
+            return "1h ago" if compact else "about an hour ago"
         minutes, remainder = divmod(remainder, 60)
         if minutes > 1:
-            return "%d minutes ago" % minutes
+            return "%d%s ago" % (minutes, "m" if compact else " minutes")
         if minutes == 1:
-            return "1 minute ago"
-        return "less than a minute ago"
+            return "1m ago" if compact else "1 minute ago"
+        return "<1m ago" if compact else "less than a minute ago"
 
 
     def quote_view_action(self, button, message):
@@ -823,9 +825,11 @@ class App(object):
             # are deleted instead of being properly wrapped. but this is preferable
             # behviour to what it was doing IMHO
             info = urwid.Text([
-                ("default", " by "),
-                (str(user["color"]), "~%s " % user["user_name"]),
-                ("dim", "@ %s" % self.timestring(thread["created"]))])
+                ("dim", "; "),
+                (str(user["color"]), "~%s" % user["user_name"]),
+                ("dim", " replied %s; " % self.timestring(thread["last_mod"], "delta", compact=True)), 
+                ("dim", "%d total" % thread["reply_count"])
+                ])
             line = urwid.Columns([
                 (3, urwid.AttrMap(button, "button", "hover")), 
                 (len(title.text), title),
@@ -883,13 +887,13 @@ class App(object):
         ]
 
 
-    def timestring(self, epoch, mode="both"):
+    def timestring(self, epoch, mode="both", compact=False):
         """
         Returns a string of time representing a given epoch and mode.
         """
         if mode == "delta":
-            return self.readable_delta(epoch)
-
+            return self.readable_delta(epoch, compact)
+        
         date = datetime.fromtimestamp(epoch)
         if mode == "time":
             directive = self.prefs["time"]
