@@ -38,7 +38,7 @@ import json
 import os
 import re
 
-# XxX_N0_4rgP4rs3_XxX ###yoloswag
+
 def get_arg(key, default=None, get_value=True):
     try:
         spec = argv.index("--" + key)
@@ -49,29 +49,36 @@ def get_arg(key, default=None, get_value=True):
         exit("invalid format for --" + key)
     return value
 
-if get_arg("help", False, False):
-    print("""BBJ Urwid Client
+help_text = """BBJ Urwid Client
 Available options:
     --help: this message
     --https: enable use of https, requires host support
     --host <hostname>: the ip address/hostname/website/server to connect to
     --port <port>: the port to use when connecting to the host
     --user <username>: automatically connect with the given username
+    --thread <thread_id>: specify a thread_id to open immediately
 Available environment variables:
     BBJ_USER: set your username to log in automatically.
       If --user is passed, this is ignored.
     BBJ_PASSWORD: set your password to log in automatically.
       if the password is wrong, will prompt you as normal.
+    NO_COLOR: disable all color output from the program.
 Please note that these environment variables need to be exported, and are
-visible to all other programs run from your shell.""")
-    exit()
+visible to all other programs run from your shell.
+"""
 
+if get_arg("help", False, False):
+    print(help_text)
+    exit()
 try:
     network = BBJ(get_arg("host", "127.0.0.1"),
                   get_arg("port", 7099),
                   get_arg("https", False, False))
 except URLError as e:
+    print(help_text)
     # print the connection error in red
+    if os.getenv("NO_COLOR"):
+        exit("%s" % repr(e))
     exit("\033[0;31m%s\033[0m" % repr(e))
 
 obnoxious_logo = """
@@ -382,6 +389,7 @@ class App(object):
     def __init__(self):
         self.prefs = bbjrc("load")
         self.client_pinned_threads = load_client_pins()
+        self.immediate_thread_load = []
         self.usermap = {}
         self.match_data = {
             "query": "",
@@ -761,7 +769,7 @@ class App(object):
         if msg_object["send_raw"]:
             return quotes
         for paragraph in msg_object["body"]:
-            # yes python is lisp fuck you
+            # yes python is lisp
             [quotes.append(cdr) for car, cdr in paragraph if car == "quote"]
         return [value_type(q) for q in quotes]
 
@@ -952,13 +960,18 @@ class App(object):
             # checks to make sure there are any posts to focus
             self.box.set_focus(0)
 
+        if self.immediate_thread_load :
+            thread_id = self.immediate_thread_load.pop()
+            self.last_index_pos = thread_id
+            self.thread_load(None, thread_id, set_index=False)
 
 
-    def thread_load(self, button, thread_id):
+
+    def thread_load(self, button, thread_id, set_index=True):
         """
         Open a thread.
         """
-        if app.mode == "index":
+        if set_index and app.mode == "index":
             # make sure the index goes back to this selected thread
             pos = self.get_focus_post(return_widget=True)
             self.last_index_pos = pos.thread["thread_id"]
@@ -1169,11 +1182,11 @@ class App(object):
             else: break
 
 
-    def goto_post(self, number):
+    def goto_post(self, number, size=(0, 0)):
         if self.mode != "thread":
             return
 
-        size = self.loop.screen_size
+        size = size if size else self.loop.screen_size
         new_pos = number * 5
         cur_pos = self.box.get_focus_path()[0]
 
@@ -2734,11 +2747,20 @@ def wipe_screen(*_):
 def main():
     global app
     app = App()
+    thread_arg = get_arg("thread", False)
     call("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
     try:
         log_in()
+        if thread_arg:
+            try:
+                # check to make sure thread_id exists. will throw
+                # ValueError if not
+                thread, usermap = network.thread_load(thread_arg)
+                app.immediate_thread_load.append(thread_arg)
+            except ValueError as e:
+                exit("Specified --thread does not exist\n" + repr(e))
         app.index()
         app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
