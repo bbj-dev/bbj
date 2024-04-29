@@ -2748,19 +2748,20 @@ def main():
     global app
     app = App()
     thread_arg = get_arg("thread", False)
+    if thread_arg:
+        try:
+            # check to make sure thread_id exists. will throw
+            # ValueError if not
+            thread, usermap = network.thread_load(thread_arg)
+            app.immediate_thread_load.append(thread_arg)
+        except ValueError as e:
+            exit("Specified --thread does not exist")
     call("clear", shell=True)
     motherfucking_rainbows(obnoxious_logo)
     print(welcome_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
     try:
         log_in()
-        if thread_arg:
-            try:
-                # check to make sure thread_id exists. will throw
-                # ValueError if not
-                thread, usermap = network.thread_load(thread_arg)
-                app.immediate_thread_load.append(thread_arg)
-            except ValueError as e:
-                exit("Specified --thread does not exist\n" + repr(e))
+        
         app.index()
         app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
