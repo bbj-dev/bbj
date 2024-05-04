@@ -4,10 +4,10 @@ A B A N D O N                               ,:
                                          /   :
                                       --'   /
        F O R  Y E  W H O              \/ /:/
-           E N T E R  H E R E         / ://_\
+           E N T E R  H E R E         / ://_
                                    __/   /
                                    )'-. /
- Crude hacks lie beneath us.      ./  :\
+ Crude hacks lie beneath us.      ./  :
                                     /.' '
 This module includes a couple     '/'
 of custom (GROAN) formatting    +
