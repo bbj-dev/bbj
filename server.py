@@ -681,14 +681,24 @@ class HTML(object):
     """
     This object contains all of the endpoints for the HTML application.
     This is not a full javascript fronted developed with a framework like React.
-    This fits in line with the general "theme" of the tilde servers
-    this application was originally designed for. If you want a more
-    modern implementation, a fully javascript-based client can be developed.
-    But the server will not have one built in.
+    If you want a more modern implementation, a fully javascript-based client
+    can be developed. But the server will not have one built in.
     """
 
+    def __init__(self):
+        self.themes = [
+            "base",
+            "9x1"
+        ]
+
+    def get_theme(self, request):
+        cookie = request.cookie
+        if "theme" in cookie and cookie["theme"].value in self.themes:
+            return cookie["theme"].value
+        return "base"
+
     @cherrypy.expose
-    def account(self, username=None, password=None, color=None, updateUsername=None, 
+    def account(self, username=None, password=None, color=None, updateUsername=None,
                 updatePassword=None, passwordConfirmation=None):
         database = sqlite3.connect(dbname)
         cookie = cherrypy.request.cookie
@@ -699,12 +709,12 @@ class HTML(object):
                 return "User not registered"
             elif auth_hash.lower() != user["auth_hash"].lower():
                 return "Authorization info incorrect."
-            cherrypy.response.cookie["username"] = username 
+            cherrypy.response.cookie["username"] = username
             cherrypy.response.cookie["username"]["max-age"] = 34560000
             cherrypy.response.cookie["auth_hash"] = auth_hash
             cherrypy.response.cookie["auth_hash"]["max-age"] = 34560000
             raise cherrypy.HTTPRedirect("/index")
-        
+
         if "username" in cookie and "auth_hash" in cookie:
             user = db.user_resolve(database, cookie["username"].value)
             if user and cookie["auth_hash"].value.lower() == user["auth_hash"]:
@@ -718,7 +728,7 @@ class HTML(object):
                     except ValueError:
                         return "Color must be a number, 0-6"
                 elif updateUsername:
-                    try: 
+                    try:
                         db.validate([["user_name", updateUsername]])
                         update = db.user_update(database, authorized_user, {"user_name": updateUsername})
                         cherrypy.response.cookie["username"] = update["user_name"]
@@ -732,28 +742,38 @@ class HTML(object):
                     elif updatePassword != passwordConfirmation:
                         return "Password and password confirmation do not match."
                     auth_hash = sha256(bytes(updatePassword, "utf8")).hexdigest()
-                    try: 
+                    try:
                         db.validate([["auth_hash", auth_hash]])
                         update = db.user_update(database, authorized_user, {"auth_hash": auth_hash})
                         cherrypy.response.cookie["auth_hash"] = update["auth_hash"]
                         cherrypy.response.cookie["auth_hash"]["max-age"] = 34560000
                     except BBJParameterError:
                         return e.description
-                    
-
-
             else:
                 authorized_user = None
         else:
             authorized_user = None
 
+        theme = self.get_theme(cherrypy.request)
+
 
         template = template_environment.get_template("account.html")
         variables = {
-            "authorized_user": authorized_user
+            "authorized_user": authorized_user,
+            "theme": self.get_theme(cherrypy.request),
+            "available_themes": self.themes
         }
         return template.render(variables)
-    
+
+    @cherrypy.expose
+    def setTheme(self, themeName=None):
+        if themeName in self.themes:
+            cherrypy.response.cookie["theme"] = themeName
+            cherrypy.response.cookie["theme"]["max-age"] = 34560000
+            raise cherrypy.HTTPRedirect("/account")
+        else:
+            return "Theme name not supplied or defined on server."
+
     @cherrypy.expose
     def logout(self):
         cookie_in = cherrypy.request.cookie
@@ -774,14 +794,14 @@ class HTML(object):
 
         database = sqlite3.connect(dbname)
         threads = db.thread_index(database)
-        
+
         if bookmarkId:
             if bookmarkId in [thread["thread_id"] for thread in threads]:
                 bookmarks.append(bookmarkId)
         elif delBookmark:
             if delBookmark in bookmarks:
                 bookmarks.remove(delBookmark)
-        
+
         cherrypy.response.cookie["bookmarks"] = json.dumps(bookmarks)
         cherrypy.response.cookie["bookmarks"]["max-age"] = 34560000
         raise cherrypy.HTTPRedirect("/index")
@@ -810,17 +830,17 @@ class HTML(object):
             user_bookmarks = json.loads(cookie["bookmarks"].value)
             bookmarked_threads = [thread for thread in threads if thread["thread_id"] in user_bookmarks]
             threads = [
-                thread for thread in threads 
-                if not thread["pinned"] 
+                thread for thread in threads
+                if not thread["pinned"]
                 and not thread["thread_id"] in user_bookmarks
             ]
         else:
             bookmarked_threads = []
             threads = [
-                thread for thread in threads 
+                thread for thread in threads
                 if not thread["pinned"]
             ]
-        
+
         template = template_environment.get_template("threadIndex.html")
         variables = {
             "pinned_threads": pinned_threads,
@@ -828,7 +848,8 @@ class HTML(object):
             "threads": threads,
             "include_op": include_op,
             "usermap": usermap,
-            "authorized_user": authorized_user
+            "authorized_user": authorized_user,
+            "theme": self.get_theme(cherrypy.request)
         }
         return template.render(variables)
 
@@ -855,10 +876,11 @@ class HTML(object):
         variables = {
             "thread": thread,
             "usermap": usermap,
-            "authorized_user": authorized_user
+            "authorized_user": authorized_user,
+            "theme": self.get_theme(cherrypy.request)
         }
         return template.render(variables)
-    
+
 
     @cherrypy.expose
     def threadSubmit(self, title=None, postContent=None):
@@ -870,13 +892,13 @@ class HTML(object):
                 if title and postContent and title.strip() and postContent.strip():
                     thread = db.thread_create(database, user["user_id"], postContent, title)
                     raise cherrypy.HTTPRedirect("/thread?id=" + thread["thread_id"])
-                else: 
+                else:
                     return "Post or Title are empty"
         else:
             return "Not logged in."
 
-                
-    
+
+
     @cherrypy.expose
     def threadReply(self, postContent=None, threadId=None):
         if not threadId:

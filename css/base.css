@@ -12,11 +12,11 @@ body {
 }
 
 .pinned {
-    background-color: aquamarine;
+    background-color: #c1ffea;
 }
 
 .bookmarked {
-    background-color: lightskyblue;
+    background-color: #c4e8ff;
 }
 
 .message {
@@ -49,6 +49,15 @@ body {
 
 }
 
+.indexLink, .indexLink:visited {
+    background-color: black;
+    color: white;
+    padding: 0.10em;
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
+    margin: 0px;
+}
+
 .newPostButton {
     font-size: 140%;
     padding: 0.5em;
@@ -78,7 +87,7 @@ pre {
 }
 
 .color2 {
-    color: yellow;
+    color: #F39C11;
 }
 
 .color3 {
@@ -90,7 +99,7 @@ pre {
 }
 
 .color5 {
-    color: cyan;
+    color: #0dabbb;
 }
 
 .color6 {

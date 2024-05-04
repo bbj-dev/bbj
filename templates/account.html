@@ -3,12 +3,12 @@
 <head>
     <title>Log In: BBJ</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/{{ theme }}.css">
 </head>
 <body>
     
     <div id="navbar">
-        <span class="bbjLogo" onclick="window.location.href='/index'">&lt;- Index</span>
+        <a class="indexLink" href="/index">&lt;- Index</a>
         {% if authorized_user %}
         Account: <span class="color{{ authorized_user['color']}}">~{{ authorized_user["user_name"] }}</span>
         {% else %}
@@ -19,63 +19,79 @@
         {% endif %}
     </div> 
     
-    {% if authorized_user %}
-    <div class="settingsBlock">
-        <h3>Login Info</h3>
-        <span>Currently logged in as <span class="color{{ authorized_user['color'] }}">~{{ authorized_user["user_name"] }}</span></span>
-        <br>
-        <a href="/logout">Log out.</a>
+    <div class="settingsContainer">
+        {% if authorized_user %}
+        <div class="settingsBlock">
+            <h3>Login Info</h3>
+            <span>Currently logged in as <span class="color{{ authorized_user['color'] }}">~{{ authorized_user["user_name"] }}</span></span>
+            <br>
+            <a href="/logout">Log out.</a>
+        </div>
+        <div class="settingsBlock">
+            <h3>Change Username</h3>
+            <form autocomplete="off" action="/account">
+                <label for="updateUsername">Update Username:</label><br>
+                <input type="text" autocomplete="off" id="updateUsername" name="updateUsername"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        <div class="settingsBlock">
+            <h3>Change Password</h3>
+            <form autocomplete="off" action="/account">
+                <label for="updatePassword">Update password:</label><br>
+                <input autocomplete="off" type="password" name="updatePassword" id="updatePassword"><br>
+                <label for="passwordConfirmation">Type it again:</label><br>
+                <input autocomplete="off" type="password" name="passwordConfirmation" id="passwordConfirmation"><br><br>
+                <input type="submit" value="Submit">
+            </form>
+        </div>
+        <div class="settingsBlock">
+            <h3>Username Color</h3>
+            <form method="get" action="/account">
+                <input type="radio" id="color0" name="color" value="0">
+                <label for="color0">None</label><br>
+                <input type="radio" id="color1" name="color" value="1">
+                <label for="color1"><span class="color1">One</span></label><br>
+                <input type="radio" id="color2" name="color" value="2">
+                <label for="color2"><span class="color2">Two</span></label><br>
+                <input type="radio" id="color3" name="color" value="3">
+                <label for="color3"><span class="color3">Three</span></label><br>
+                <input type="radio" id="color4" name="color" value="4">
+                <label for="color4"><span class="color4">Four</span></label><br>
+                <input type="radio" id="color5" name="color" value="5">
+                <label for="color5"><span class="color5">Five</span></label><br>
+                <input type="radio" id="color6" name="color" value="6">
+                <label for="color6"><span class="color6">Six</span></label><br>
+                <br>
+                <input type="submit" value="Save">
+            </form>
+        </div>
+        
+        
+        {% else %}
+        <div class="settingsBlock">
+            <form class="loginForm" method="post" action="/account">
+                <label for="username">Username:</label>
+                <input type="text" name="username" /><br />
+                <label for="password">Password:</label>
+                <input type="password" name="password" /><br />
+                <input type="submit" value="Log in" />
+            </form>
+        </div>
+        {% endif %}
+        
+        <div class="settingsBlock">
+            <h3>Theme</h3>
+            <form class="themesForm" method="get" action="setTheme">
+                {% for theme in available_themes %}
+                <input type="radio" id="{{ theme }}" name="themeName" value="{{ theme }}">
+                <label for="{{ theme }}">{{ theme }}</label>
+                <br>
+                {% endfor %}
+                <br>
+                <input type="submit" value="save">
+            </form>
+        </div>
     </div>
-    <div class="settingsBlock">
-        <h3>Change Username</h3>
-        <form autocomplete="off" action="/account">
-            <label for="updateUsername">Update Username:</label><br>
-            <input type="text" autocomplete="off" id="updateUsername" name="updateUsername"><br>
-            <input type="submit" value="Submit">
-        </form>
-    </div>
-    <div class="settingsBlock">
-        <h3>Change Password</h3>
-        <form autocomplete="off" action="/account">
-            <label for="updatePassword">Update password:</label><br>
-            <input autocomplete="off" type="password" name="updatePassword" id="updatePassword"><br>
-            <label for="passwordConfirmation">Type it again:</label><br>
-            <input autocomplete="off" type="password" name="passwordConfirmation" id="passwordConfirmation"><br>
-            <input type="submit" value="Submit">
-        </form>
-    </div>
-    <div class="settingsBlock">
-        <h3>Username Color</h3>
-        <form method="get" action="/account">
-            <input type="radio" id="color0" name="color" value="0">
-            <label for="color0">None</label><br>
-            <input type="radio" id="color1" name="color" value="1">
-            <label for="color1"><span class="color1">One</span></label><br>
-            <input type="radio" id="color2" name="color" value="2">
-            <label for="color2"><span class="color2">Two</span></label><br>
-            <input type="radio" id="color3" name="color" value="3">
-            <label for="color3"><span class="color3">Three</span></label><br>
-            <input type="radio" id="color4" name="color" value="4">
-            <label for="color4"><span class="color4">Four</span></label><br>
-            <input type="radio" id="color5" name="color" value="5">
-            <label for="color5"><span class="color5">Five</span></label><br>
-            <input type="radio" id="color6" name="color" value="6">
-            <label for="color6"><span class="color6">Six</span></label><br>
-            <input type="submit" value="Save">
-        </form>
-    </div>
-    
-    
-    {% else %}
-    <div class="settingsBlock">
-        <form class="loginForm" method="post" action="/account">
-            <label for="username">Username:</label>
-            <input type="text" name="username" /><br />
-            <label for="password">Password:</label>
-            <input type="password" name="password" /><br />
-            <input type="submit" value="Log in" />
-        </form>
-    </div>
-    {% endif %}
 </body>
 </html>

@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/{{ theme }}.css">
     <title>Thread Index: BBJ</title>
   </head>
   
@@ -37,11 +37,11 @@
     {% endif %}
 
     {% if pinned_threads %}
-    <div class="pinnedContainer">
+    <div class="pinnedContainer indexContainer">
       <h2>Pinned Threads</h2>
       {% for thread in pinned_threads %}
       <div class="thread pinned">
-        <a href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
+        <a class="threadLink" href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
         <br>
         by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
         <br>
@@ -56,11 +56,11 @@
     {% endif %}
 
     {% if bookmarked_threads %}
-    <div class="bookmarksContainer">
+    <div class="bookmarksContainer indexContainer">
       <h2>Bookmarked Threads</h2>
       {% for thread in bookmarked_threads %}
       <div class="thread bookmarked">
-        <a href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
+        <a class="threadLink" href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
         <br>
         by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
         <br>
@@ -69,18 +69,18 @@
         {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
         <br>
         last active by <span class="color{{ usermap[thread['last_author']]['color'] }}">{{ usermap[thread["last_author"]]["user_name"] }}</span>
-        <br><a href="setBookmark?delBookmark={{ thread['thread_id'] }}">Unbookmark this thread.</a>
+        <br><a class="bookmarkLink" href="setBookmark?delBookmark={{ thread['thread_id'] }}">Unbookmark this thread.</a>
       </div>
       {% endfor %}
     </div>
     {% endif %}
     
     {% if threads %}
-    <div class="threadContainer">
+    <div class="threadContainer indexContainer">
       <h2>Threads</h2>
       {% for thread in threads %}
       <div class="thread">
-        <a href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
+        <a class="threadLink" href="thread?id={{ thread['thread_id'] }}">{{ thread["title"] }}</a>
         <br>
         by <span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>
         <br>
@@ -89,7 +89,7 @@
         {{ thread["reply_count"] }} replies; active <span class="datetime">{{ thread["last_mod"] }}</span>
         <br>
         last active by <span class="color{{ usermap[thread['last_author']]['color'] }}">{{ usermap[thread["last_author"]]["user_name"] }}</span>
-        <br><a href="setBookmark?bookmarkId={{ thread['thread_id'] }}">Bookmark this thread.</a>
+        <br><a class="bookmarkLink" href="setBookmark?bookmarkId={{ thread['thread_id'] }}">Bookmark this thread.</a>
       </div>
       {% endfor %}
     </div>

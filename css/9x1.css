@@ -1,0 +1,182 @@
+@font-face {
+    font-family: ms-sans-serif;
+    src: url(themeassets/ms_sans_serif.woff);
+  }
+
+@font-face {
+    font-family: ms-sans-serif-bold;
+    src: url(themeassets/ms_sans_serif_bold.woff);
+  }
+
+body {
+    background-color: #008080;
+    padding-top: 1em;
+    font-size: 11px;
+    font-family: ms-sans-serif;
+    font-smooth: never;
+    -webkit-font-smoothing : none;
+}
+
+.indexContainer {
+    box-shadow: -2px -2px #e0dede, -2px 0 #e0dede, 0 -2px #e0dede, -4px -4px white, -4px 0 white, 0 -4px white, 2px 2px #818181, 0 2px #818181, 2px 0 #818181,  2px -2px #e0dede, -2px 2px #818181, -4px 2px white, -4px 4px black, 4px 4px black, 4px 0 black, 0 4px black, 2px -4px white, 4px -4px black;
+    background-color: #c3c3c3;
+    max-width: 45em;
+    margin: 1em;
+    margin-bottom: 1.8em;
+    padding-bottom: 0.2em;
+}
+
+h2 {
+    font-size: 11px;
+    font-family: ms-sans-serif-bold;
+    background-color:  #010081;
+    color: white;
+    padding: 0.1em;
+    margin: 0px;
+    background-image: linear-gradient(to right,  #010081,  #008080);
+}
+
+h3 {
+    font-size: 11px;
+    font-family: ms-sans-serif-bold;
+}
+
+.threadTitle {
+    color: white;
+    font-family: ms-sans-serif-bold;
+    padding: 0.3em;
+    max-width: 50em;
+    background-color:  #010081;
+    background-image: linear-gradient(to right,  #010081,  #008080);
+    font-size: 11px;
+
+}
+
+.threadLink {
+    font-family: ms-sans-serif-bold;
+}
+
+.thread {
+    margin: 1em;
+}
+
+a, a:visited {
+    color: #010081;
+}
+
+.postId {
+    margin-right: 0.5em;
+}
+
+.messagesContainer {
+    margin: 1em;
+    box-shadow: -2px -2px #e0dede, -2px 0 #e0dede, 0 -2px #e0dede, -4px -4px white, -4px 0 white, 0 -4px white, 2px 2px #818181, 0 2px #818181, 2px 0 #818181,  2px -2px #e0dede, -2px 2px #818181, -4px 2px white, -4px 4px black, 4px 4px black, 4px 0 black, 0 4px black, 2px -4px white, 4px -4px black;
+    max-width: 50em;
+    background-color: #c3c3c3;
+}
+
+.messageHeader {
+    font-size: 11px;
+}
+
+.message {
+    padding: 1em;
+    border-bottom: 1px dotted black;
+
+}
+
+#navbar {
+    overflow: hidden;
+    background-color: #c3c3c3;
+    /* font-size: 1em; */
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
+    margin: 0px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    color: black;
+    border-bottom: 2px solid black;
+  }
+
+.bbjLogo {
+    padding: 0.10em;
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
+    margin: 0px;
+    text-decoration: underline;
+}
+
+.indexLink {
+    padding: 0.10em;
+    padding-top: 0.12em;
+    padding-bottom: 0.12em;
+    margin: 0px;
+    color: black;
+}
+
+.newPostButton {
+    box-shadow: inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px grey,inset 2px 2px #dfdfdf;
+    background-color: #c3c3c3;
+    padding: 0.5em;
+    margin: 1em;
+    margin-top: 1.5em;
+    display: inline-block;
+    text-decoration: none;
+    color: black;
+}
+
+.newReplyButton {
+    box-shadow: inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px grey,inset 2px 2px #dfdfdf;
+    padding: 0.5em;
+    color: black;
+    text-decoration: none;
+    display: inline-block;
+    margin-left: 1em;
+}
+
+input[type=submit] {
+    box-shadow: inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px grey,inset 2px 2px #dfdfdf;
+    padding: 0.5em;
+    color: black;
+    background-color: #c3c3c3;
+}
+
+.settingsContainer {
+    box-shadow: inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px grey,inset 2px 2px #dfdfdf;
+    background-color: #c3c3c3;
+    max-width: 40em;
+    padding: 1em;
+    margin-top: 1em;
+}
+
+pre {
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+.color1 {
+    color: red;
+}
+
+.color2 {
+    color: #AC6A00;
+}
+
+.color3 {
+    color: green;
+}
+
+.color4 {
+    color: blue;
+}
+
+.color5 {
+    color: #008b99;
+}
+
+.color6 {
+    color: magenta;
+}
+

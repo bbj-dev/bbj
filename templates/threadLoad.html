@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta http-equiv="x-ua-compatible" content="ie=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/{{ theme }}.css">
     <title>{{ thread["title"] }}: BBJ</title>
 </head>
 <script>
@@ -12,7 +12,7 @@
 </script>
 <body>
     <div id="navbar">
-        <span class="bbjLogo" onclick="window.location.href='/index'">&lt;- Index</span>
+        <a class="indexLink" href="/index">&lt;- Index</a>
         {% if authorized_user %}
         Account: <span class="color{{ authorized_user['color']}}">~{{ authorized_user["user_name"] }}</span>
         {% else %}
@@ -23,41 +23,42 @@
         {% else %}
         <a class="navbarLink" href="/account">Login</a>
         {% endif %}
-      </div> 
-
-      <h3><span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>: {{ thread["title"] }}</h3>
-
-      {% if authorized_user %}
-      <a class="newReplyButton" href="javascript:revealPostReplyForm()">Reply</a>
-      <div class="postReplyBox" id="postReplyBox" style="display: none;">
-        <form method="post" action="/threadReply">
-            <br>
-          <label for="postContent">Reply:</label><br>
-          <textarea type="text" id="postContent" name="postContent" rows="10" cols="50"></textarea><br>
-          <input type="text" name="threadId" value="{{ thread['thread_id'] }}" style="display:none">
-          <input type="submit" value="Post">
-        </form>
-      </div>
-      {% endif %}
-
-    {% for message in thread["messages"] %}
-    <div class="message">
-        <div class="messageHeader">
-            >{{ message["post_id"] }}
-            <span class="color{{ usermap[message['author']]['color'] }}">{{ usermap[message["author"]]["user_name"] }}</span>
-            @ <span class="datetime">{{ message["created"] }}</span>
+    </div> 
+    
+    <div class="messagesContainer">
+        <h3 class="threadTitle"><span class="color{{ usermap[thread['author']]['color'] }}">{{ usermap[thread["author"]]["user_name"] }}</span>: {{ thread["title"] }}</h3>
+        {% if authorized_user %}
+        <a class="newReplyButton" href="javascript:revealPostReplyForm()">Reply to Thread</a>
+        <div class="postReplyBox" id="postReplyBox" style="display: none;">
+            <form method="post" action="/threadReply">
+                <br>
+                <label for="postContent">Reply:</label><br>
+                <textarea type="text" id="postContent" name="postContent" rows="10" cols="50"></textarea><br>
+                <input type="text" name="threadId" value="{{ thread['thread_id'] }}" style="display:none">
+                <input type="submit" value="Post">
+            </form>
         </div>
-        <div class="messageBody">
-            <pre>{{ message["body"] }}</pre>
+        {% endif %}
+        
+        {% for message in thread["messages"] %}
+        <div class="message">
+            <div class="messageHeader">
+                <span class="postId" id="post{{ message['post_id'] }}">&gt;{{ message["post_id"] }}</span>
+                <span class="color{{ usermap[message['author']]['color'] }}">{{ usermap[message["author"]]["user_name"] }}</span>
+                @ <span class="datetime">{{ message["created"] }}</span>
+            </div>
+            <div class="messageBody">
+                <pre>{{ message["body"] }}</pre>
+            </div>
+            <div class="messageFooter">
+                {% if authorized_user %}
+                <a id="replyLink{{ message['post_id'] }}" href="javascript:revealPostReplyBox({{ message['post_id'] }})">Direct reply.</a>
+                <div class="directReplyBoxContainer" id="replyBox{{ message['post_id'] }}"></div>
+                {% endif %}
+            </div>
         </div>
-        <div class="messageFooter">
-            {% if authorized_user %}
-            <a id="replyLink{{ message['post_id'] }}" href="javascript:revealPostReplyBox({{ message['post_id'] }})">Direct reply.</a>
-            <div class="directReplyBoxContainer" id="replyBox{{ message['post_id'] }}"></div>
-            {% endif %}
-        </div>
+        {% endfor %}
     </div>
-    {% endfor %}
 </body>
 <script src="/js/datetime.js"></script>
 <script src="/js/postboxes.js"></script>
