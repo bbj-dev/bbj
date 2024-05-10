@@ -753,14 +753,11 @@ class HTML(object):
                 authorized_user = None
         else:
             authorized_user = None
-
         theme = self.get_theme(cherrypy.request)
-
-
         template = template_environment.get_template("account.html")
         variables = {
             "authorized_user": authorized_user,
-            "theme": self.get_theme(cherrypy.request),
+            "theme": theme,
             "available_themes": self.themes
         }
         return template.render(variables)
