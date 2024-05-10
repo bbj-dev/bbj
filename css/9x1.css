@@ -138,7 +138,7 @@ a, a:visited {
 
 input[type=submit] {
     box-shadow: inset -1px -1px #0a0a0a,inset 1px 1px #fff,inset -2px -2px grey,inset 2px 2px #dfdfdf;
-    padding: 0.5em;
+    /* padding: 0.5em; */
     color: black;
     background-color: #c3c3c3;
 }
