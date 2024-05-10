@@ -214,7 +214,7 @@ general_help = [
     "To make scrolling faster, ", ("button", "hold shift"), " when using a control: it "
     "will repeat 5 times by default, and you can change this number in your settings.\n\n"
 
-    "In threads, The ", ("button", "<"), " or ", ("button", ","), " keys, and ", ("button", ">"), 
+    "In threads, The ", ("button", "<"), " or ", ("button", ","), " keys, and ", ("button", ">"),
     " or ", ("button", "."), " keys will jump by "
     "a chosen number of post headers. You can see the count inside of the footer line at "
     "the far right side: press ", ("button", "x"), " to cycle it upwards or ",
@@ -799,7 +799,7 @@ class App(object):
             infoline = "%d replies; active %s" % (
                 thread["reply_count"],
                 self.timestring(thread["last_mod"], "delta"))
-            
+
             pile = [
                 urwid.Columns([(3, urwid.AttrMap(button, "button", "hover")), title]),
                 urwid.Text(dateline),
@@ -809,10 +809,10 @@ class App(object):
                     (str(last_author["color"]), "~" + last_author["user_name"])
                 ])
             ]
-        
+
         elif self.prefs["information_density"] == "compact":
             firstline = urwid.Columns([
-                (3, urwid.AttrMap(button, "button", "hover")), 
+                (3, urwid.AttrMap(button, "button", "hover")),
                 (len(title._text), title)
                 ])
             secondline = urwid.Text([
@@ -828,7 +828,7 @@ class App(object):
                 firstline,
                 urwid.AttrMap(secondline, "dim"),
             ]
-        
+
         elif self.prefs["information_density"] == "ultra":
             # for some reason, text overflowing to the right side of terminal
             # are deleted instead of being properly wrapped. but this is preferable
@@ -836,11 +836,11 @@ class App(object):
             info = urwid.Text([
                 ("dim", "; "),
                 (str(user["color"]), "~%s" % user["user_name"]),
-                ("dim", " replied %s; " % self.timestring(thread["last_mod"], "delta", compact=True)), 
+                ("dim", " replied %s; " % self.timestring(thread["last_mod"], "delta", compact=True)),
                 ("dim", "%d total" % thread["reply_count"])
                 ])
             line = urwid.Columns([
-                (3, urwid.AttrMap(button, "button", "hover")), 
+                (3, urwid.AttrMap(button, "button", "hover")),
                 (len(title.text), title),
                 (len(info.text), info)])
             pile = [line]
@@ -902,7 +902,7 @@ class App(object):
         """
         if mode == "delta":
             return self.readable_delta(epoch, compact)
-        
+
         date = datetime.fromtimestamp(epoch)
         if mode == "time":
             directive = self.prefs["time"]
@@ -1670,7 +1670,7 @@ class App(object):
         content.append(urwid.Text(("button", "Information Density")))
         for item in density_buttons:
             content.append(item)
-        
+
         content.append(urwid.Divider())
 
         for item in time_stuff:
@@ -2493,14 +2493,14 @@ def motherfucking_rainbows(string, inputmode=False, end="\n"):
     """
     I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee
     """
-    
+
     prefs = bbjrc("load")
     if prefs["monochrome"] or os.getenv("NO_COLOR"):
         if inputmode:
             return input("")
         print(string, end="")
         return print(end, end="")
-    
+
     for character in string:
         print(choice(colors) + character, end="")
     print('\033[0m', end="")
@@ -2762,7 +2762,7 @@ def main():
     print(welcome_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
     try:
         log_in()
-        
+
         app.index()
         app.loop.run()
     except (InterruptedError, KeyboardInterrupt):
