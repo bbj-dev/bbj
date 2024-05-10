@@ -132,7 +132,7 @@ anon_warn_monochrome = """>>> Just a reminder! ---------------------------------
 """
 
 format_help = [
-    "Quick reminder: \[rainbow: expressions work like this]. You may scroll "
+    r"Quick reminder: \[rainbow: expressions work like this]. You may scroll "
     "this message, or press Q or escape to close it.\n\n"
 
     "BBJ supports **bolding**, __underlining__, and [rainbow: coloring] text "
@@ -158,21 +158,21 @@ format_help = [
 
     "You can use [rainbow: rainbow], [red: red], [yellow: yellow], [green: green], "
     "[blue: blue], [cyan: cyan], [magenta: and magenta], [dim: dim], **bold**, and __underline__ "
-    "inside of your posts. \**bold works like this\**, \__and underlines like this\__. "
-    "You can escape these expressions \\\**like this\\\**. They can span up to the full width "
+    r"inside of your posts. \**bold works like this\**, \__and underlines like this\__. "
+    r"You can escape these expressions \\**like this\\**. They can span up to the full width "
     "of the same line. They are best used on shorter phrases. "
     "However, you can use a different syntax for it, which is also required to use "
-    "colors: these expressions \[bold: look like this] and have less restrictions.",
+    r"colors: these expressions \[bold: look like this] and have less restrictions.",
 
     "The colon and the space following it are important. When you use these "
     "expressions, the __first__ space is not part of the content, but any characters, "
     "including spaces, that follow it are included in the body. The formatting will "
-    "apply until the closing ]. You can escape such an expression \\\[cyan: like this] "
-    "and can also \\[blue: escape \\\] other closing brackets] inside of it. Only "
+    r"apply until the closing ]. You can escape such an expression \\[cyan: like this] "
+    r"and can also \[blue: escape \\] other closing brackets] inside of it. Only "
     "closing brackets need to be escaped within an expression. Any backslashes used "
     "for escaping will not show in the body unless you use two slashes.",
 
-    "This peculiar syntax elimiates false positives. You never have to escape [normal] "
+    "This peculiar syntax eliminates false positives. You never have to escape [normal] "
     "brackets when using the board. Only expressions with **valid and defined** directives "
     "will be affected. [so: this is totally valid and requires no escapes] because 'so' is "
     "not a directive. [red this will pass too] because the colon is missing.",
@@ -259,6 +259,7 @@ default_prefs = {
     "information_density": "default",
     "thread_divider": True,
     "monochrome": False,
+    "enable_dim": True,
     "edit_escapes": {
         "abort": "f1",
         "focus": "f2",

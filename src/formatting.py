@@ -1,9 +1,9 @@
-"""
+r"""
 A B A N D O N                               ,:
    A L L  H O P E                         ,' |
                                          /   :
                                       --'   /
-       F O R  Y E  W H O              \/ /:/
+       F O R  Y E  W H O               / /:/
            E N T E R  H E R E         / ://_
                                    __/   /
                                    )'-. /
@@ -55,7 +55,7 @@ colon/space follow it. Thus, including [brackets like this] in a post body
 will NOT require you to escape it! Even [brackets: like this] is safe, because
 brackets is not a defined formatting parameter. So, any amount of unescaped brackets
 may exist within the body unless they mimic a directive. To escape a valid directive,
-escaping only the opening is suffiecient: \[bold: like this]. The literal body of
+escaping only the opening is sufficient: \[bold: like this]. The literal body of
 text outputted by that will be [bold: like this], with the backslash removed.
 
 Just like the brackets themselves, backslashes may occur freely within bodies,
