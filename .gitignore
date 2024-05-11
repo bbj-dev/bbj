@@ -2,3 +2,4 @@
 /config.json
 *.sqlite
 *__pycache__*
+/logs/
