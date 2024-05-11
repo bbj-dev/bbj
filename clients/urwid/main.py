@@ -2129,11 +2129,11 @@ class ExternalEditor(urwid.Terminal):
         self.endpoint = endpoint
         self.params = params
         env = os.environ
-        # barring this, programs will happily spit out unicode chars which
+        # OLD: barring this, programs will happily spit out unicode chars which
         # urwid+python3 seem to choke on. This seems to be a bug on urwid's
         # behalf. Users who take issue to programs trying to supress unicode
         # should use the options menu to switch to Overthrow mode.
-        env.update({"LANG": "POSIX"})
+        # OLD env.update({"LANG": "POSIX"})
         command = ["bash", "-c", "{} {}; echo Press any key to kill this window...".format(
             app.prefs["editor"], self.path)]
         super(ExternalEditor, self).__init__(command, env, app.loop, app.prefs["edit_escapes"]["abort"])
@@ -2746,6 +2746,7 @@ def wipe_screen(*_):
 
 def main():
     global app
+    urwid.set_encoding("utf8")
     app = App()
     thread_arg = get_arg("thread", False)
     if thread_arg:
