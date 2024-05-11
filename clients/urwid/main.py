@@ -2456,15 +2456,15 @@ def frilly_exit():
     if app.prefs["dramatic_exit"] and app.loop.screen_size:
         width, height = app.loop.screen_size
         for x in range(height - 1):
-            motherfucking_rainbows(
+            print_rainbows(
                 "".join([choice([" ", choice(punctuation)])
                         for x in range(width)]
                 ))
         out = "  ~~CoMeE BaCkK SooOn~~  0000000"
-        motherfucking_rainbows(out.zfill(width))
+        print_rainbows(out.zfill(width))
     else:
         call("clear", shell=True)
-        motherfucking_rainbows("Come back soon! <3")
+        print_rainbows("Come back soon! <3")
     exit()
 
 
@@ -2489,7 +2489,7 @@ def urwid_rainbows(string, bold=False):
     return urwid.Text([(choice(colors), char) for char in string])
 
 
-def motherfucking_rainbows(string, inputmode=False, end="\n"):
+def print_rainbows(string, inputmode=False, end="\n"):
     """
     I cANtT FeELLE MyYE FACECsEE ANYrrMOROeeee
     """
@@ -2599,7 +2599,7 @@ def log_in(relog=False):
            or os.getenv("BBJ_USER") \
            or sane_value("user_name", "Username", return_empty=True)
     if name == "":
-        motherfucking_rainbows("~~W3 4R3 4n0nYm0u5~~")
+        print_rainbows("~~W3 4R3 4n0nYm0u5~~")
     else:
         # ConnectionRefusedError means registered but needs a
         # password, ValueError means we need to register the user.
@@ -2610,7 +2610,7 @@ def log_in(relog=False):
                   if not relog else ""
             )
             # make it easy for people who use an empty password =)
-            motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
+            print_rainbows("~~welcome back {}~~".format(network.user_name))
 
         except ConnectionRefusedError:
             def login_loop(prompt, positive):
@@ -2621,10 +2621,10 @@ def log_in(relog=False):
                     login_loop("// R E J E C T E D //.", False)
 
             login_loop("Enter your password", True)
-            motherfucking_rainbows("~~welcome back {}~~".format(network.user_name))
+            print_rainbows("~~welcome back {}~~".format(network.user_name))
 
         except ValueError:
-            motherfucking_rainbows("Nice to meet'cha, %s!" % name)
+            print_rainbows("Nice to meet'cha, %s!" % name)
             response = paren_prompt(
                 "Register as %s?" % name,
                 choices=["yes!", "change name", "nevermind!"]
@@ -2638,7 +2638,7 @@ def log_in(relog=False):
 
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
-            motherfucking_rainbows("~~welcome to the party, %s!~~" % network.user_name)
+            print_rainbows("~~welcome to the party, %s!~~" % network.user_name)
     sleep(0.5) # let that confirmation message shine
 
 
@@ -2758,7 +2758,7 @@ def main():
         except ValueError as e:
             exit("Specified --thread does not exist")
     call("clear", shell=True)
-    motherfucking_rainbows(obnoxious_logo)
+    print_rainbows(obnoxious_logo)
     print(welcome_monochrome if app.prefs["monochrome"] or os.getenv("NO_COLOR") else welcome)
     try:
         log_in()
