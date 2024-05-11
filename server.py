@@ -466,7 +466,7 @@ class API(object):
     thread_load.arglist = (
         ("thread_id", "string: the thread to load."),
         ("OPTIONAL: op_only", "boolean: include only the original message in `messages`"),
-        # XXX formal formatting documentation is desperately needed
+        # formal formatting documentation is desperately needed
         ("OPTIONAL: format", "string: the formatting type of the returned messages.")
     )
 
@@ -606,7 +606,7 @@ class API(object):
     format_message.doctype = "Tools"
     format_message.arglist = (
         ("body", "string: the message body to apply formatting to."),
-        # XXX: remember to update this with new formatting docs
+        # remember to update this with new formatting docs
         ("format", "string: the specifier for the desired formatting engine")
     )
 

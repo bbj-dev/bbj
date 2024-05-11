@@ -123,19 +123,20 @@ def parse_segments(text, sanitize_linequotes=True):
 
 def sequential_expressions(string):
     """
-    Takes a string, sexpifies it, and returns a list of lists
-    who contain tuples. Each list of tuples represents a paragraph.
-    Within each paragraph, [0] is either None or a markup directive,
-    and [1] is the body of text to which it applies. This representation
-    is very easy to handle for a client. It semi-supports nesting:
-    eg, the expression [red: this [blue: is [green: mixed]]] will
-    return [("red", "this "), ("blue", "is "), ("green", "mixed")],
-    but this cannot effectively express an input like
-    [bold: [red: bolded colors.]], in which case the innermost
-    expression will take precedence. For the input:
-        "[bold: [red: this] is some shit [green: it cant handle]]"
+    Takes a string, creates key/value pairs of formatting directives, and
+    returns a list of lists who contain tuples. Each list of tuples represents
+    a paragraph. Within each paragraph, [0] is either None or a markup
+    directive, and [1] is the body of text to which it applies. This
+    representation is very easy to handle for a client. It semi-supports
+    nesting: eg, the expression [red: this [blue: is [green: mixed]]] will
+    return [("red", "this "), ("blue", "is "), ("green", "mixed")], but this
+    cannot effectively express an input like [bold: [red: bolded colors.]], in
+    which case the innermost expression will take precedence.
+    For the input:
+    "[bold: [red: this] is some stuff [green: it cant handle]]"
     you get:
-    [('red', 'this'), ('bold', ' is some shit '), ('green', 'it cant handle')]
+    [('red', 'this'), ('bold', ' is some stuff '), ('green', 'it cant handle')]
+
     """
     # abandon all hope ye who enter here
     directives = colors + markup
