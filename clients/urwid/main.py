@@ -586,7 +586,7 @@ class App(object):
         elif hours > 336: # 2 weeks:
             return "%d%s ago" % (floor(hours / 168), "w" if compact else " weeks")
         elif hours > 168: # one week
-            return "%d%s ago" % (floor(hours / 168), "w" if compact else " weeks")
+            return "%d%s ago" % (floor(hours / 168), "w" if compact else " week")
         elif hours > 48:
             return "%d%s ago" % (floor(hours / 24), "d" if compact else " days")
         elif hours > 1:
