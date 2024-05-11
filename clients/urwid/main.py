@@ -1415,7 +1415,7 @@ class App(object):
         try:
             name = nameloop("Choose a new username", True)
             network.user_update(user_name=name)
-            motherfucking_rainbows("~~hello there %s~~" % name)
+            print_rainbows("~~hello there %s~~" % name)
             sleep(0.8)
             self.loop.start()
             self.loop.widget = self.loop.widget[0]
@@ -1431,7 +1431,7 @@ class App(object):
         try:
             password = password_loop("Choose a new password. Can be empty", True)
             network.user_update(auth_hash=network._hash(password))
-            motherfucking_rainbows("SET NEW PASSWORD")
+            print_rainbows("SET NEW PASSWORD")
             sleep(0.8)
             self.loop.start()
             self.loop.widget = self.loop.widget[0]
@@ -2446,9 +2446,8 @@ class ActionBox(urwid.ListBox):
 
 def frilly_exit():
     """
-    Exit with some flair. Will fill the screen with rainbows
-    and shit, or just say bye, depending on the user's bbjrc
-    setting, `dramatic_exit`
+    Exit with some flair. Will fill the screen with rainbows,
+    or just say bye, depending on the user's bbjrc setting, `dramatic_exit`
     """
     # sometimes this gets called before the loop is set up properly
     try: app.loop.stop()
@@ -2470,7 +2469,7 @@ def frilly_exit():
 
 def cute_button(label, callback=None, data=None):
     """
-    Urwid's default buttons are shit, and they have ugly borders.
+    Urwid's default buttons have ugly borders.
     This function returns buttons that are a bit easier to love.
     """
     button = urwid.Button("", callback, data)
