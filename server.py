@@ -235,6 +235,21 @@ class API(object):
     )
 
     @api_method
+    def reset_user_password(self, args, database, user, **kwargs):
+        """
+        Caller must be logged in and set as admin. Calling this endpoint
+        will set the `user` (user_id or user_name) account password to
+        an empty string.
+        """
+        validate(args, ["user"])
+        if user["is_admin"]:
+            user = db.user_resolve(database, args["user"])
+            # hash an empty string
+            auth_hash = sha256(bytes("", "utf8")).hexdigest()
+            return db.user_update(database, user, {"auth_hash": auth_hash})
+        raise BBJUserError("non-admin attempt to reset a user's password")
+
+    @api_method
     def user_update(self, args, database, user, **kwargs):
         """
         Receives new parameters and assigns them to the user object.
