@@ -863,7 +863,7 @@ class App(object):
         used in the index, this is not a pile widget, because using a pile
         causes line-by-line text scrolling to be unusable.
         """
-        info = "@ " + self.timestring(message["created"])
+        info = self.readable_delta(message["created"])
         if message["edited"]:
             info += " [edited]"
 
