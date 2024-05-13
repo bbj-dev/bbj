@@ -1426,7 +1426,7 @@ class App(object):
             name = nameloop("Choose a new username", True)
             network.user_update(user_name=name)
             print_rainbows("~~hello there %s~~" % name)
-            if credentials_file():
+            if credentials_file_enabled:
                 credentials_file(update_credentials=True)
             sleep(0.8)
             self.loop.start()
@@ -1444,7 +1444,7 @@ class App(object):
             password = password_loop("Choose a new password. Can be empty", True)
             network.user_update(auth_hash=network._hash(password))
             print_rainbows("SET NEW PASSWORD")
-            if credentials_file():
+            if credentials_file_enabled:
                 credentials_file(update_credentials=True)
             sleep(0.8)
             self.loop.start()
@@ -2614,7 +2614,7 @@ def log_in(relog=False):
     # this function sets the network auth settings, so no
     # further action is needed
     if not relog and credentials_file():
-        print("Logged in with credentials file!")
+        print("Logged in with credentials file! [%s]" % credspath)
         sleep(0.5) # show the message for a moment
         return
     if relog:
