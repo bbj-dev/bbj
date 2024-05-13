@@ -385,6 +385,8 @@ themes = {
 rcpath = os.path.join(os.getenv("HOME"), ".bbjrc")
 markpath = os.path.join(os.getenv("HOME"), ".bbjmarks")
 pinpath = os.path.join(os.getenv("HOME"), ".bbjpins")
+credspath = os.path.join(os.getenv("HOME"), ".bbjcredentials")
+credentials_file_enabled = False
 
 class App(object):
     def __init__(self):
@@ -427,6 +429,14 @@ class App(object):
             urwid.Frame(self.body),
             palette=monochrome_map if os.getenv("NO_COLOR") or self.prefs["monochrome"] else colormap,
             handle_mouse=self.prefs["mouse_integration"])
+
+
+    def toggle_credentials_file(self, button, value):
+        if value:
+            credentials_file(create_if_not_exists=True)
+        else:
+            credentials_file(delete_if_exists=True)
+
 
 
     def frame_theme(self, title=""):
@@ -1416,6 +1426,8 @@ class App(object):
             name = nameloop("Choose a new username", True)
             network.user_update(user_name=name)
             print_rainbows("~~hello there %s~~" % name)
+            if credentials_file():
+                credentials_file(update_credentials=True)
             sleep(0.8)
             self.loop.start()
             self.loop.widget = self.loop.widget[0]
@@ -1432,6 +1444,8 @@ class App(object):
             password = password_loop("Choose a new password. Can be empty", True)
             network.user_update(auth_hash=network._hash(password))
             print_rainbows("SET NEW PASSWORD")
+            if credentials_file():
+                credentials_file(update_credentials=True)
             sleep(0.8)
             self.loop.start()
             self.loop.widget = self.loop.widget[0]
@@ -1533,6 +1547,12 @@ class App(object):
                 urwid.Button("Go anonymous", on_press=self.unlog),
                 urwid.Button("Change username", on_press=self.change_username),
                 urwid.Button("Change password", on_press=self.change_password),
+                urwid.Divider(),
+                urwid.CheckBox(
+                    "Auto-login with credentials file",
+                    state=credentials_file_enabled,
+                    on_state_change=self.toggle_credentials_file
+                     ),
                 urwid.Divider(),
                 urwid.Text(("button", "Your color:")),
                 urwid.Text(("default", "This color will show on your "
@@ -2591,6 +2611,12 @@ def log_in(relog=False):
     chain. The user is run through this before starting the
     curses app.
     """
+    # this function sets the network auth settings, so no
+    # further action is needed
+    if not relog and credentials_file():
+        print("Logged in with credentials file!")
+        sleep(0.5) # show the message for a moment
+        return
     if relog:
         name = sane_value("user_name", "Username", return_empty=True)
     else:
@@ -2638,6 +2664,8 @@ def log_in(relog=False):
             password = password_loop("Enter a password. It can be empty if you want")
             network.user_register(name, password)
             print_rainbows("~~welcome to the party, %s!~~" % network.user_name)
+    if credentials_file():
+        credentials_file(update_credentials=True)
     sleep(0.5) # let that confirmation message shine
 
 
@@ -2742,6 +2770,68 @@ def wipe_screen(*_):
     app.loop.stop()
     call("clear", shell=True)
     app.loop.start()
+
+
+def create_credentials_file():
+    # if invalid login info is present this throws a
+    # ConnectionRefusedError
+    #
+    # verify that the user information is still correct.
+    # This method can only be called in the interface
+    # when the user is already logged in, but lets check
+    # anyways
+    global credentials_file_enabled
+    network.set_credentials(network.user_name, network.user_auth, hash_auth=False)
+    credentials_file_enabled = True
+    try:
+        os.remove(credspath)
+    except FileNotFoundError:
+        pass
+    with open(credspath, "w") as f:
+        json.dump({"user_name": network.user_name, "auth_hash": network.user_auth}, f, indent=2)
+    os.chmod(credspath, 0o600)
+    return True
+
+
+
+def credentials_file(delete_if_exists=False, create_if_not_exists=False, update_credentials=False):
+    global credentials_file_enabled
+    if update_credentials:
+        return create_credentials_file()
+    elif delete_if_exists:
+        try:
+            os.remove(credspath)
+        except FileNotFoundError:
+            pass
+        credentials_file_enabled = False
+        return False
+    try:
+        with open(credspath, "r") as f:
+            creds = json.load(f)
+        # always set this in case user messes it up externally
+        os.chmod(credspath, 0o600)
+        network.set_credentials(creds["user_name"], creds["auth_hash"], hash_auth=False)
+        credentials_file_enabled = True
+        return True
+    except FileNotFoundError:
+        if create_if_not_exists:
+            return create_credentials_file()
+        credentials_file_enabled = False
+        return False
+    except (json.decoder.JSONDecodeError, KeyError):
+        app.loop.stop()
+        wipe_screen()
+        exit("JSON input from %s is malformed. Please edit or delete the file." % credspath)
+    except (ValueError, ConnectionRefusedError):
+        try:
+            os.remove(credspath)
+        except FileNotFoundError:
+            pass
+        credentials_file_enabled = False
+        return False
+
+
+
 
 
 def main():
