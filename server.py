@@ -248,6 +248,10 @@ class API(object):
             auth_hash = sha256(bytes("", "utf8")).hexdigest()
             return db.user_update(database, user, {"auth_hash": auth_hash})
         raise BBJUserError("non-admin attempt to reset a user's password")
+    user_update.doctype = "Users"
+    user_update.arglist = (
+        ("user", "string: a user_name or user_id")
+    )
 
     @api_method
     def user_update(self, args, database, user, **kwargs):
