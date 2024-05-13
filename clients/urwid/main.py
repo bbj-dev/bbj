@@ -2438,7 +2438,9 @@ class ActionBox(urwid.ListBox):
             call("clear", shell=True)
             readline.set_completer(rlcompleter.Completer().complete)
             readline.parse_and_bind("tab: complete")
-            interact(banner="Python " + version + "\nBBJ Interactive Console\nCtrl-D exits.", local=globals())
+            message = "Python " + version + "\nBBJ Interactive Console\nCtrl-D exits."
+            admin_message = '\nYou are an admin. Reset a user password by calling `reset_user_password("USERNAME")`'
+            interact(banner=message + admin_message if network.user["is_admin"] else message, local=globals())
             app.loop.start()
 
         elif app.mode == "thread" and not app.window_split and not overlay:
@@ -2831,7 +2833,12 @@ def credentials_file(delete_if_exists=False, create_if_not_exists=False, update_
         return False
 
 
-
+def reset_user_password(username):
+    """
+    This method is intended for admins to access via `$` key
+    (interactive python shell)
+    """
+    return network("reset_user_password", user=username)
 
 
 def main():
