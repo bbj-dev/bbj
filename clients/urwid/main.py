@@ -1906,6 +1906,9 @@ class MessageBody(urwid.Text):
         last_directive = None
         for paragraph in text_objects:
             for directive, body in paragraph:
+                # these need to removed at the source, server side. but
+                # im lazy so here we go
+                body = body.replace("\r", "")
 
                 if directive in colornames:
                     color = str(colornames.index(directive))
