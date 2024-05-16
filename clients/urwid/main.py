@@ -846,7 +846,7 @@ class App(object):
             # behviour to what it was doing IMHO
             info = urwid.Text([
                 ("dim", "; "),
-                (str(user["color"]), "~%s" % last_author["user_name"]),
+                (str(last_author["color"]), "~%s" % last_author["user_name"]),
                 ("dim", " replied %s; " % self.timestring(thread["last_mod"], "delta", compact=True)),
                 ("dim", "%d total" % thread["reply_count"])
                 ])
