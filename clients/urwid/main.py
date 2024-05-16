@@ -797,7 +797,6 @@ class App(object):
         else:
             title = urwid.Text(thread["title"])
         user = self.usermap[thread["author"]]
-        last_user = self.usermap[thread["last_author"]]
         last_author = self.usermap[thread["last_author"]]
 
         if self.prefs["information_density"] == "default":
