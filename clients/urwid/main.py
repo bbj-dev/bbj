@@ -15,9 +15,6 @@ the keypress methods will call into this global `app` object.
 There are few additional functions that are defined outside
 of the App class. They are delegated to the very bottom of
 this file.
-
-Please mail me (~desvox) for feedback and for any of your
-"OH MY GOD WHY WOULD YOU DO THIS"'s or "PEP8 IS A THING"'s.
 """
 
 from network import BBJ, URLError
