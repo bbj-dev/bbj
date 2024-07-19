@@ -1894,10 +1894,10 @@ class MessageBody(urwid.Text):
     An urwid.Text object that works with the BBJ formatting directives.
     """
     def __init__(self, message):
+        self.post_id = message["post_id"]
         if message["send_raw"]:
             return super(MessageBody, self).__init__(message["body"])
 
-        self.post_id = message["post_id"]
         text_objects = message["body"]
         result = []
         last_directive = None
