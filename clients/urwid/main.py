@@ -251,7 +251,8 @@ default_prefs = {
     "custom_divider_char": False,
     "frame_title": "BBJ",
     "use_custom_frame_title": False,
-    "max_text_width": 80,
+    "limit_max_text_width": False,
+   "max_text_width": 80,
     "confirm_anon": True,
     "information_density": "default",
     "thread_divider": True,
@@ -892,12 +893,16 @@ class App(object):
             ])
 
         head.message = message
+        if self.prefs["limit_max_text_width"]:
+            width = self.prefs["max_text_width"]
+        else:
+            width, _ = self.loop.screen_size
         return [
             head,
             urwid.Divider(),
             urwid.Padding(
                 MessageBody(message),
-                width=self.prefs["max_text_width"]),
+                width=width),
             urwid.Divider(),
             urwid.AttrMap(urwid.Divider(self.theme["divider"]), "dim")
         ]
@@ -1415,6 +1420,9 @@ class App(object):
         self.prefs["thread_divider"] = value
         bbjrc("update", **self.prefs)
 
+    def toggle_limit_width(self, button, value):
+        self.prefs["limit_max_text_width"] = value
+        bbjrc("update", **self.prefs)
 
     def change_username(self, *_):
         self.loop.stop()
@@ -1647,6 +1655,11 @@ class App(object):
                          on_state_change=self.toggle_monochrome
                      ),
                      urwid.CheckBox(
+                         "Limit max message width (configure width below)",
+                         state=self.prefs["limit_max_text_width"],
+                         on_state_change=self.toggle_limit_width
+                     ),
+                     urwid.CheckBox(
                          "Dump rainbows on exit",
                          state=self.prefs["dramatic_exit"],
                          on_state_change=self.toggle_exit
@@ -1694,7 +1707,7 @@ class App(object):
             content.append(item)
 
         for item in [urwid.Divider(),
-                     urwid.Text(("button", "Max message width:")),
+                     urwid.Text(("button", "Limited message width:")),
                      urwid.AttrMap(width_edit, "opt_prompt"),
                      urwid.Divider(),
                      urwid.Text(("button", "Scroll multiplier when holding shift or scrolling with the mouse:")),
