@@ -286,7 +286,7 @@ class BBJ(object):
 
         Examples:
           try:
-              bbj.set_credentials("desvox", "i am sandvich")
+              bbj.set_credentials("user", "i am sandvich")
           except ConnectionRefusedError:
               # bad auth info
           except ValueError:
@@ -295,14 +295,11 @@ class BBJ(object):
           # you can handle hashing yourself if you want
           password = input("Enter your password:")
           bbj.set_credentials(
-              "desvox",
+              "user",
               sha256(bytes(password, "utf8")).hexdigest(),
               hash_auth=False
           )
         """
-        if hash_auth:
-            user_auth = self._hash(user_auth)
-
         if check_validity and not self.validate_credentials(user_name, user_auth):
             self.user_auth = self.user_name = None
             raise ConnectionRefusedError("Auth and User do not match")
@@ -325,14 +322,14 @@ class BBJ(object):
 
         Example:
           # this method DOES NOT take a password string. it must be hashed.
-          try: validate_credentials("desvox", hashed_password)
+          try: validate_credentials("user", hashed_password)
           except ConnectionRefusedError:
               ...
           except ValueError:
               ...
 
           # as a boolean:
-          is_okay = bbj.validate_credentials("desvox", hashed_password, exception=False)
+          is_okay = bbj.validate_credentials("user", hashed_password, exception=False)
         """
         self.validate_all([
                 ("user_name", user_name),
@@ -377,15 +374,15 @@ class BBJ(object):
         Example:
 
           try:
-              bbj.user_register("desvox", "sandvich")
+              bbj.user_register("user", "sandvich")
           except UserWarning as e:
               # show this to users. always.
               print(e.description)
 
           # the object is now also set for this user...
-          assert bbj.get_me()["user_name"] == "desvox"
+          assert bbj.get_me()["user_name"] == "user"
           # ...unless you call it like this:
-          # bbj.user_register("desvox", "sandvich", set_as_user=False)
+          # bbj.user_register("user", "sandvich", set_as_user=False)
         """
         if hash_auth:
             user_auth = sha256(bytes(user_auth, "utf8")).hexdigest()
