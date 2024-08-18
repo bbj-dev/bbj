@@ -300,6 +300,9 @@ class BBJ(object):
               hash_auth=False
           )
         """
+        if hash_auth:
+            user_auth = self._hash(user_auth)
+
         if check_validity and not self.validate_credentials(user_name, user_auth):
             self.user_auth = self.user_name = None
             raise ConnectionRefusedError("Auth and User do not match")
