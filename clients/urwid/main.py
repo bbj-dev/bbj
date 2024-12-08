@@ -1703,6 +1703,9 @@ class App(object):
 
         content.append(urwid.Divider())
 
+        for item in time_stuff:
+            content.append(item)
+
         for item in [urwid.Divider(),
                      urwid.Text(("button", "Limited message width:")),
                      urwid.AttrMap(width_edit, "opt_prompt"),
