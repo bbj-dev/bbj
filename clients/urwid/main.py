@@ -1716,9 +1716,6 @@ class App(object):
                      urwid.AttrMap(editor_display, "opt_prompt")]:
             content.append(item)
 
-        for item in time_stuff:
-            content.append(item)
-
         for item in editor_buttons:
             content.append(item)
 
