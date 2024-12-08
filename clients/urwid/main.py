@@ -896,7 +896,7 @@ class App(object):
         if self.prefs["limit_max_text_width"]:
             width = self.prefs["max_text_width"]
         else:
-            width, _ = self.loop.screen_size
+            width = "pack"
         return [
             head,
             urwid.Divider(),
