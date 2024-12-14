@@ -252,7 +252,7 @@ default_prefs = {
     "frame_title": "BBJ",
     "use_custom_frame_title": False,
     "limit_max_text_width": False,
-   "max_text_width": 80,
+    "max_text_width": 80,
     "confirm_anon": True,
     "information_density": "default",
     "thread_divider": True,
@@ -280,6 +280,37 @@ colormap = [
     ("opt_header", "light cyan", "default"),
     ("hover", "light cyan", "default"),
     ("dim", "dark gray", "default"),
+    ("bold", "default,bold", "default"),
+    ("underline", "default,underline", "default"),
+
+    # map the bbj api color values for display
+    ("0", "default", "default"),
+    ("1", "dark red", "default"),
+    # sounds ugly but brown is as close as we can get to yellow without being bold
+    ("2", "brown", "default"),
+    ("3", "dark green", "default"),
+    ("4", "dark blue", "default"),
+    ("5", "dark cyan", "default"),
+    ("6", "dark magenta", "default"),
+
+    # and have the bolded colors use the same values times 10
+    ("10", "light red", "default"),
+    ("20", "yellow", "default"),
+    ("30", "light green", "default"),
+    ("40", "light blue", "default"),
+    ("50", "light cyan", "default"),
+    ("60", "light magenta", "default")
+]
+
+no_dim_colormap = [
+    ("default", "default", "default"),
+    ("bar", "light magenta", "default"),
+    ("button", "light red", "default"),
+    ("quote", "brown", "default"),
+    ("opt_prompt", "black", "light gray"),
+    ("opt_header", "light cyan", "default"),
+    ("hover", "light cyan", "default"),
+    ("dim", "default", "default"),
     ("bold", "default,bold", "default"),
     ("underline", "default,underline", "default"),
 
@@ -423,9 +454,17 @@ class App(object):
             urwid.LineBox(self.box, **self.frame_theme(self.frame_title)),
             "default"
         )
+
+        if os.getenv("NO_COLOR") or self.prefs["monochrome"]:
+            selected_colormap = monochrome_map
+        elif self.prefs["enable_dim"]:
+            selected_colormap = colormap
+        else:
+            selected_colormap = no_dim_colormap
+
         self.loop = urwid.MainLoop(
             urwid.Frame(self.body),
-            palette=monochrome_map if os.getenv("NO_COLOR") or self.prefs["monochrome"] else colormap,
+            palette=selected_colormap,
             handle_mouse=self.prefs["mouse_integration"])
 
 
@@ -1400,10 +1439,31 @@ class App(object):
 
     def toggle_monochrome(self, button, value):
         self.prefs["monochrome"] = value
-        self.loop.screen.register_palette(monochrome_map if value else colormap)
+
+        if os.getenv("NO_COLOR") or self.prefs["monochrome"]:
+            selected_colormap = monochrome_map
+        elif self.prefs["enable_dim"]:
+            selected_colormap = colormap
+        else:
+            selected_colormap = no_dim_colormap
+
+        self.loop.screen.register_palette(selected_colormap)
         self.loop.screen.clear()
         bbjrc("update", **self.prefs)
 
+    def toggle_dim(self, button, value):
+        self.prefs["enable_dim"] = value
+
+        if os.getenv("NO_COLOR") or self.prefs["monochrome"]:
+            selected_colormap = monochrome_map
+        elif self.prefs["enable_dim"]:
+            selected_colormap = colormap
+        else:
+            selected_colormap = no_dim_colormap
+
+        self.loop.screen.register_palette(selected_colormap)
+        self.loop.screen.clear()
+        bbjrc("update", **self.prefs)
 
     def toggle_mouse(self, button, value):
         self.prefs["mouse_integration"] = value
@@ -1653,6 +1713,11 @@ class App(object):
                          "Monochrome mode",
                          state=self.prefs["monochrome"],
                          on_state_change=self.toggle_monochrome
+                     ),
+                     urwid.CheckBox(
+                         "Enable dim characters",
+                         state=self.prefs["enable_dim"],
+                         on_state_change=self.toggle_dim
                      ),
                      urwid.CheckBox(
                          "Limit max message width (configure width below)",
