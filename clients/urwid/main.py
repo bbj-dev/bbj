@@ -537,7 +537,10 @@ class App(object):
                 footer += " [@#] Search Control"
 
         else:
-            footer = bars["index"]
+            if network.user["is_admin"]:
+                footer = bars["index"] + " [\]Pinned"
+            else:
+                footer = bars["index"]
 
         self.set_footer(footer)
 
@@ -828,7 +831,7 @@ class App(object):
         """
         button = cute_button(">>", self.thread_load, thread["thread_id"])
         if pinned == "server":
-            title = urwid.AttrWrap(urwid.Text("[STICKY] " + thread["title"]), "20")
+            title = urwid.AttrWrap(urwid.Text("[PINNED] " + thread["title"]), "20")
         elif pinned == "client":
             title = urwid.AttrWrap(urwid.Text("[*] " + thread["title"]), "50")
         else:
