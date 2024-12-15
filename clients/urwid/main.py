@@ -700,7 +700,7 @@ class App(object):
             align=("relative", 50),
             valign=("relative", 50),
             height=len(buttons) + 3,
-            width=30
+            width=45
         )
 
 
@@ -1384,14 +1384,14 @@ class App(object):
                     urwid.Divider(self.theme["divider"]),
                     urwid.Text(general_help)
                 ])),
-            **self.frame_theme("?????")
+            **self.frame_theme("BBJ Help")
         )
 
         app.loop.widget = urwid.Overlay(
             widget, app.loop.widget,
             align=("relative", 50),
             valign=("relative", 50),
-            width=30,
+            width=45,
             height=("relative", 60)
         )
 
@@ -1818,7 +1818,7 @@ class App(object):
             widget, self.loop.widget,
             align="center",
             valign="middle",
-            width=30,
+            width=45,
             height=("relative", 75)
         )
 
