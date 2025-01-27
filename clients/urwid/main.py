@@ -1886,7 +1886,7 @@ class App(object):
         Dispatches the appropriate composure mode and widget based on application
         context and user preferences.
         """
-        if not network.user_auth  and not network.instance_info["allow_anon"]:
+        if not network.user_auth and not network.instance_info["allow_anon"]:
             return self.temp_footer_message(
                 "Anonymous participation is disabled on this server")
 

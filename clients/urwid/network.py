@@ -49,7 +49,7 @@ class BBJ(object):
 
     See the offical API error documentation for more details.
     """
-    def __init__(self, host="127.0.0.1", port=7099, https=False):
+    def __init__(self, host="127.0.0.1", port="7099", https=False):
         """
         Optionally takes port and host as kwargs. It will immediately
         try to resolve a connection to the server, if its down, it
@@ -71,7 +71,9 @@ class BBJ(object):
           If you set this to False, anonymous network usage is
           guaranteed.
         """
-        self.base = "http{}://{}:{}/api/%s".format("s" if https else "", host, port)
+        portstring = f":{port}" if port != "80" else ""
+        namestring = f"{host}{portstring}"
+        self.base = f"http{'s' if https else ''}://{namestring}/api/%s"
         self.user_name = self.user_auth = None
         self.send_auth = True
         try:
