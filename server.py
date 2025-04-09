@@ -23,7 +23,8 @@ default_config = {
     "host": "127.0.0.1",
     "instance_name": "BBJ",
     "allow_anon": True,
-    "debug": False
+    "debug": False,
+    "codes" : {}
 }
 
 try:
@@ -225,9 +226,27 @@ class API(object):
         `auth_hash` that you supply, in addition to all the default user
         parameters. Returns code 4 errors for any failures.
         """
-        validate(args, ["user_name", "auth_hash"])
+        validate(args, ["user_name", "auth_hash", "code"])
+
+        user_name = args["user_name"]
+
+        code = args["code"]
+
+        codes = app_config["codes"]
+
+        if codes:
+            if code is None \
+                    or len(code) == 0:
+                raise BBJParameterError("You need an invitation code to sign up")
+
+            if user_name not in codes:
+                raise BBJUserError("You are not allowed to register")
+
+            if code != codes[user_name]:
+                raise BBJUserError("Incorrect invitation code")
+
         return db.user_register(
-            database, args["user_name"], args["auth_hash"])
+            database, user_name, args["auth_hash"])
     user_register.doctype = "Users"
     user_register.arglist = (
         ("user_name", "string: the desired display name"),
