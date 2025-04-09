@@ -11,7 +11,6 @@ import cherrypy
 import sqlite3
 import json
 
-dbname = "data.sqlite"
 template_environment = Environment(loader=FileSystemLoader("templates/"), autoescape=select_autoescape())
 
 
@@ -24,7 +23,8 @@ default_config = {
     "instance_name": "BBJ",
     "allow_anon": True,
     "debug": False,
-    "codes" : {}
+    "codes" : {},
+    "dbname" : "data.sqlite"
 }
 
 try:
@@ -43,6 +43,8 @@ except FileNotFoundError:
 finally:
     with open("config.json", "w") as _out:
         json.dump(app_config, _out, indent=2)
+
+dbname = app_config["dbname"]
 
 
 def api_method(function):
