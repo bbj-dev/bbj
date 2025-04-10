@@ -1,3 +1,5 @@
+ARG bbj_config=appjail-files/config.json
+
 OPTION overwrite=force
 OPTION start
 OPTION volume=bbj-data mountpoint:/bbj/data owner:1001 group:1001
@@ -19,7 +21,7 @@ WORKDIR /bbj
 
 RUN git clone --depth 1 https://github.com/DtxdF/bbj.git src
 
-COPY appjail-files/config.json src/config.json
+COPY ${bbj_config} src/config.json
 CMD chown bbj:bbj /bbj/src/config.json
 
 RUN pip install cherrypy
