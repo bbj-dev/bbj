@@ -470,6 +470,8 @@ registered on the server.
  * __user_name__: string: the desired display name
 
  * __auth_hash__: string: a sha256 hash of a password
+ 
+ * __code__: string: invitation code
 
 
 

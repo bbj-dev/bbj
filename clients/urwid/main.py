@@ -2713,6 +2713,8 @@ def log_in(relog=False):
     if name == "":
         print_rainbows("~~W3 4R3 4n0nYm0u5~~")
     else:
+        (name, code) = get_code_from(name)
+
         # ConnectionRefusedError means registered but needs a
         # password, ValueError means we need to register the user.
         try:
@@ -2745,15 +2747,37 @@ def log_in(relog=False):
             if response == "c":
                 name = nameloop("Pick a new name", True)
 
+                (name, code) = get_code_from(name)
+
             elif response == "n":
                 raise InterruptedError
 
             password = password_loop("Enter a password. It can be empty if you want")
-            network.user_register(name, password)
+
+            try:
+                network.user_register(name, password, code)
+
+            except Exception as err:
+                paren_prompt("%s" % err, False, function=print)
+                exit()
+
             print_rainbows("~~welcome to the party, %s!~~" % network.user_name)
     if credentials_file():
         credentials_file(update_credentials=True)
     sleep(0.5) # let that confirmation message shine
+
+
+def get_code_from(name):
+    code = None
+    name = name.split("@", 1)
+
+    if len(name) == 1:
+        name = name[0]
+
+    else:
+        (name, code) = name
+
+    return (name, code)
 
 
 def bbjrc(mode, **params):

@@ -1,0 +1,58 @@
+ARG bbj_config=appjail-files/config.json
+
+OPTION overwrite=force
+OPTION start
+OPTION volume=bbj-data mountpoint:/bbj/data owner:1001 group:1001
+
+INCLUDE gh+DtxdF/efficient-makejail
+
+CMD mkdir -p /usr/local/etc/pkg/repos
+COPY appjail-files/pkg.latest.conf /usr/local/etc/pkg/repos/Latest.conf
+
+PKG python py311-pip py311-sqlite3 git-tiny
+
+CMD pw useradd -n bbj -d /bbj -c "bulletin board server for small communities"
+CMD mkdir -p /bbj /bbj/data
+CMD chown bbj:bbj /bbj /bbj/data
+
+USER bbj
+
+WORKDIR /bbj
+
+RUN git clone --depth 1 https://github.com/DtxdF/bbj.git src
+
+COPY ${bbj_config} src/config.json
+CMD chown bbj:bbj /bbj/src/config.json
+
+RUN pip install cherrypy
+RUN pip install urwid
+RUN pip install jinja2
+
+CMD if [ ! -f /bbj/data/bbj.db ]; then sqlite3 /bbj/data/bbj.db < /bbj/src/schema.sql; fi
+CMD chown bbj:bbj /bbj/data/bbj.db
+CMD chmod 600 /bbj/data/bbj.db
+
+STOP
+
+STAGE start
+
+USER bbj
+WORKDIR /bbj/src
+
+RUN daemon \
+        -t "bulletin board server for small communities" \
+        -p /bbj/data/pid \
+        -o /bbj/data/log \
+            python server.py
+
+STAGE custom:bbj_status
+
+CMD if [ -f "/bbj/data/pid" ]; then \
+        top -ap `head -1 /bbj/data/pid`; \
+    fi
+
+STAGE custom:bbj_log
+
+CMD if [ -f "/bbj/data/log" ]; then \
+        less -R /bbj/data/log; \
+    fi

@@ -1,0 +1,12 @@
+{
+  "admins": [
+    "admin"
+  ],
+  "port": 7099,
+  "host": "0.0.0.0",
+  "instance_name": "BBJ (AppJail)",
+  "allow_anon": false,
+  "debug": false,
+  "codes": {},
+  "dbname": "/bbj/data/bbj.db"
+}

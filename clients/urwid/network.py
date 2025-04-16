@@ -368,7 +368,7 @@ class BBJ(object):
         return response["data"]
 
 
-    def user_register(self, user_name, user_auth, hash_auth=True, set_as_user=True):
+    def user_register(self, user_name, user_auth, code=None, hash_auth=True, set_as_user=True):
         """
         Register user_name into the system with user_auth. Unless hash_auth
         is set to false, user_auth should be a password string.
@@ -395,7 +395,8 @@ class BBJ(object):
         response = self("user_register",
             no_auth=True,
             user_name=user_name,
-            auth_hash=user_auth
+            auth_hash=user_auth,
+            code=code
         )["data"]
 
         assert all([
