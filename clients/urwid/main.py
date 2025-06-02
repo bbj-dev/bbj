@@ -1523,8 +1523,7 @@ class App(object):
             self.loop.start()
 
 
-    def live_time_render(self, editor, text, args):
-        widget, key = args
+    def live_time_render(self, widget, key, editor, text):
         try:
             rendered = datetime.fromtimestamp(time()).strftime(text)
             self.prefs[key] = text
@@ -1661,11 +1660,11 @@ class App(object):
 
         time_box = urwid.Text(self.timestring(time(), "time"))
         time_edit = Prompt(edit_text=self.prefs["time"])
-        urwid.connect_signal(time_edit, "change", self.live_time_render, (time_box, "time"))
+        urwid.connect_signal(time_edit, "change", self.live_time_render, user_args=(time_box, "time"))
 
         date_box = urwid.Text(self.timestring(time(), "date"))
         date_edit = Prompt(edit_text=self.prefs["date"])
-        urwid.connect_signal(date_edit, "change", self.live_time_render, (date_box, "date"))
+        urwid.connect_signal(date_edit, "change", self.live_time_render, user_args=(date_box, "date"))
 
         time_stuff = [
             urwid.Text(("button", "Time Format")),
