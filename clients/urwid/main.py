@@ -35,6 +35,9 @@ import json
 import os
 import re
 
+import warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning) 
+
 
 def get_arg(key, default=None, get_value=True):
     try:
@@ -538,7 +541,7 @@ class App(object):
 
         else:
             if network.user["is_admin"]:
-                footer = bars["index"] + " [\]Pinned"
+                footer = bars["index"] + " [\\]Pinned"
             else:
                 footer = bars["index"]
 
