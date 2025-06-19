@@ -916,7 +916,13 @@ class App(object):
         used in the index, this is not a pile widget, because using a pile
         causes line-by-line text scrolling to be unusable.
         """
-        info = self.readable_delta(message["created"])
+        info = self.timestring(message['created'])
+        delta = time() - message["created"]
+        hours, _ = divmod(delta, 3600)
+        
+        if hours < 840:
+            info += f" ({self.readable_delta(message['created'])})"
+
         if message["edited"]:
             info += " [edited]"
 
